@@ -1,0 +1,212 @@
+Metadata-Version: 2.4
+Name: myanmar-agri-geo
+Version: 0.1.0
+Summary: Reproducible Geo-CSV builder for Myanmar crop-suitability research
+Author: Myanmar Agri Geo CSV contributors
+License: MIT
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: numpy>=1.26
+Requires-Dist: pandas>=2.1
+Requires-Dist: PyYAML>=6.0
+Provides-Extra: full
+Requires-Dist: earthengine-api>=1.0; extra == "full"
+Requires-Dist: geopandas>=0.14; extra == "full"
+Requires-Dist: pyarrow>=14; extra == "full"
+Requires-Dist: rasterio>=1.3; extra == "full"
+Requires-Dist: requests>=2.31; extra == "full"
+Requires-Dist: shapely>=2.0; extra == "full"
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+
+# Myanmar Agricultural Geo-CSV Pipeline
+
+Myanmar နိုင်ငံအတွက် crop-suitability research dataset တည်ဆောက်ရန် reproducible pipeline ဖြစ်ပါသည်။ Chat ထဲတွင် GB-size CSV အတု မထုတ်ပေးဘဲ၊ public geospatial sources ကို Google Earth Engine (GEE) နှင့် Python ဖြင့် စုစည်းပြီး provenance, QA, CSV, Parquet အဖြစ် ထုတ်ပေးသည်။
+
+Code agent အခြားတစ်ခုကို တူညီသည့် pipeline တည်ဆောက်ခိုင်းလိုပါက [copy-paste Burmese prompt](PROMPT_MYANMAR_GEO_CSV.md) ကိုသုံးနိုင်သည်။
+
+The project is mapped explicitly to the ASEAN GeoAI Solution Canvas in
+[MYANMAR_GEOAI_SOLUTION_CANVAS.md](MYANMAR_GEOAI_SOLUTION_CANVAS.md), including
+what is implemented today and what needs real-data/label validation next.
+
+> ဒီ dataset ၏ rule-based suitability labels များသည် **provisional research labels** သာဖြစ်သည်။ မြေစစ်ဆေးမှု၊ ဒေသခံ agronomist review, irrigation/flood/drainage, land tenure, pests, market conditions မပါဘဲ production crop recommendation အဖြစ် မသုံးပါနှင့်။
+
+## What it builds
+
+- Myanmar-wide 5 km equal-area grid; one record per grid cell per month, January 2018–December 2025.
+- Sentinel-2 cloud-masked NDVI, McFeeters NDWI, and NDMI; Sentinel-1 VV/VH is retained for monsoon optical-cloud gaps.
+- CHIRPS rainfall, ERA5-Land temperature/solar radiation/physical soil-water, terrain, JRC surface-water proxies, and SoilGrids 0–30 cm soil features.
+- Suitability fields for monsoon rice, dry-season rice, maize, sugarcane, cassava, durian, mangosteen, longan, mango, chili, and tomato.
+- `CSV.gz`, Parquet, split manifest, data dictionary, provenance manifest, and JSON QA report.
+- A CollabHub resource-audit CSV and a pending external-feature manifest. These
+  are metadata, not a claim that a dashboard, tutorial, or model module is an
+  observation source.
+
+No completed primary Geo-CSV/Parquet is bundled in this repository. A real
+export needs a registered Earth Engine account and the required data-source
+access; explicit source caches are kept under `data/raw/` and excluded from
+version control.
+
+## Real Myanmar data status
+
+The project is ready to produce a real Myanmar-only 5 km/monthly feature
+dataset, but this local copy has not yet run its authenticated Earth Engine
+exports. It therefore does **not** yet contain the final GB-scale CSV or
+Parquet. The supplied generic flood/COVID CSVs are deliberately excluded: they
+are not verified Myanmar agricultural observations. See the
+[real-data export plan](REAL_MYANMAR_DATA_EXPORT_PLAN.md) for source roles,
+expected natural file sizes, label limits, clean-data gates and the exact
+owner-run authorization/export sequence.
+
+For genuine Myanmar crop-area/production statistics, use the separate
+[official-statistics side-table guide](OFFICIAL_MYANMAR_CROP_STATS.md). Those
+annual admin-level data calibrate/evaluate aggregate predictions; they never
+become 5 km crop labels or model-input features.
+
+## Quick start
+
+Use Python 3.10+ in an isolated environment:
+
+```bash
+python -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -e '.[full,dev]'
+earthengine authenticate
+
+# This must return earth_engine_ready: true before submitting exports.
+myanmar-agri-geo ee-auth-check --config config/default.yaml
+```
+
+Review or copy [`config/default.yaml`](config/default.yaml), then perform the workflow:
+
+```bash
+# Inspect country/time/grid/crop settings without calling any external service.
+myanmar-agri-geo plan --config config/default.yaml
+
+# Write CollabHub resource decisions and conditional feature contracts. This is
+# metadata-only; it needs neither Earth Engine nor a source download.
+myanmar-agri-geo resource-audit --config config/default.yaml
+
+# Download/cache the official CHIRPS v3 monthly files required for final
+# rainfall values. The GEE CHIRPS collection is only a staging fallback.
+myanmar-agri-geo prepare-chirps --config config/default.yaml --download
+
+# A year-sized slice is useful when a connection is interrupted; repeat for
+# the remaining years and the manifest will still describe the full period.
+myanmar-agri-geo prepare-chirps --config config/default.yaml --start-month 2018-01 --end-month 2018-12 --download
+
+# Submit GEE table exports. Use --dry-run first to inspect the task plan.
+myanmar-agri-geo gee-export --config config/default.yaml --dry-run
+myanmar-agri-geo gee-export --config config/default.yaml --start-tasks
+
+# If the GEE SoilGrids community assets are unavailable, make an auditable
+# local/WebDAV fallback manifest. Download or clip VRT/GeoTIFF layers to the
+# configured soil cache before assembly if this fallback is needed. Set
+# soilgrids.use_gee_community_assets=false before running the GEE export.
+myanmar-agri-geo prepare-soil --config config/default.yaml
+
+# After all Drive export CSVs are downloaded into data/raw/gee/:
+myanmar-agri-geo assemble --config config/default.yaml
+myanmar-agri-geo validate --config config/default.yaml --strict
+```
+
+The defaults write these artefacts under `data/output/`:
+
+```text
+myanmar_agri_suitability.csv.gz
+myanmar_agri_suitability.parquet
+myanmar_agri_suitability_split_manifest.csv
+data_dictionary.md
+source_manifest.json
+qa_report.json
+collabhub_resource_audit.csv
+external_feature_manifest.csv
+```
+
+Use compressed CSV for broad compatibility and Parquet for training at scale. The implementation does not pad or duplicate records to manufacture a target file size.
+If a program genuinely requires an uncompressed `.csv`, request it explicitly:
+
+```bash
+myanmar-agri-geo assemble --config config/default.yaml --plain-csv
+```
+
+That writes the same validated rows as an additional, potentially multi-GB
+compatibility file. The final assembly stops before publishing CSV/Parquet if
+the configured row-level missingness gate fails; its QA report records the
+reason rather than silently filling source values.
+
+## CollabHub resource audit
+
+The [CollabHub audit](COLLABHUB_RESOURCE_AUDIT.md) preserves the public-source
+contract. HYDRAFloods, Mekong Drought & Crop Watch, and the Regional Land
+Cover Mapping System are only **conditional sidecar candidates**: an official
+downloadable Myanmar-appropriate release must first pass license, coverage,
+date, CRS, unit, checksum, missingness, and leakage checks.
+
+OpenGeoAI water, field-delineation, land-cover, training-data, and export
+examples are optional processors or implementation references that operate on
+the project's own inputs. They are not source data. The site’s telecom/open
+network datasets, mapping libraries, MLOps tools, learning material, and
+unreviewed project pages are excluded from primary-table ingestion.
+
+Never place arbitrary external CSVs in `data/raw/gee/`; it is reserved for
+completed GEE exports. Stage a vetted source in `data/raw/external/<source_id>/`
+and retain its provenance in the external-feature manifest before writing an
+adapter.
+
+## Data contract
+
+Every primary-table row contains `grid_id`, `year_month`, centroid coordinates, terrain, soil, water, climate/solar, remote-sensing features, source-quality flags, and four labels for every crop:
+
+```text
+suitability_score__<crop>   # 0–100; null when feature coverage is insufficient
+is_suitable__<crop>         # default: score >= 70
+label_source__<crop>        # rule_based | hybrid_rule_observed | observed
+label_confidence__<crop>    # rules-only labels are deliberately low-confidence (default cap: 0.45)
+```
+
+Physical values are not globally normalized. The split manifest assigns 0.5-degree spatial blocks for five-fold spatial cross-validation and reserves 2025 as a temporal holdout. Fit scaling/imputation only on each training fold.
+
+`NDWI` and `NDMI` are surface/canopy-moisture proxies; they are **not** physical soil-moisture measurements. The physical soil-water field comes from ERA5-Land and is explicitly named `era5_soil_moisture_m3_m3`.
+
+## Labels and observed records
+
+The bundled profiles are broad, transparent agronomic thresholds—not measured crop outcomes. They are automatically marked `rule_based` with limited confidence.
+
+To calibrate with permitted, geocoded Myanmar observations, set `project.observed_labels_path` to a long-form CSV containing:
+
+```csv
+grid_id,year_month,crop_id,observed_suitability_score
+MMR_123,2022-06,durian,82
+```
+
+`observed_score` or `observed_is_suitable` are also accepted. The records are used only for label calibration; they are never copied into model feature columns. Missing observed labels never trigger synthetic values.
+
+## Source notes
+
+| Source | Role |
+| --- | --- |
+| Sentinel-2 SR Harmonized | 10 m surface reflectance and vegetation/water indices |
+| Sentinel-1 GRD | SAR VV/VH support during cloud-heavy months |
+| CHIRPS v3 monthly | final rainfall cache, sampled locally at grid centroids; GEE CHIRPS v2 is staging-only unless an explicit fallback is allowed |
+| ERA5-Land Daily Aggregated | temperature, downward solar radiation, and physical soil water |
+| SoilGrids 2.0 | 0–30 cm pH, texture, SOC, CEC; GEE community assets first, WebDAV VRT/local cache fallback |
+| SRTM | elevation, slope, and aspect |
+| JRC Global Surface Water | static surface-water occurrence/distance proxy |
+| FAO GAUL | Myanmar boundary/context |
+
+The GEE backend records source identifiers in each row and writes detailed source and file hashes into `source_manifest.json`. Observe each provider's license, attribution, and access terms before distributing any derived data.
+
+## QA gates
+
+`validate` checks unique `grid_id + year_month` keys, Myanmar coordinates, the 2018–2025 time window, units/ranges, quality metadata, suitability score/boolean consistency, label provenance/confidence, missingness, and the final shared schema. It does not silently impute cloud-missing satellite records.
+
+Run the included tests with:
+
+```bash
+python -m pytest
+```
+
+## Scope boundary
+
+This release builds the geo-suitability dataset only. Planting/harvest calendar prediction needs a separate field-event time-series dataset with verified crop-stage, planting, and harvest labels.

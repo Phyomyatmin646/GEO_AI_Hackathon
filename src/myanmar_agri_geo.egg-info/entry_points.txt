@@ -1,0 +1,2 @@
+[console_scripts]
+myanmar-agri-geo = myanmar_agri_geo.cli:main
