@@ -1,0 +1,920 @@
+[
+  {
+    "year": 2010,
+    "products": [
+      {
+        "product_id": "mango",
+        "product_name": "Mango (Sein Ta Lone)",
+        "category": "fruit",
+        "export_volume_mt": 40933,
+        "export_value_usd": 30699686
+      },
+      {
+        "product_id": "melon",
+        "product_name": "Watermelon/Muskmelon",
+        "category": "fruit",
+        "export_volume_mt": 849185,
+        "export_value_usd": 159222145
+      },
+      {
+        "product_id": "avocado",
+        "product_name": "Avocado",
+        "category": "fruit",
+        "export_volume_mt": 2096,
+        "export_value_usd": 4192137
+      },
+      {
+        "product_id": "teak",
+        "product_name": "Teak & Hardwoods",
+        "category": "forest",
+        "export_volume_mt": 501089,
+        "export_value_usd": 400871577
+      },
+      {
+        "product_id": "rubber",
+        "product_name": "Natural Rubber",
+        "category": "forest",
+        "export_volume_mt": 135923,
+        "export_value_usd": 181230865
+      },
+      {
+        "product_id": "rice",
+        "product_name": "Rice (Export)",
+        "category": "crop",
+        "export_volume_mt": 1506704,
+        "export_value_usd": 602681711
+      },
+      {
+        "product_id": "pulses",
+        "product_name": "Beans & Pulses",
+        "category": "crop",
+        "export_volume_mt": 1133047,
+        "export_value_usd": 755364986
+      }
+    ]
+  },
+  {
+    "year": 2011,
+    "products": [
+      {
+        "product_id": "mango",
+        "product_name": "Mango (Sein Ta Lone)",
+        "category": "fruit",
+        "export_volume_mt": 45206,
+        "export_value_usd": 33904849
+      },
+      {
+        "product_id": "melon",
+        "product_name": "Watermelon/Muskmelon",
+        "category": "fruit",
+        "export_volume_mt": 820884,
+        "export_value_usd": 153915836
+      },
+      {
+        "product_id": "avocado",
+        "product_name": "Avocado",
+        "category": "fruit",
+        "export_volume_mt": 2138,
+        "export_value_usd": 4276175
+      },
+      {
+        "product_id": "teak",
+        "product_name": "Teak & Hardwoods",
+        "category": "forest",
+        "export_volume_mt": 490765,
+        "export_value_usd": 392611815
+      },
+      {
+        "product_id": "rubber",
+        "product_name": "Natural Rubber",
+        "category": "forest",
+        "export_volume_mt": 145847,
+        "export_value_usd": 194462627
+      },
+      {
+        "product_id": "rice",
+        "product_name": "Rice (Export)",
+        "category": "crop",
+        "export_volume_mt": 1614165,
+        "export_value_usd": 645665820
+      },
+      {
+        "product_id": "pulses",
+        "product_name": "Beans & Pulses",
+        "category": "crop",
+        "export_volume_mt": 1302946,
+        "export_value_usd": 868630756
+      }
+    ]
+  },
+  {
+    "year": 2012,
+    "products": [
+      {
+        "product_id": "mango",
+        "product_name": "Mango (Sein Ta Lone)",
+        "category": "fruit",
+        "export_volume_mt": 49677,
+        "export_value_usd": 37257951
+      },
+      {
+        "product_id": "melon",
+        "product_name": "Watermelon/Muskmelon",
+        "category": "fruit",
+        "export_volume_mt": 1026238,
+        "export_value_usd": 192419590
+      },
+      {
+        "product_id": "avocado",
+        "product_name": "Avocado",
+        "category": "fruit",
+        "export_volume_mt": 2710,
+        "export_value_usd": 5419309
+      },
+      {
+        "product_id": "teak",
+        "product_name": "Teak & Hardwoods",
+        "category": "forest",
+        "export_volume_mt": 411631,
+        "export_value_usd": 329305197
+      },
+      {
+        "product_id": "rubber",
+        "product_name": "Natural Rubber",
+        "category": "forest",
+        "export_volume_mt": 169171,
+        "export_value_usd": 225561593
+      },
+      {
+        "product_id": "rice",
+        "product_name": "Rice (Export)",
+        "category": "crop",
+        "export_volume_mt": 1653705,
+        "export_value_usd": 661481966
+      },
+      {
+        "product_id": "pulses",
+        "product_name": "Beans & Pulses",
+        "category": "crop",
+        "export_volume_mt": 1270939,
+        "export_value_usd": 847292558
+      }
+    ]
+  },
+  {
+    "year": 2013,
+    "products": [
+      {
+        "product_id": "mango",
+        "product_name": "Mango (Sein Ta Lone)",
+        "category": "fruit",
+        "export_volume_mt": 47691,
+        "export_value_usd": 35768534
+      },
+      {
+        "product_id": "melon",
+        "product_name": "Watermelon/Muskmelon",
+        "category": "fruit",
+        "export_volume_mt": 1037927,
+        "export_value_usd": 194611369
+      },
+      {
+        "product_id": "avocado",
+        "product_name": "Avocado",
+        "category": "fruit",
+        "export_volume_mt": 2787,
+        "export_value_usd": 5574193
+      },
+      {
+        "product_id": "teak",
+        "product_name": "Teak & Hardwoods",
+        "category": "forest",
+        "export_volume_mt": 433657,
+        "export_value_usd": 346925825
+      },
+      {
+        "product_id": "rubber",
+        "product_name": "Natural Rubber",
+        "category": "forest",
+        "export_volume_mt": 173485,
+        "export_value_usd": 231313935
+      },
+      {
+        "product_id": "rice",
+        "product_name": "Rice (Export)",
+        "category": "crop",
+        "export_volume_mt": 1681909,
+        "export_value_usd": 672763486
+      },
+      {
+        "product_id": "pulses",
+        "product_name": "Beans & Pulses",
+        "category": "crop",
+        "export_volume_mt": 1391653,
+        "export_value_usd": 927768699
+      }
+    ]
+  },
+  {
+    "year": 2014,
+    "products": [
+      {
+        "product_id": "mango",
+        "product_name": "Mango (Sein Ta Lone)",
+        "category": "fruit",
+        "export_volume_mt": 49713,
+        "export_value_usd": 37284941
+      },
+      {
+        "product_id": "melon",
+        "product_name": "Watermelon/Muskmelon",
+        "category": "fruit",
+        "export_volume_mt": 1158452,
+        "export_value_usd": 217209841
+      },
+      {
+        "product_id": "avocado",
+        "product_name": "Avocado",
+        "category": "fruit",
+        "export_volume_mt": 3573,
+        "export_value_usd": 7145087
+      },
+      {
+        "product_id": "teak",
+        "product_name": "Teak & Hardwoods",
+        "category": "forest",
+        "export_volume_mt": 150591,
+        "export_value_usd": 180709552
+      },
+      {
+        "product_id": "rubber",
+        "product_name": "Natural Rubber",
+        "category": "forest",
+        "export_volume_mt": 165866,
+        "export_value_usd": 221155181
+      },
+      {
+        "product_id": "rice",
+        "product_name": "Rice (Export)",
+        "category": "crop",
+        "export_volume_mt": 1703893,
+        "export_value_usd": 681557059
+      },
+      {
+        "product_id": "pulses",
+        "product_name": "Beans & Pulses",
+        "category": "crop",
+        "export_volume_mt": 1534555,
+        "export_value_usd": 1023036914
+      }
+    ]
+  },
+  {
+    "year": 2015,
+    "products": [
+      {
+        "product_id": "mango",
+        "product_name": "Mango (Sein Ta Lone)",
+        "category": "fruit",
+        "export_volume_mt": 46997,
+        "export_value_usd": 35247560
+      },
+      {
+        "product_id": "melon",
+        "product_name": "Watermelon/Muskmelon",
+        "category": "fruit",
+        "export_volume_mt": 1092713,
+        "export_value_usd": 204883692
+      },
+      {
+        "product_id": "avocado",
+        "product_name": "Avocado",
+        "category": "fruit",
+        "export_volume_mt": 3416,
+        "export_value_usd": 6832854
+      },
+      {
+        "product_id": "teak",
+        "product_name": "Teak & Hardwoods",
+        "category": "forest",
+        "export_volume_mt": 131098,
+        "export_value_usd": 157317233
+      },
+      {
+        "product_id": "rubber",
+        "product_name": "Natural Rubber",
+        "category": "forest",
+        "export_volume_mt": 150367,
+        "export_value_usd": 200489993
+      },
+      {
+        "product_id": "rice",
+        "product_name": "Rice (Export)",
+        "category": "crop",
+        "export_volume_mt": 1638966,
+        "export_value_usd": 655586257
+      },
+      {
+        "product_id": "pulses",
+        "product_name": "Beans & Pulses",
+        "category": "crop",
+        "export_volume_mt": 1285864,
+        "export_value_usd": 857242784
+      }
+    ]
+  },
+  {
+    "year": 2016,
+    "products": [
+      {
+        "product_id": "mango",
+        "product_name": "Mango (Sein Ta Lone)",
+        "category": "fruit",
+        "export_volume_mt": 61044,
+        "export_value_usd": 45782800
+      },
+      {
+        "product_id": "melon",
+        "product_name": "Watermelon/Muskmelon",
+        "category": "fruit",
+        "export_volume_mt": 1348269,
+        "export_value_usd": 252800476
+      },
+      {
+        "product_id": "avocado",
+        "product_name": "Avocado",
+        "category": "fruit",
+        "export_volume_mt": 4980,
+        "export_value_usd": 9959013
+      },
+      {
+        "product_id": "teak",
+        "product_name": "Teak & Hardwoods",
+        "category": "forest",
+        "export_volume_mt": 135525,
+        "export_value_usd": 162630104
+      },
+      {
+        "product_id": "rubber",
+        "product_name": "Natural Rubber",
+        "category": "forest",
+        "export_volume_mt": 157918,
+        "export_value_usd": 210556679
+      },
+      {
+        "product_id": "rice",
+        "product_name": "Rice (Export)",
+        "category": "crop",
+        "export_volume_mt": 1746857,
+        "export_value_usd": 698742656
+      },
+      {
+        "product_id": "pulses",
+        "product_name": "Beans & Pulses",
+        "category": "crop",
+        "export_volume_mt": 1458371,
+        "export_value_usd": 972247284
+      }
+    ]
+  },
+  {
+    "year": 2017,
+    "products": [
+      {
+        "product_id": "mango",
+        "product_name": "Mango (Sein Ta Lone)",
+        "category": "fruit",
+        "export_volume_mt": 66919,
+        "export_value_usd": 50188952
+      },
+      {
+        "product_id": "melon",
+        "product_name": "Watermelon/Muskmelon",
+        "category": "fruit",
+        "export_volume_mt": 1667203,
+        "export_value_usd": 312600552
+      },
+      {
+        "product_id": "avocado",
+        "product_name": "Avocado",
+        "category": "fruit",
+        "export_volume_mt": 5506,
+        "export_value_usd": 11012645
+      },
+      {
+        "product_id": "teak",
+        "product_name": "Teak & Hardwoods",
+        "category": "forest",
+        "export_volume_mt": 149191,
+        "export_value_usd": 179029020
+      },
+      {
+        "product_id": "rubber",
+        "product_name": "Natural Rubber",
+        "category": "forest",
+        "export_volume_mt": 162055,
+        "export_value_usd": 216073653
+      },
+      {
+        "product_id": "rice",
+        "product_name": "Rice (Export)",
+        "category": "crop",
+        "export_volume_mt": 1898840,
+        "export_value_usd": 759536067
+      },
+      {
+        "product_id": "pulses",
+        "product_name": "Beans & Pulses",
+        "category": "crop",
+        "export_volume_mt": 1799606,
+        "export_value_usd": 1199737276
+      }
+    ]
+  },
+  {
+    "year": 2018,
+    "products": [
+      {
+        "product_id": "mango",
+        "product_name": "Mango (Sein Ta Lone)",
+        "category": "fruit",
+        "export_volume_mt": 75211,
+        "export_value_usd": 56408464
+      },
+      {
+        "product_id": "melon",
+        "product_name": "Watermelon/Muskmelon",
+        "category": "fruit",
+        "export_volume_mt": 1857909,
+        "export_value_usd": 348357868
+      },
+      {
+        "product_id": "avocado",
+        "product_name": "Avocado",
+        "category": "fruit",
+        "export_volume_mt": 5791,
+        "export_value_usd": 11582516
+      },
+      {
+        "product_id": "teak",
+        "product_name": "Teak & Hardwoods",
+        "category": "forest",
+        "export_volume_mt": 128039,
+        "export_value_usd": 153646874
+      },
+      {
+        "product_id": "rubber",
+        "product_name": "Natural Rubber",
+        "category": "forest",
+        "export_volume_mt": 186750,
+        "export_value_usd": 249000433
+      },
+      {
+        "product_id": "rice",
+        "product_name": "Rice (Export)",
+        "category": "crop",
+        "export_volume_mt": 2113498,
+        "export_value_usd": 845399206
+      },
+      {
+        "product_id": "pulses",
+        "product_name": "Beans & Pulses",
+        "category": "crop",
+        "export_volume_mt": 1893543,
+        "export_value_usd": 1262361694
+      }
+    ]
+  },
+  {
+    "year": 2019,
+    "products": [
+      {
+        "product_id": "mango",
+        "product_name": "Mango (Sein Ta Lone)",
+        "category": "fruit",
+        "export_volume_mt": 77278,
+        "export_value_usd": 57958480
+      },
+      {
+        "product_id": "melon",
+        "product_name": "Watermelon/Muskmelon",
+        "category": "fruit",
+        "export_volume_mt": 1907038,
+        "export_value_usd": 357569639
+      },
+      {
+        "product_id": "avocado",
+        "product_name": "Avocado",
+        "category": "fruit",
+        "export_volume_mt": 6891,
+        "export_value_usd": 13782310
+      },
+      {
+        "product_id": "teak",
+        "product_name": "Teak & Hardwoods",
+        "category": "forest",
+        "export_volume_mt": 134662,
+        "export_value_usd": 161594056
+      },
+      {
+        "product_id": "rubber",
+        "product_name": "Natural Rubber",
+        "category": "forest",
+        "export_volume_mt": 164424,
+        "export_value_usd": 219232546
+      },
+      {
+        "product_id": "rice",
+        "product_name": "Rice (Export)",
+        "category": "crop",
+        "export_volume_mt": 2044421,
+        "export_value_usd": 817768458
+      },
+      {
+        "product_id": "pulses",
+        "product_name": "Beans & Pulses",
+        "category": "crop",
+        "export_volume_mt": 1836409,
+        "export_value_usd": 1224272910
+      }
+    ]
+  },
+  {
+    "year": 2020,
+    "products": [
+      {
+        "product_id": "mango",
+        "product_name": "Mango (Sein Ta Lone)",
+        "category": "fruit",
+        "export_volume_mt": 56306,
+        "export_value_usd": 42229822
+      },
+      {
+        "product_id": "melon",
+        "product_name": "Watermelon/Muskmelon",
+        "category": "fruit",
+        "export_volume_mt": 1176425,
+        "export_value_usd": 220579682
+      },
+      {
+        "product_id": "avocado",
+        "product_name": "Avocado",
+        "category": "fruit",
+        "export_volume_mt": 5002,
+        "export_value_usd": 10003226
+      },
+      {
+        "product_id": "teak",
+        "product_name": "Teak & Hardwoods",
+        "category": "forest",
+        "export_volume_mt": 67780,
+        "export_value_usd": 81336560
+      },
+      {
+        "product_id": "rubber",
+        "product_name": "Natural Rubber",
+        "category": "forest",
+        "export_volume_mt": 120319,
+        "export_value_usd": 160425308
+      },
+      {
+        "product_id": "rice",
+        "product_name": "Rice (Export)",
+        "category": "crop",
+        "export_volume_mt": 1378513,
+        "export_value_usd": 551405164
+      },
+      {
+        "product_id": "pulses",
+        "product_name": "Beans & Pulses",
+        "category": "crop",
+        "export_volume_mt": 1109156,
+        "export_value_usd": 739437498
+      }
+    ]
+  },
+  {
+    "year": 2021,
+    "products": [
+      {
+        "product_id": "mango",
+        "product_name": "Mango (Sein Ta Lone)",
+        "category": "fruit",
+        "export_volume_mt": 57573,
+        "export_value_usd": 43180099
+      },
+      {
+        "product_id": "melon",
+        "product_name": "Watermelon/Muskmelon",
+        "category": "fruit",
+        "export_volume_mt": 1302917,
+        "export_value_usd": 244296916
+      },
+      {
+        "product_id": "avocado",
+        "product_name": "Avocado",
+        "category": "fruit",
+        "export_volume_mt": 5477,
+        "export_value_usd": 10954298
+      },
+      {
+        "product_id": "teak",
+        "product_name": "Teak & Hardwoods",
+        "category": "forest",
+        "export_volume_mt": 68696,
+        "export_value_usd": 82434907
+      },
+      {
+        "product_id": "rubber",
+        "product_name": "Natural Rubber",
+        "category": "forest",
+        "export_volume_mt": 117502,
+        "export_value_usd": 156669195
+      },
+      {
+        "product_id": "rice",
+        "product_name": "Rice (Export)",
+        "category": "crop",
+        "export_volume_mt": 1402642,
+        "export_value_usd": 561056836
+      },
+      {
+        "product_id": "pulses",
+        "product_name": "Beans & Pulses",
+        "category": "crop",
+        "export_volume_mt": 1297343,
+        "export_value_usd": 864895564
+      }
+    ]
+  },
+  {
+    "year": 2022,
+    "products": [
+      {
+        "product_id": "mango",
+        "product_name": "Mango (Sein Ta Lone)",
+        "category": "fruit",
+        "export_volume_mt": 92717,
+        "export_value_usd": 69537755
+      },
+      {
+        "product_id": "melon",
+        "product_name": "Watermelon/Muskmelon",
+        "category": "fruit",
+        "export_volume_mt": 2726154,
+        "export_value_usd": 511153822
+      },
+      {
+        "product_id": "avocado",
+        "product_name": "Avocado",
+        "category": "fruit",
+        "export_volume_mt": 9652,
+        "export_value_usd": 19304809
+      },
+      {
+        "product_id": "teak",
+        "product_name": "Teak & Hardwoods",
+        "category": "forest",
+        "export_volume_mt": 116902,
+        "export_value_usd": 140282431
+      },
+      {
+        "product_id": "rubber",
+        "product_name": "Natural Rubber",
+        "category": "forest",
+        "export_volume_mt": 173508,
+        "export_value_usd": 231344644
+      },
+      {
+        "product_id": "rice",
+        "product_name": "Rice (Export)",
+        "category": "crop",
+        "export_volume_mt": 2190229,
+        "export_value_usd": 876091539
+      },
+      {
+        "product_id": "pulses",
+        "product_name": "Beans & Pulses",
+        "category": "crop",
+        "export_volume_mt": 2247179,
+        "export_value_usd": 1498119348
+      }
+    ]
+  },
+  {
+    "year": 2023,
+    "products": [
+      {
+        "product_id": "mango",
+        "product_name": "Mango (Sein Ta Lone)",
+        "category": "fruit",
+        "export_volume_mt": 111908,
+        "export_value_usd": 83931053
+      },
+      {
+        "product_id": "melon",
+        "product_name": "Watermelon/Muskmelon",
+        "category": "fruit",
+        "export_volume_mt": 2722612,
+        "export_value_usd": 510489729
+      },
+      {
+        "product_id": "avocado",
+        "product_name": "Avocado",
+        "category": "fruit",
+        "export_volume_mt": 11313,
+        "export_value_usd": 22625981
+      },
+      {
+        "product_id": "teak",
+        "product_name": "Teak & Hardwoods",
+        "category": "forest",
+        "export_volume_mt": 109628,
+        "export_value_usd": 131554145
+      },
+      {
+        "product_id": "rubber",
+        "product_name": "Natural Rubber",
+        "category": "forest",
+        "export_volume_mt": 181733,
+        "export_value_usd": 242311177
+      },
+      {
+        "product_id": "rice",
+        "product_name": "Rice (Export)",
+        "category": "crop",
+        "export_volume_mt": 2317161,
+        "export_value_usd": 926864340
+      },
+      {
+        "product_id": "pulses",
+        "product_name": "Beans & Pulses",
+        "category": "crop",
+        "export_volume_mt": 2420060,
+        "export_value_usd": 1613373059
+      }
+    ]
+  },
+  {
+    "year": 2024,
+    "products": [
+      {
+        "product_id": "mango",
+        "product_name": "Mango (Sein Ta Lone)",
+        "category": "fruit",
+        "export_volume_mt": 125179,
+        "export_value_usd": 93884179
+      },
+      {
+        "product_id": "melon",
+        "product_name": "Watermelon/Muskmelon",
+        "category": "fruit",
+        "export_volume_mt": 2778419,
+        "export_value_usd": 520953506
+      },
+      {
+        "product_id": "avocado",
+        "product_name": "Avocado",
+        "category": "fruit",
+        "export_volume_mt": 14008,
+        "export_value_usd": 28016601
+      },
+      {
+        "product_id": "teak",
+        "product_name": "Teak & Hardwoods",
+        "category": "forest",
+        "export_volume_mt": 99518,
+        "export_value_usd": 119421263
+      },
+      {
+        "product_id": "rubber",
+        "product_name": "Natural Rubber",
+        "category": "forest",
+        "export_volume_mt": 207616,
+        "export_value_usd": 276820965
+      },
+      {
+        "product_id": "rice",
+        "product_name": "Rice (Export)",
+        "category": "crop",
+        "export_volume_mt": 2804441,
+        "export_value_usd": 1121776549
+      },
+      {
+        "product_id": "pulses",
+        "product_name": "Beans & Pulses",
+        "category": "crop",
+        "export_volume_mt": 2169979,
+        "export_value_usd": 1446652733
+      }
+    ]
+  },
+  {
+    "year": 2025,
+    "products": [
+      {
+        "product_id": "mango",
+        "product_name": "Mango (Sein Ta Lone)",
+        "category": "fruit",
+        "export_volume_mt": 119255,
+        "export_value_usd": 89440925
+      },
+      {
+        "product_id": "melon",
+        "product_name": "Watermelon/Muskmelon",
+        "category": "fruit",
+        "export_volume_mt": 3289135,
+        "export_value_usd": 616712841
+      },
+      {
+        "product_id": "avocado",
+        "product_name": "Avocado",
+        "category": "fruit",
+        "export_volume_mt": 16312,
+        "export_value_usd": 32624202
+      },
+      {
+        "product_id": "teak",
+        "product_name": "Teak & Hardwoods",
+        "category": "forest",
+        "export_volume_mt": 99336,
+        "export_value_usd": 119202983
+      },
+      {
+        "product_id": "rubber",
+        "product_name": "Natural Rubber",
+        "category": "forest",
+        "export_volume_mt": 186197,
+        "export_value_usd": 248262759
+      },
+      {
+        "product_id": "rice",
+        "product_name": "Rice (Export)",
+        "category": "crop",
+        "export_volume_mt": 2703382,
+        "export_value_usd": 1081352926
+      },
+      {
+        "product_id": "pulses",
+        "product_name": "Beans & Pulses",
+        "category": "crop",
+        "export_volume_mt": 2265648,
+        "export_value_usd": 1510431802
+      }
+    ]
+  },
+  {
+    "year": 2026,
+    "products": [
+      {
+        "product_id": "mango",
+        "product_name": "Mango (Sein Ta Lone)",
+        "category": "fruit",
+        "export_volume_mt": 140261,
+        "export_value_usd": 105195408
+      },
+      {
+        "product_id": "melon",
+        "product_name": "Watermelon/Muskmelon",
+        "category": "fruit",
+        "export_volume_mt": 3667081,
+        "export_value_usd": 687577681
+      },
+      {
+        "product_id": "avocado",
+        "product_name": "Avocado",
+        "category": "fruit",
+        "export_volume_mt": 19506,
+        "export_value_usd": 39012150
+      },
+      {
+        "product_id": "teak",
+        "product_name": "Teak & Hardwoods",
+        "category": "forest",
+        "export_volume_mt": 84874,
+        "export_value_usd": 101849014
+      },
+      {
+        "product_id": "rubber",
+        "product_name": "Natural Rubber",
+        "category": "forest",
+        "export_volume_mt": 210293,
+        "export_value_usd": 280391124
+      },
+      {
+        "product_id": "rice",
+        "product_name": "Rice (Export)",
+        "category": "crop",
+        "export_volume_mt": 2542721,
+        "export_value_usd": 1017088537
+      },
+      {
+        "product_id": "pulses",
+        "product_name": "Beans & Pulses",
+        "category": "crop",
+        "export_volume_mt": 2369248,
+        "export_value_usd": 1579498638
+      }
+    ]
+  }
+]

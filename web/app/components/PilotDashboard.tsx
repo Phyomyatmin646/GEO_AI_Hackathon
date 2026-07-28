@@ -7,7 +7,7 @@ import { useLanguage } from "../lib/i18n";
 
 const GeoMap = dynamic(() => import("./GeoMap"), {
   ssr: false,
-  loading: () => <div className="map-loading">မြေပုံ ပြင်ဆင်နေသည်…</div>,
+  loading: () => <div className="map-loading">Loading map...</div>,
 });
 import { CROP_COLORS } from "../lib/colors";
 import Link from "next/link";
@@ -238,45 +238,43 @@ export function PilotDashboard() {
               </select>
               real pilot
             </p>
-            <div className="mb-4">
-              <Link href="/macro" className="inline-block bg-emerald-100 text-emerald-800 px-4 py-2 rounded-lg font-medium shadow hover:bg-emerald-200 transition items-center gap-2">
-                📊 National Macro-Economics Dashboard
+            <div className="flex gap-4 items-center mb-6">
+              <Link href="/macro" className="flex items-center gap-2 bg-emerald-50 text-emerald-800 px-4 py-2 rounded-lg font-medium shadow-sm hover:bg-emerald-100 transition border border-emerald-200">
+                📊 {t.cell.macro.title}
+              </Link>
+              <Link href="/climate" className="flex items-center gap-2 bg-amber-50 text-amber-800 px-4 py-2 rounded-lg font-medium shadow-sm hover:bg-amber-100 transition border border-amber-200">
+                🌩 {lang === "en" ? "Climate & Disasters" : "ရာသီဥတုနှင့် သဘာဝဘေး"}
               </Link>
             </div>
             <h1>
-              မြေတစ်ကွက်ချင်းစီအတွက် <em>ဘာစိုက်သင့်သလဲ?</em>
+              {t.dashboard.heroTitlePre}<em>{t.dashboard.heroTitleEm}</em>
             </h1>
             <p className="hero-copy">
               {t.header.description}
             </p>
           </div>
           <aside className="hero-note real-note">
-            <strong>Real environmental data · rule baseline</strong>
-            <p>
-              ဒီ release ထဲက feature များသည် QA စစ်ပြီးသော real source data ဖြစ်သည်။
-              Crop score များမှာ agronomic rule-based screening သာဖြစ်ပြီး trained
-              AI prediction သို့မဟုတ် field-observed label မဟုတ်ပါ။ Evidence မလုံလောက်ပါက
-              system က recommendation မပေးဘဲ abstain လုပ်သည်။
-            </p>
+            <strong>{t.dashboard.heroNoteTitle}</strong>
+            <p>{t.dashboard.heroNoteDesc}</p>
           </aside>
         </section>
 
         <section className="metric-strip" aria-label="Real pilot summary">
           <div className="metric">
             <span className="metric-value">{numberFormatter.format(payload.meta.rowCount)}</span>
-            <span className="metric-label">Real 5 km pilot cells</span>
+            <span className="metric-label">{t.dashboard.metricCells}</span>
           </div>
           <div className="metric">
             <span className="metric-value">{numberFormatter.format(payload.meta.scoredCellCount)}</span>
-            <span className="metric-label">Rule-screened cells</span>
+            <span className="metric-label">{t.dashboard.metricScored}</span>
           </div>
           <div className="metric">
             <span className="metric-value">{numberFormatter.format(payload.meta.abstainedCellCount)}</span>
-            <span className="metric-label">Insufficient-evidence abstentions</span>
+            <span className="metric-label">{t.dashboard.metricAbstained}</span>
           </div>
           <div className="metric">
             <span className="metric-value">0</span>
-            <span className="metric-label">Observed crop labels loaded</span>
+            <span className="metric-label">{t.dashboard.metricLabels}</span>
           </div>
         </section>
 
@@ -285,7 +283,7 @@ export function PilotDashboard() {
             <div className="map-toolbar">
               <strong>{payload.meta.region} · {selectedCell.month}</strong>
               <span>
-                {payload.meta.grid.sizeM / 1000} km real grid · cell တစ်ကွက်ကို နှိပ်ပါ
+                {payload.meta.grid.sizeM / 1000} {t.dashboard.mapToolbar}
               </span>
             </div>
             <div className="map-legend" aria-label="Map legend" style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -297,7 +295,7 @@ export function PilotDashboard() {
               ))}
               <span style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.85rem", color: "#4b5563" }}>
                 <i style={{ width: "12px", height: "12px", display: "inline-block", backgroundColor: "#8b918c", borderRadius: "2px" }} />
-                Missing/Unknown
+                {t.dashboard.missingUnknown}
               </span>
             </div>
             <GeoMap
@@ -329,16 +327,13 @@ export function PilotDashboard() {
               <div className="abstention-card" role="status">
                 <span className="abstention-icon" aria-hidden="true">△</span>
                 <div>
-                  <h3>Recommendation မပေးနိုင်သေးပါ</h3>
-                  <p>
-                    ဒီ cell မှာ rule scoring အတွက် လိုအပ်သော source features မလုံလောက်ပါ။
-                    Missing values ကို အတုမဖြည့်ထားပါ။
-                  </p>
+                  <h3>{t.dashboard.abstentionTitle}</h3>
+                  <p>{t.dashboard.abstentionDesc}</p>
                 </div>
               </div>
             ) : (
               <>
-                <p className="section-label">Top rule-based shortlist</p>
+                <p className="section-label">{t.dashboard.topShortlist}</p>
                 <div className="recommendations">
                   {selectedCell.recommendations.slice(0, 3).map((crop) => (
                     <button
@@ -507,12 +502,11 @@ export function PilotDashboard() {
 
           <article className="evidence-card">
             <p className="card-eyebrow">Human-in-the-loop</p>
-            <h3>Agronomist / user review</h3>
+            <h3>{t.dashboard.reviewTitle}</h3>
             {activeCrop ? (
               <>
                 <p>
-                  {activeCrop.nameMm} recommendation ကို ဒေသအခြေအနေနဲ့
-                  ကိုက်ညီတယ်လို့ မြင်ပါသလား?
+                  {lang === 'my' ? activeCrop.nameMm : activeCrop.nameEn} {t.dashboard.reviewQuestion}
                 </p>
                 <div className="review-controls">
                   {(["agree", "uncertain", "disagree"] as ReviewVerdict[]).map((value) => (
@@ -530,19 +524,18 @@ export function PilotDashboard() {
                   className="review-note"
                   value={reviewNote}
                   onChange={(event) => setReviewNote(event.target.value)}
-                  placeholder="မြေပြင်အခြေအနေ၊ ရေ၊ စိုက်ပျိုးရာသီ မှတ်ချက်…"
+                  placeholder={t.dashboard.reviewPlaceholder}
                 />
                 <button type="button" className="save-review" onClick={saveReview}>
-                  {reviewSaved ? "Device တွင်သိမ်းပြီးပါပြီ" : "Pilot review သိမ်းမည်"}
+                  {reviewSaved ? t.dashboard.reviewSaved : t.dashboard.saveReview}
                 </button>
                 <p className="review-disclaimer">
-                  Device-local feedback only — training label အဖြစ် auto-merge မလုပ်ပါ။
+                  {t.dashboard.reviewDisclaimer}
                 </p>
               </>
             ) : (
               <p>
-                System abstain လုပ်ထားသော cell ဖြစ်သဖြင့် crop review ကို မဖွင့်ထားပါ။
-                Missing evidence ဖြည့်ပြီးမှ ပြန်စစ်ပါ။
+                {t.dashboard.reviewAbstained}
               </p>
             )}
           </article>
@@ -551,7 +544,7 @@ export function PilotDashboard() {
         <section className="limitations">
           <div>
             <p className="card-eyebrow">Responsible-use boundary</p>
-            <h2>ဒီ pilot က ဘာမဟုတ်သလဲ</h2>
+            <h2>{t.dashboard.limitationsTitle}</h2>
           </div>
           <ul>
             {payload.meta.limitations.map((limitation) => (
@@ -562,7 +555,7 @@ export function PilotDashboard() {
 
         <footer className="footer">
           <span>
-            Decision-support only · Farmer choice and local agronomist review remain final.
+            {t.dashboard.footerDisclaimer}
           </span>
           <span>
             {payload.meta.splitPolicy} · Synthetic rows excluded · Contract {payload.meta.dataContract}

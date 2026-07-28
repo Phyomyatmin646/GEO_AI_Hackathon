@@ -636,6 +636,8 @@ export async function loadPilotBundle(region: string = "ayeyawaddy"): Promise<Pi
         rawBundle = (await import("../../data/output/pilot_mandalay_2018_01/pilot_mandalay_2018_01.json", { with: { type: "json" } })).default;
       } else if (normalizedRegion === "sagaing") {
         rawBundle = (await import("../../data/output/pilot_sagaing_2018_01/pilot_sagaing_2018_01.json", { with: { type: "json" } })).default;
+      } else if (normalizedRegion === "bago" || normalizedRegion === "bago__e") {
+        rawBundle = (await import("../../data/output/pilot_bago__e_2018_01/pilot_bago__e_2018_01.json", { with: { type: "json" } })).default;
       } else {
         throw new Error(`Unknown region: ${region}`);
       }
