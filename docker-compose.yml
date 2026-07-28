@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: ./web
+    container_name: agri_geo_web
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./web:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    restart: unless-stopped
+
+  pipeline:
+    build:
+      context: .
+    container_name: agri_geo_pipeline
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    # The Dockerfile CMD runs `tail -f /dev/null` to keep the container alive.
+    # Developers can attach to it via: docker-compose exec pipeline bash
+    restart: unless-stopped
