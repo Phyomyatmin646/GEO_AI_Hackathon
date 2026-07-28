@@ -2,7 +2,7 @@ import os
 import shutil
 import subprocess
 
-regions = ["ayeyawaddy", "magway", "mandalay", "sagaing"]
+regions = ["ayeyawaddy", "magway", "mandalay", "sagaing", "bago__e"]
 base_dir = "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline"
 raw_gee = os.path.join(base_dir, "data/raw/gee")
 temp_gee = os.path.join(base_dir, "data/raw/gee_temp")
