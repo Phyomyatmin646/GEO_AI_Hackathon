@@ -1,0 +1,1 @@
+observation_id,grid_id,year_month,crop_id,longitude,latitude,observed_crop_present,observed_suitability_score,observed_yield_t_ha,planting_date,harvest_date,source_type,source_org,source_reference,reviewer_role,review_status,consent_or_public_basis,location_precision_m,is_synthetic,notes

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 from typing import Any, Sequence
@@ -36,6 +37,7 @@ def _gee_config(config: dict[str, Any]) -> Any:
     defaults = DatasetIds()
     datasets = DatasetIds(
         gaul_level0=sources.get("fao_gaul_level0", defaults.gaul_level0),
+        gaul_level1=sources.get("fao_gaul_level1", defaults.gaul_level1),
         sentinel2_sr_harmonized=sources.get("sentinel2", defaults.sentinel2_sr_harmonized),
         sentinel1_grd=sources.get("sentinel1", defaults.sentinel1_grd),
         chirps_daily=sources.get("chirps", defaults.chirps_daily),
@@ -48,6 +50,17 @@ def _gee_config(config: dict[str, Any]) -> Any:
         grid_crs=config["project"]["grid_crs"],
         grid_size_m=int(config["project"]["grid_size_m"]),
         sample_scale_m=int(config["earth_engine"]["export_scale_m"]),
+        tile_size_m=int(config["earth_engine"].get("tile_size_m", 100_000)),
+        reduce_regions_tile_scale=int(
+            config["earth_engine"].get("reduce_regions_tile_scale", 4)
+        ),
+        water_distance_scale_m=int(
+            config["earth_engine"].get("water_distance_scale_m", 1_000)
+        ),
+        sampling_geometry=str(
+            config["earth_engine"].get("sampling_geometry", "centroid")
+        ),
+        include_admin1=bool(config["earth_engine"].get("include_admin1", False)),
     )
 
 
@@ -176,12 +189,29 @@ def command_gee_export(args: argparse.Namespace) -> int:
     end_exclusive = args.end or _next_month_string(config["project"]["end_month"])
     months = months_inclusive(start, _previous_month_string(end_exclusive))
     tile_ids = args.tile_ids or None
+    feature_set = args.feature_set or config["earth_engine"].get("feature_set", "split")
+    if feature_set not in {"split", "all", "dynamic", "static"}:
+        raise SystemExit("earth_engine.feature_set must be split, all, dynamic, or static")
+    spatial_shards = len(tile_ids) if tile_ids else 1
+    monthly_task_count = (
+        len(months) * spatial_shards
+        if feature_set in {"split", "all", "dynamic"}
+        else 0
+    )
+    static_task_count = spatial_shards if feature_set in {"split", "static"} else 0
     preflight = {
         "start_month": start,
         "end_month_exclusive": end_exclusive,
         "months": len(months),
         "tile_ids": tile_ids,
-        "task_count": len(months) * (len(tile_ids) if tile_ids else 1),
+        "admin1_scope": args.admin1,
+        "feature_set": feature_set,
+        "sampling_geometry": config["earth_engine"].get(
+            "sampling_geometry", "centroid"
+        ),
+        "monthly_task_count": monthly_task_count,
+        "static_task_count": static_task_count,
+        "task_count": monthly_task_count + static_task_count,
         "destination": args.destination,
         "drive_folder": args.folder or config["earth_engine"]["drive_folder"],
         "use_gee_community_soilgrids": bool(config["soilgrids"].get("use_gee_community_assets", True)),
@@ -195,22 +225,59 @@ def command_gee_export(args: argparse.Namespace) -> int:
     if args.destination == "gcs" and not args.bucket:
         raise SystemExit("--bucket is required for --destination gcs")
 
-    from .gee_backend import create_monthly_export_tasks, initialize_earth_engine
+    from .gee_backend import (
+        create_5km_grid,
+        create_monthly_export_tasks,
+        create_static_export_tasks,
+        get_myanmar_admin1_region,
+        initialize_earth_engine,
+    )
 
     ee = initialize_earth_engine(config["earth_engine"].get("project"))
-    tasks = create_monthly_export_tasks(
-        start,
-        end_exclusive,
-        tile_ids=tile_ids,
-        config=_gee_config(config),
-        destination=args.destination,
-        folder=args.folder or config["earth_engine"]["drive_folder"],
-        bucket=args.bucket,
-        description_prefix=args.prefix or config["project"]["name"],
-        include_gee_soil=bool(config["soilgrids"].get("use_gee_community_assets", True)),
-        start_tasks=True,
-        ee_module=ee,
+    gee_config = _gee_config(config)
+    region = (
+        get_myanmar_admin1_region(
+            args.admin1, ee_module=ee, datasets=gee_config.datasets
+        )
+        if args.admin1
+        else None
     )
+    grid = create_5km_grid(region, config=gee_config, ee_module=ee)
+    prefix = args.prefix or config["project"]["name"]
+    if args.admin1:
+        scope_slug = "".join(
+            character.lower() if character.isalnum() else "_"
+            for character in args.admin1
+        ).strip("_")
+        prefix = f"{prefix}_{scope_slug}"
+    common = {
+        "grid": grid,
+        "region": region,
+        "tile_ids": tile_ids,
+        "config": gee_config,
+        "destination": args.destination,
+        "folder": args.folder or config["earth_engine"]["drive_folder"],
+        "bucket": args.bucket,
+        "description_prefix": prefix,
+        "include_gee_soil": bool(
+            config["soilgrids"].get("use_gee_community_assets", True)
+        ),
+        "start_tasks": True,
+        "ee_module": ee,
+    }
+    tasks: list[Any] = []
+    if feature_set in {"split", "static"}:
+        tasks.extend(create_static_export_tasks(**common))
+    if feature_set in {"split", "all", "dynamic"}:
+        monthly_feature_set = "dynamic" if feature_set == "split" else feature_set
+        tasks.extend(
+            create_monthly_export_tasks(
+                start,
+                end_exclusive,
+                feature_set=monthly_feature_set,
+                **common,
+            )
+        )
     # Task IDs are obtained after starting, so this file lets an operator audit
     # the planned exports without attempting to manage authentication for them.
     task_records: list[dict[str, Any]] = []
@@ -263,6 +330,9 @@ def command_validate(args: argparse.Namespace) -> int:
         strict_schema=args.strict,
         suitability_threshold=float(config["labels"]["suitability_threshold"]),
         max_feature_missing_fraction=float(config["quality"]["max_missing_feature_fraction"]),
+        min_usable_row_fraction=float(
+            config["quality"].get("min_usable_row_fraction", 1.0)
+        ),
         start_year_month=config["project"]["start_month"],
         end_year_month=config["project"]["end_month"],
     )
@@ -270,6 +340,137 @@ def command_validate(args: argparse.Namespace) -> int:
     write_qa_report(report, report_path)
     print(json.dumps({"valid": report["valid"], "errors": report["errors"], "warnings": report["warnings"], "report": str(report_path)}, ensure_ascii=False))
     return 0 if report["valid"] else 1
+
+
+def command_observed_label_template(args: argparse.Namespace) -> int:
+    from .observed_labels import write_observed_label_template
+
+    destination = write_observed_label_template(args.output)
+    print(destination)
+    return 0
+
+
+def command_validate_observed_labels(args: argparse.Namespace) -> int:
+    config, _ = _load_resolved(args.config)
+    from .observed_labels import validate_observed_label_file
+
+    output_dir = Path(args.output_dir or config["project"]["output_dir"])
+    report = validate_observed_label_file(
+        args.input,
+        accepted_path=output_dir / "observed_labels_accepted.csv",
+        rejected_path=output_dir / "observed_labels_rejected.csv",
+        report_path=output_dir / "observed_labels_qa_report.json",
+        crops=config["labels"]["crops"],
+        start_year_month=config["project"]["start_month"],
+        end_year_month=config["project"]["end_month"],
+        min_latitude=float(config["quality"]["min_latitude"]),
+        max_latitude=float(config["quality"]["max_latitude"]),
+        min_longitude=float(config["quality"]["min_longitude"]),
+        max_longitude=float(config["quality"]["max_longitude"]),
+    )
+    print(json.dumps(report, indent=2, ensure_ascii=False))
+    return 0 if report["valid"] else 1
+
+
+def command_official_stats_template(args: argparse.Namespace) -> int:
+    from .official_stats import write_official_stats_template
+
+    destination = write_official_stats_template(args.output)
+    print(destination)
+    return 0
+
+
+def command_compare_official_stats(args: argparse.Namespace) -> int:
+    config, _ = _load_resolved(args.config)
+    from .official_stats import compare_official_statistics
+
+    output_dir = Path(args.output_dir or config["project"]["output_dir"])
+    report = compare_official_statistics(
+        args.predictions,
+        args.official,
+        comparison_path=output_dir / "official_stats_comparison_rows.csv",
+        report_path=output_dir / "official_stats_comparison_report.json",
+    )
+    print(json.dumps(report, indent=2, ensure_ascii=False))
+    return 0 if report["valid"] else 1
+
+
+def command_download_drive_exports(args: argparse.Namespace) -> int:
+    config, _ = _load_resolved(args.config)
+    from .drive_exports import download_drive_exports
+
+    records = download_drive_exports(
+        folder_id=args.folder_id,
+        destination_dir=args.output_dir or config["project"]["raw_gee_dir"],
+        filename_prefix=args.prefix,
+        overwrite=bool(args.overwrite),
+    )
+    manifest_path = Path(
+        args.manifest
+        or Path(config["project"]["output_dir"])
+        / "drive_export_download_manifest.json"
+    )
+    write_json(
+        manifest_path,
+        {
+            "manifest_version": "1.0",
+            "processing_timestamp_utc": datetime.now(timezone.utc).isoformat(),
+            "drive_folder_id": args.folder_id,
+            "filename_prefix": args.prefix,
+            "destination_dir": str(
+                Path(args.output_dir or config["project"]["raw_gee_dir"])
+            ),
+            "files": records,
+        },
+    )
+    print(
+        json.dumps(
+            {
+                "matched_files": len(records),
+                "downloaded_files": sum(
+                    record["status"] == "downloaded" for record in records
+                ),
+                "verified_existing_files": sum(
+                    record["status"] == "verified_existing"
+                    for record in records
+                ),
+                "manifest": str(manifest_path),
+                "files": records,
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+    )
+    return 0 if records else 1
+
+
+def command_build_web_pilot(args: argparse.Namespace) -> int:
+    from .pilot_bundle import build_web_pilot_bundle
+
+    bundle = build_web_pilot_bundle(
+        args.input,
+        qa_report_path=args.qa_report,
+        source_manifest_path=args.source_manifest,
+        output_path=args.output,
+        max_cells=args.max_cells,
+        top_crops=args.top_crops,
+    )
+    print(
+        json.dumps(
+            {
+                "output": str(args.output),
+                "release_id": bundle["meta"]["releaseId"],
+                "cells": len(bundle["cells"]),
+                "scored_cells": bundle["meta"]["scoredCellCount"],
+                "abstained_cells": bundle["meta"]["abstainedCellCount"],
+                "source_csv_sha256": bundle["meta"]["sourceCsvSha256"],
+                "qa_report_sha256": bundle["meta"]["qaReportSha256"],
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+    )
+    return 0
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -320,6 +521,15 @@ def _build_parser() -> argparse.ArgumentParser:
     export.add_argument("--folder", help="Google Drive export folder")
     export.add_argument("--bucket", help="Cloud Storage bucket for GCS exports")
     export.add_argument("--prefix", help="Export-task description prefix")
+    export.add_argument(
+        "--feature-set",
+        choices=("split", "all", "dynamic", "static"),
+        help="split exports static features once plus monthly dynamic features",
+    )
+    export.add_argument(
+        "--admin1",
+        help="Optional exact FAO GAUL ADM1_NAME for a compute-bounded regional pilot",
+    )
     export.add_argument("--tile-id", action="append", dest="tile_ids", help="Repeat for selected 100 km grid shards")
     export.set_defaults(handler=command_gee_export)
 
@@ -340,6 +550,95 @@ def _build_parser() -> argparse.ArgumentParser:
     validate.add_argument("--report", help="Path for QA JSON; defaults to configured output directory")
     validate.add_argument("--strict", action="store_true", help="Require the complete published schema")
     validate.set_defaults(handler=command_validate)
+
+    observed_template = subparsers.add_parser(
+        "observed-label-template",
+        help="Write an empty production observed-label CSV contract",
+    )
+    observed_template.add_argument(
+        "--output",
+        default="data/templates/observed_labels_template.csv",
+        help="Destination CSV path",
+    )
+    observed_template.set_defaults(handler=command_observed_label_template)
+
+    observed_validate = subparsers.add_parser(
+        "validate-observed-labels",
+        help="Gate real crop observations by provenance, review, privacy, and split policy",
+    )
+    config_arg(observed_validate)
+    observed_validate.add_argument("--input", required=True, help="Observed-label CSV")
+    observed_validate.add_argument(
+        "--output-dir",
+        help="Accepted/rejected CSV and JSON QA destination",
+    )
+    observed_validate.set_defaults(handler=command_validate_observed_labels)
+
+    stats_template = subparsers.add_parser(
+        "official-stats-template",
+        help="Write an empty official aggregate crop-statistics CSV contract",
+    )
+    stats_template.add_argument(
+        "--output",
+        default="data/templates/official_crop_stats_template.csv",
+        help="Destination CSV path",
+    )
+    stats_template.set_defaults(handler=command_official_stats_template)
+
+    stats_compare = subparsers.add_parser(
+        "compare-official-stats",
+        help="Compare admin/year/crop predictions to official aggregate statistics",
+    )
+    config_arg(stats_compare)
+    stats_compare.add_argument("--predictions", required=True)
+    stats_compare.add_argument("--official", required=True)
+    stats_compare.add_argument("--output-dir")
+    stats_compare.set_defaults(handler=command_compare_official_stats)
+
+    drive_download = subparsers.add_parser(
+        "download-drive-exports",
+        help="Download completed Earth Engine CSV exports from Drive into data/raw/gee",
+    )
+    config_arg(drive_download)
+    drive_download.add_argument("--folder-id", required=True)
+    drive_download.add_argument("--prefix", help="Only download filenames containing this prefix")
+    drive_download.add_argument("--output-dir")
+    drive_download.add_argument(
+        "--manifest",
+        help="Download-receipt JSON; defaults to the configured output directory",
+    )
+    drive_download.add_argument("--overwrite", action="store_true")
+    drive_download.set_defaults(handler=command_download_drive_exports)
+
+    web_pilot = subparsers.add_parser(
+        "build-web-pilot",
+        help="Build compact web JSON from a QA-approved real regional CSV",
+    )
+    web_pilot.add_argument("--input", required=True, help="QA-approved final CSV")
+    web_pilot.add_argument("--qa-report", required=True, help="QA JSON for the CSV")
+    web_pilot.add_argument(
+        "--source-manifest",
+        required=True,
+        help="Source/provenance manifest containing the CSV SHA-256",
+    )
+    web_pilot.add_argument(
+        "--output",
+        default="web/data/pilot_ayeyawaddy_2018_01.json",
+        help="Destination compact JSON bundle",
+    )
+    web_pilot.add_argument(
+        "--max-cells",
+        type=int,
+        default=None,
+        help="Optional deterministic sample size; omitted means all QA-approved cells",
+    )
+    web_pilot.add_argument(
+        "--top-crops",
+        type=int,
+        default=3,
+        help="Number of provisional crop recommendations per scored cell",
+    )
+    web_pilot.set_defaults(handler=command_build_web_pilot)
     return parser
 
 

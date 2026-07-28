@@ -77,11 +77,40 @@ def test_missingness_release_gate_rejects_an_all_null_feature_row() -> None:
         expected_crops=("monsoon_rice",),
         strict_schema=False,
         max_feature_missing_fraction=0.35,
+        min_usable_row_fraction=0.95,
     )
 
     assert report["valid"] is False
-    assert _check(report, "feature_missing_fraction_release_gate")["status"] == "fail"
+    assert _check(report, "feature_missing_fraction_release_gate")["status"] == "warning"
+    assert _check(report, "usable_row_fraction_release_gate")["status"] == "fail"
     assert _check(report, "usable_for_training_consistent")["status"] == "pass"
+
+
+def test_small_unusable_subset_is_retained_when_dataset_coverage_passes() -> None:
+    frame = pd.concat([_valid_frame()] * 50, ignore_index=True)
+    frame["grid_id"] = [f"MMR_{index:04d}" for index in range(len(frame))]
+    for column in STATIC_FEATURE_COLUMNS + MONTHLY_FEATURE_COLUMNS:
+        if column not in frame:
+            frame[column] = 1.0
+        frame.loc[0, column] = pd.NA
+    frame["feature_missing_fraction"] = frame[
+        STATIC_FEATURE_COLUMNS + MONTHLY_FEATURE_COLUMNS
+    ].isna().mean(axis=1).round(4)
+    frame["usable_for_training"] = frame["feature_missing_fraction"] <= 0.35
+
+    report = validate_dataset(
+        frame,
+        expected_crops=("monsoon_rice",),
+        strict_schema=False,
+        max_feature_missing_fraction=0.35,
+        min_usable_row_fraction=0.95,
+    )
+
+    assert report["valid"] is True
+    assert _check(report, "feature_missing_fraction_release_gate")["status"] == "warning"
+    gate = _check(report, "usable_row_fraction_release_gate")
+    assert gate["status"] == "pass"
+    assert gate["details"]["usable_rows"] == 99
 
 
 def test_write_qa_report_emits_strict_json(tmp_path) -> None:

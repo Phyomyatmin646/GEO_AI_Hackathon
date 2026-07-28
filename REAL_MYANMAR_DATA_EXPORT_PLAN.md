@@ -45,29 +45,26 @@ These are planning estimates, not a promise to pad a file to a particular
 number of gigabytes. Accuracy comes from source/label quality, leakage-safe
 validation and coverage—not file size.
 
-## Current blocker and safe authorization
+## Current export architecture
 
-The Earth Engine SDK is installed on this Mac, but it is **not authorized**
-yet. Satellite and ERA5-Land exports cannot be launched until the project
-owner authorizes their own account. Do not send a Gmail password to anyone,
-including an assistant.
+The Earth Engine account and Cloud project are authorized. The original
+country-wide one-month polygon reduction proved too expensive for a pilot.
+The default has therefore been changed to a split, regional-first
+architecture:
 
-From the project directory, the owner should run:
+- 5 km equal-area cell centroids for the fast pilot sampling path;
+- static soil, terrain and water features exported once;
+- the capped JRC water-distance proxy calculated on a documented 1 km mask
+  instead of a 1,667-pixel native-resolution neighbourhood;
+- dynamic satellite and climate features exported once per month;
+- explicit `--admin1` regional smoke tests before a Myanmar-wide run.
 
-```bash
-cd /Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline
-python -m venv .venv
-.venv/bin/python -m pip install --upgrade pip
-.venv/bin/python -m pip install -e '.[full,dev]'
-earthengine authenticate
-```
+This preserves stable 5 km grid IDs but treats the feature values as
+centroid samples, not polygon-wide means. For a later production-quality
+polygon-mean export, change `earth_engine.sampling_geometry` from `centroid`
+to `cell` and budget substantially more Earth Engine compute.
 
-Complete the browser login yourself. If the hackathon supplies an Earth
-Engine-enabled Google Cloud project, set its project ID in
-`config/default.yaml` under `earth_engine.project`; do not put a password,
-token, or private key in the YAML file.
-
-Confirm that saved authorization is usable before creating any export task:
+Confirm saved authorization before creating a new task:
 
 ```bash
 .venv/bin/python -m myanmar_agri_geo.cli ee-auth-check --config config/default.yaml
@@ -75,12 +72,17 @@ Confirm that saved authorization is usable before creating any export task:
 
 ## Reproducible production sequence
 
-1. Confirm the 96-month, Myanmar-only plan without changing external state:
+1. Confirm a one-month, one-region pilot without changing external state:
 
    ```bash
-   .venv/bin/python -m myanmar_agri_geo.cli plan --config config/default.yaml
-   .venv/bin/python -m myanmar_agri_geo.cli gee-export --config config/default.yaml --dry-run
+   myanmar-agri-geo gee-export --config config/default.yaml \
+     --admin1 Ayeyawaddy --start 2018-01 --end 2018-02 \
+     --feature-set split --dry-run
    ```
+
+   This should report one static task plus one monthly-dynamic task. Only
+   after reviewing that plan should the same command be run with
+   `--start-tasks`.
 
 2. Download the official final CHIRPS v3 cache. This is an explicit download
    because the pipeline must not silently substitute the Earth Engine CHIRPS
@@ -99,13 +101,18 @@ Confirm that saved authorization is usable before creating any export task:
      --start-month 2018-01 --end-month 2018-12 --download
    ```
 
-3. After reviewing the dry-run output, start the Earth Engine table tasks.
-   This creates exports in the configured Google Drive folder and can take
-   hours to days depending on quota:
+3. Start the two regional pilot tasks:
 
    ```bash
-   .venv/bin/python -m myanmar_agri_geo.cli gee-export --config config/default.yaml --start-tasks
+   myanmar-agri-geo gee-export --config config/default.yaml \
+     --admin1 Ayeyawaddy --start 2018-01 --end 2018-02 \
+     --feature-set split --start-tasks
    ```
+
+   Inspect both task IDs and the resulting Drive CSVs. Confirm unique
+   `grid_id` values and expected row counts before increasing the region or
+   date range. A full 2018–2025 country export should be the final scale-up,
+   not the first validation run.
 
 4. Download every completed GEE CSV to `data/raw/gee/`. Do not add unrelated
    CSVs to this directory.

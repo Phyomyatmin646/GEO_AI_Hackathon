@@ -6,7 +6,11 @@ import json
 import pandas as pd
 
 from myanmar_agri_geo.config import load_config, resolved_config
-from myanmar_agri_geo.pipeline import assemble_dataset
+from myanmar_agri_geo.pipeline import (
+    assemble_dataset,
+    attach_project_context,
+    read_gee_exports,
+)
 
 
 def _raw_export_frame() -> pd.DataFrame:
@@ -86,3 +90,75 @@ def test_assemble_outputs_all_required_artifacts(tmp_path) -> None:
     assert manifest["contextual_resource_audit"]["catalog_url"] == "https://geoai-collabhub.com/resources"
     qa = json.loads(artifacts["qa_report"].read_text(encoding="utf-8"))
     assert qa["valid"] is True
+
+
+def test_split_static_and_monthly_exports_join_by_grid_id(tmp_path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    pd.DataFrame(
+        [
+            {
+                "grid_id": "mm_1_2",
+                "year_month": "__static__",
+                "longitude": 96.0,
+                "latitude": 17.0,
+                "table_kind": "static",
+                "elevation_m": 42.0,
+                "soil_ph_h2o_0_30cm": 6.2,
+                "source_srtm": "USGS/SRTMGL1_003",
+            }
+        ]
+    ).to_csv(raw_dir / "pilot_static.csv", index=False)
+    pd.DataFrame(
+        [
+            {
+                "grid_id": "mm_1_2",
+                "year_month": "2018-01",
+                "longitude": 96.0,
+                "latitude": 17.0,
+                "table_kind": "monthly_dynamic",
+                "ndvi_median": 0.54,
+            }
+        ]
+    ).to_csv(raw_dir / "pilot_dynamic_2018_01.csv", index=False)
+
+    frame, files = read_gee_exports(raw_dir)
+
+    assert len(files) == 2
+    assert len(frame) == 1
+    assert frame.loc[0, "year_month"] == "2018-01"
+    assert frame.loc[0, "elevation_m"] == 42.0
+    assert frame.loc[0, "soil_ph_h2o_0_30cm"] == 6.2
+    assert frame.loc[0, "ndvi_median"] == 0.54
+
+
+def test_project_context_fills_only_trusted_myanmar_admin0() -> None:
+    config, _ = load_config("config/default.yaml")
+    frame = pd.DataFrame(
+        {
+            "grid_id": ["mm_1_2", "mm_2_3"],
+            "admin0_name": [pd.NA, "Myanmar"],
+        }
+    )
+
+    output = attach_project_context(frame, config)
+
+    assert output["admin0_name"].eq("Myanmar").all()
+    assert output["admin0_source"].tolist() == [
+        "project_scope_config",
+        "source_export",
+    ]
+
+
+def test_project_context_rejects_conflicting_admin0() -> None:
+    config, _ = load_config("config/default.yaml")
+    frame = pd.DataFrame(
+        {"grid_id": ["mm_1_2"], "admin0_name": ["Thailand"]}
+    )
+
+    try:
+        attach_project_context(frame, config)
+    except ValueError as exc:
+        assert "conflict" in str(exc)
+    else:  # pragma: no cover - defensive assertion
+        raise AssertionError("Expected conflicting admin0_name to be rejected")

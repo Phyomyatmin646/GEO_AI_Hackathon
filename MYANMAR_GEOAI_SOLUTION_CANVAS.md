@@ -11,13 +11,13 @@ an automated decision for credit, insurance, land rights, or land conversion.
 | 1. Problem statement | Defined | This document and crop-suitability data contract. |
 | 2. Stakeholders & users | Defined | Users, decision scope and review responsibility documented below. |
 | 3. Spatial context | Implemented in configuration | Myanmar-only `MMR`, 5 km grid, 2018–2025 monthly period. |
-| 4. Data requirements | Pipeline ready; source export in progress | Source contract, quality fields and provenance manifest are implemented; authenticated Earth Engine exports still required. |
-| 5. GeoAI intelligence | Rule baseline and leakage-safe splits implemented | No trained deep-learning model or accuracy claim until independent Myanmar labels exist. |
-| 6. Solution design | Data pipeline designed | Burmese map/API/UI is a later pilot deliverable. |
-| 7. Technology stack | Core Python/GEE stack implemented | Scalable partitioning and production deployment remain future work. |
-| 8. Ethics, privacy & sustainability | Policy/QA requirements documented | Protected-area exclusion layer and field-consent workflow remain to be implemented. |
+| 4. Data requirements | Real regional pilot complete | Ayeyawaddy January 2018 source rows, checksums, QA and provenance are complete; Myanmar-wide 2018–2025 coverage remains pending. |
+| 5. GeoAI intelligence | Rule baseline, observed-label gates and leakage-safe splits implemented | No trained-model accuracy claim until sufficient independent Myanmar labels pass the gate. |
+| 6. Solution design | Interactive real-data pilot implemented | The 5 km map/API serves all 1,344 QA-approved pilot cells and shows crop rank, reason, missingness/uncertainty and review capture; no production fixture remains. |
+| 7. Technology stack | Core Python/GEE stack and deployable web pilot implemented | The production path is generated only from the QA-passed regional CSV; private hosting remains an explicit deployment step. |
+| 8. Ethics, privacy & sustainability | Label privacy/consent/review gates implemented | Protected-area exclusion still requires a verified authoritative layer. |
 | 9. Value & impact | KPIs defined | No KPI result is claimed before a real held-out evaluation. |
-| 10. Implementation roadmap | Defined | See the phase gates below; no phase is skipped merely to create a larger CSV. |
+| 10. Implementation roadmap | Phases 0–1 complete | See the phase gates below; national export and independent observed-label acquisition remain required. |
 
 ## 1. Problem statement
 

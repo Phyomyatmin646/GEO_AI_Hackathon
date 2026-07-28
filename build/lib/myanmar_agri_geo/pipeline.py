@@ -95,7 +95,7 @@ def normalise_gee_frame(raw: pd.DataFrame) -> pd.DataFrame:
 
 
 def read_gee_exports(raw_dir: str | Path) -> tuple[pd.DataFrame, list[Path]]:
-    """Read one or more CSV/GZIP files downloaded from completed GEE exports."""
+    """Read completed exports and join split static rows by ``grid_id``."""
 
     directory = Path(raw_dir)
     if not directory.is_dir():
@@ -106,7 +106,58 @@ def read_gee_exports(raw_dir: str | Path) -> tuple[pd.DataFrame, list[Path]]:
             f"No .csv or .csv.gz files found in {directory}. Download completed GEE Drive exports first."
         )
     frames = [normalise_gee_frame(pd.read_csv(file)) for file in files]
-    return pd.concat(frames, ignore_index=True), files
+    combined = pd.concat(frames, ignore_index=True)
+    if "table_kind" not in combined:
+        return combined, files
+
+    kinds = combined["table_kind"].astype("string")
+    static_mask = kinds.eq("static")
+    if not bool(static_mask.any()):
+        return combined, files
+
+    static = combined.loc[static_mask].copy()
+    monthly = combined.loc[~static_mask].copy()
+    if monthly.empty:
+        raise ValueError(
+            "Static GEE exports were found, but no monthly dynamic/combined "
+            "exports are available for assembly."
+        )
+    duplicate_static = static["grid_id"].duplicated(keep=False)
+    if bool(duplicate_static.any()):
+        examples = sorted(static.loc[duplicate_static, "grid_id"].astype(str).unique())[:5]
+        raise ValueError(
+            "Static GEE exports contain duplicate grid_id values; check "
+            f"overlapping shards. Examples: {examples}"
+        )
+
+    static_metadata = [
+        "admin0_name",
+        "admin1_name",
+        "admin1_code",
+        "source_srtm",
+        "source_jrc_water",
+        "source_soil",
+        "soil_features_in_export",
+        "soil_uncertainty_available",
+        "soilgrids_native_resolution_m",
+    ]
+    payload = [
+        column
+        for column in [*STATIC_FEATURE_COLUMNS, *static_metadata]
+        if column in static.columns and static[column].notna().any()
+    ]
+    # Pandas concatenation creates the union of both schemas, so drop the
+    # all-null static placeholders from monthly rows before the many-to-one
+    # join to avoid suffixes.
+    monthly = monthly.drop(columns=[column for column in payload if column in monthly])
+    static_side = static.loc[:, ["grid_id", *payload]]
+    merged = monthly.merge(
+        static_side,
+        on="grid_id",
+        how="left",
+        validate="many_to_one",
+    )
+    return merged, files
 
 
 def _calculate_trailing_rainfall(frame: pd.DataFrame) -> pd.Series:
@@ -168,6 +219,41 @@ def enrich_physical_features(frame: pd.DataFrame, config: dict[str, Any]) -> pd.
     if "solar_radiation_mj_m2_day" not in output and "solar_radiation_j_m2_day" in output:
         output["solar_radiation_mj_m2_day"] = pd.to_numeric(output["solar_radiation_j_m2_day"], errors="coerce") / 1_000_000
     output["water_availability_score"] = _derive_water_availability(output)
+    return output
+
+
+def attach_project_context(frame: pd.DataFrame, config: dict[str, Any]) -> pd.DataFrame:
+    """Attach trusted country scope without inventing lower-level geography.
+
+    Older exports omitted ``admin0_name`` when the optional, expensive admin-1
+    lookup was disabled. The export geometry and configuration are still
+    explicitly restricted to ISO3 MMR. Fill only that deterministic country
+    context, record its origin, and reject conflicting source values.
+    """
+
+    output = frame.copy()
+    iso3 = str(config["project"].get("iso3", "")).strip().upper()
+    country = str(config["project"].get("country_name", "")).strip()
+    if iso3 != "MMR" or country.casefold() != "myanmar":
+        raise ValueError(
+            "Project context can only attach admin0_name for the configured Myanmar/ISO3 MMR scope."
+        )
+    if "admin0_name" in output:
+        admin0 = output["admin0_name"].astype("string")
+    else:
+        admin0 = pd.Series(pd.NA, index=output.index, dtype="string")
+    blank = admin0.isna() | admin0.str.strip().eq("")
+    conflict = ~blank & admin0.str.strip().str.casefold().ne("myanmar")
+    if bool(conflict.any()):
+        examples = sorted(admin0.loc[conflict].dropna().astype(str).unique())[:5]
+        raise ValueError(
+            "GEE export contains admin0 values that conflict with the Myanmar project scope: "
+            f"{examples}"
+        )
+    output["admin0_name"] = admin0.mask(blank, country)
+    output["admin0_source"] = np.where(
+        blank, "project_scope_config", "source_export"
+    )
     return output
 
 
@@ -295,6 +381,7 @@ def assemble_dataset(
     destination = Path(output_dir or config["project"]["output_dir"])
     destination.mkdir(parents=True, exist_ok=True)
     frame, raw_files = read_gee_exports(raw_location)
+    frame = attach_project_context(frame, config)
     if bool(config["chirps_v3"].get("enabled", True)):
         frame = attach_chirps_v3_from_cache(
             frame,
@@ -351,6 +438,9 @@ def assemble_dataset(
         strict_schema=True,
         suitability_threshold=float(config["labels"]["suitability_threshold"]),
         max_feature_missing_fraction=float(config["quality"]["max_missing_feature_fraction"]),
+        min_usable_row_fraction=float(
+            config["quality"].get("min_usable_row_fraction", 1.0)
+        ),
         start_year_month=config["project"]["start_month"],
         end_year_month=config["project"]["end_month"],
     )

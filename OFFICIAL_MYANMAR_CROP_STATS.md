@@ -91,3 +91,25 @@ normalized separately; a PDF is not automatically a clean model table.
   model evaluation.
 - Field observations intended as strong labels need their own consent,
   provenance, quality flag and held-out split policy.
+
+## Project comparison command
+
+Copy the header-only
+[`data/templates/official_crop_stats_template.csv`](data/templates/official_crop_stats_template.csv),
+then enter only statistics copied from a traceable official release. Every row
+requires `source_org`, `source_url`, and `retrieved_at`.
+
+Prepare an admin/year/crop prediction table with
+`admin1,year,crop_id,predicted_crop_score` (and optional
+`predicted_yield_t_ha`), then run:
+
+```bash
+myanmar-agri-geo compare-official-stats \
+  --config config/default.yaml \
+  --predictions data/evaluation/admin1_predictions.csv \
+  --official data/raw/official/myanmar_crop_statistics.csv
+```
+
+The command writes matched comparison rows and a JSON report with coverage,
+per-crop rank correlation, and yield error where available. It does not mutate
+the 5 km features or observed-label table.

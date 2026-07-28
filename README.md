@@ -17,25 +17,46 @@ what is implemented today and what needs real-data/label validation next.
 - CHIRPS rainfall, ERA5-Land temperature/solar radiation/physical soil-water, terrain, JRC surface-water proxies, and SoilGrids 0–30 cm soil features.
 - Suitability fields for monsoon rice, dry-season rice, maize, sugarcane, cassava, durian, mangosteen, longan, mango, chili, and tomato.
 - `CSV.gz`, Parquet, split manifest, data dictionary, provenance manifest, and JSON QA report.
+- A reproducible real-pilot web bundle, versioned cell API, true 5 km map
+  geometry, honest insufficient-evidence abstention, and per-cell CSV reports.
 - A CollabHub resource-audit CSV and a pending external-feature manifest. These
   are metadata, not a claim that a dashboard, tutorial, or model module is an
   observation source.
 
-No completed primary Geo-CSV/Parquet is bundled in this repository. A real
-export needs a registered Earth Engine account and the required data-source
-access; explicit source caches are kept under `data/raw/` and excluded from
-version control.
+Large primary Geo-CSV/Parquet and source caches remain under git-ignored
+`data/raw/` and `data/output/`. The checked web artifact is a deterministic
+JSON representation generated from a QA-passed release; it is not a
+replacement for the primary data products.
+
+The default export architecture is optimized for pilot work:
+
+- The 5 km equal-area grid is represented by cell centroids during Earth
+  Engine sampling. This is much cheaper than reducing every raster over every
+  polygon. Set `earth_engine.sampling_geometry: "cell"` only when the slower
+  polygon-mean production export is required.
+- Static terrain, surface-water and soil features are exported once. Monthly
+  satellite and climate features are exported separately and joined by
+  `grid_id` during assembly.
+- The capped JRC surface-water distance is an approximate 1 km-grid proximity
+  proxy. Computing the same 50 km search at native 30 m resolution was the
+  main static-task bottleneck.
+- `--admin1` can restrict a smoke test to one GAUL state/region before any
+  country-wide task is submitted.
 
 ## Real Myanmar data status
 
-The project is ready to produce a real Myanmar-only 5 km/monthly feature
-dataset, but this local copy has not yet run its authenticated Earth Engine
-exports. It therefore does **not** yet contain the final GB-scale CSV or
-Parquet. The supplied generic flood/COVID CSVs are deliberately excluded: they
-are not verified Myanmar agricultural observations. See the
-[real-data export plan](REAL_MYANMAR_DATA_EXPORT_PLAN.md) for source roles,
-expected natural file sizes, label limits, clean-data gates and the exact
-owner-run authorization/export sequence.
+The current workspace has completed the first real regional release:
+Ayeyawaddy, January 2018, with 1,344 distinct 5 km cells. Its primary CSV,
+CSV.gz and Parquet pass strict QA; 1,330 rows are feature-usable. The web
+release contains all 1,344 cells, gives provisional rule rankings to 1,288,
+and abstains on 56 cells with insufficient evidence. It contains **zero
+observed crop labels** and therefore does not claim trained-model accuracy.
+
+Myanmar-wide 2018–2025 export and observed-label acquisition remain pending.
+The supplied generic flood/COVID CSVs remain excluded because they are not
+verified Myanmar agricultural observations. See the [Phase 0
+report](docs/PHASE0_REPORT.md), [Phase 1 report](docs/PHASE1_REPORT.md), and
+[real-data export plan](REAL_MYANMAR_DATA_EXPORT_PLAN.md).
 
 For genuine Myanmar crop-area/production statistics, use the separate
 [official-statistics side-table guide](OFFICIAL_MYANMAR_CROP_STATS.md). Those
@@ -78,6 +99,22 @@ myanmar-agri-geo prepare-chirps --config config/default.yaml --start-month 2018-
 myanmar-agri-geo gee-export --config config/default.yaml --dry-run
 myanmar-agri-geo gee-export --config config/default.yaml --start-tasks
 
+# Recommended first pilot: one month and one state/region. The split plan
+# creates one static task plus one monthly-dynamic task.
+myanmar-agri-geo gee-export --config config/default.yaml \
+  --admin1 Ayeyawaddy --start 2018-01 --end 2018-02 \
+  --feature-set split --dry-run
+myanmar-agri-geo gee-export --config config/default.yaml \
+  --admin1 Ayeyawaddy --start 2018-01 --end 2018-02 \
+  --feature-set split --start-tasks
+
+# After both regional tasks succeed, sync only their CSVs from the task's
+# Destination URI folder into the raw GEE staging directory.
+myanmar-agri-geo download-drive-exports \
+  --config config/default.yaml \
+  --folder-id DRIVE_FOLDER_ID \
+  --prefix myanmar_agri_suitability_ayeyawaddy
+
 # If the GEE SoilGrids community assets are unavailable, make an auditable
 # local/WebDAV fallback manifest. Download or clip VRT/GeoTIFF layers to the
 # configured soil cache before assembly if this fallback is needed. Set
@@ -87,6 +124,32 @@ myanmar-agri-geo prepare-soil --config config/default.yaml
 # After all Drive export CSVs are downloaded into data/raw/gee/:
 myanmar-agri-geo assemble --config config/default.yaml
 myanmar-agri-geo validate --config config/default.yaml --strict
+
+# Publish a web bundle only from the QA-approved CSV and its matching
+# provenance files. The default includes every cell in the regional release.
+myanmar-agri-geo build-web-pilot \
+  --input data/output/pilot_ayeyawaddy_2018_01/myanmar_agri_suitability_ayeyawaddy_2018_01.csv \
+  --qa-report data/output/pilot_ayeyawaddy_2018_01/qa_report.json \
+  --source-manifest data/output/pilot_ayeyawaddy_2018_01/source_manifest.json \
+  --output web/data/pilot_ayeyawaddy_2018_01.json
+
+# Create the field/official-record contract. The template contains headers only;
+# it never creates or suggests fake observations.
+myanmar-agri-geo observed-label-template
+
+# Keep only real, approved, provenance-backed records. This writes separate
+# accepted/rejected CSVs and observed_labels_qa_report.json.
+myanmar-agri-geo validate-observed-labels \
+  --config config/default.yaml \
+  --input data/raw/observed/field_observations.csv
+
+# Compare aggregate predictions with a separately downloaded official table.
+# The official values remain evaluation-only and never become 5 km labels.
+myanmar-agri-geo official-stats-template
+myanmar-agri-geo compare-official-stats \
+  --config config/default.yaml \
+  --predictions data/evaluation/admin1_predictions.csv \
+  --official data/raw/official/myanmar_crop_statistics.csv
 ```
 
 The defaults write these artefacts under `data/output/`:
@@ -152,14 +215,57 @@ Physical values are not globally normalized. The split manifest assigns 0.5-degr
 
 The bundled profiles are broad, transparent agronomic thresholds—not measured crop outcomes. They are automatically marked `rule_based` with limited confidence.
 
-To calibrate with permitted, geocoded Myanmar observations, set `project.observed_labels_path` to a long-form CSV containing:
+To calibrate with permitted, geocoded Myanmar observations, first copy
+[`data/templates/observed_labels_template.csv`](data/templates/observed_labels_template.csv).
+One row represents one reviewed `grid_id + year_month + crop_id` target. It must
+contain a real crop-presence, suitability, yield, planting, or harvest
+observation plus:
 
-```csv
-grid_id,year_month,crop_id,observed_suitability_score
-MMR_123,2022-06,durian,82
+- source type, organization and traceable source reference;
+- agronomist/extension/crop-scientist/data-steward approval;
+- informed consent, official-public basis, approved research basis, or a data
+  sharing agreement;
+- Myanmar coordinates and a stated location precision of 5 km or better;
+- `is_synthetic=false`.
+
+Direct farmer identifiers are forbidden. Synthetic, pending-review,
+out-of-bounds, duplicate, or untraceable rows are written to a rejected file
+and cannot enter calibration. Accepted 2018–2024 rows receive deterministic
+0.5-degree spatial folds; all 2025 rows are locked to `temporal_holdout`.
+
+Only after `validate-observed-labels` passes should
+`project.observed_labels_path` point to
+`data/output/observed_labels_accepted.csv`. Observed records are label targets,
+never model inputs, and missing observed labels never trigger synthetic values.
+
+## Interactive application
+
+The `web/` application serves the QA-approved Ayeyawaddy January 2018 release
+through `/api/v1/cells`. Selecting a true 5 km EPSG:6933-derived cell shows
+real measured features, provisional crop scores, positive/limiting factors,
+missingness, uncertainty, source links, release/QA hashes, and a downloadable
+UTF-8 CSV report. Cells below the evidence threshold display an abstention
+instead of a fabricated recommendation.
+
+The UI states that environmental features are real while recommendations are
+rule-based and not observed/trained-AI results. Device-local feedback is never
+auto-merged into training labels. The old `/api/cells` endpoint remains only
+as a truthfully deprecated compatibility route.
+
+Run it locally with:
+
+```bash
+cd web
+npm install
+npm run dev
 ```
 
-`observed_score` or `observed_is_suitable` are also accepted. The records are used only for label calibration; they are never copied into model feature columns. Missing observed labels never trigger synthetic values.
+Verify it with:
+
+```bash
+npm run lint
+npm test
+```
 
 ## Source notes
 
@@ -188,4 +294,8 @@ python -m pytest
 
 ## Scope boundary
 
-This release builds the geo-suitability dataset only. Planting/harvest calendar prediction needs a separate field-event time-series dataset with verified crop-stage, planting, and harvest labels.
+This release builds the geo-suitability dataset, validates real observed-label
+contracts, compares official aggregate statistics, and serves an explainable
+map/API pilot. It does not yet claim a trained production model or measured
+accuracy. Planting/harvest calendar prediction still needs sufficient verified
+crop-stage event time series beyond accepting those dates in the label contract.

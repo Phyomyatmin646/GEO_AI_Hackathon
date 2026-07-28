@@ -6,9 +6,13 @@ src/myanmar_agri_geo/cli.py
 src/myanmar_agri_geo/config.py
 src/myanmar_agri_geo/crop_profiles.py
 src/myanmar_agri_geo/documentation.py
+src/myanmar_agri_geo/drive_exports.py
 src/myanmar_agri_geo/gee_backend.py
 src/myanmar_agri_geo/labeling.py
 src/myanmar_agri_geo/manifest.py
+src/myanmar_agri_geo/observed_labels.py
+src/myanmar_agri_geo/official_stats.py
+src/myanmar_agri_geo/pilot_bundle.py
 src/myanmar_agri_geo/pipeline.py
 src/myanmar_agri_geo/resources.py
 src/myanmar_agri_geo/schema.py
@@ -23,7 +27,11 @@ src/myanmar_agri_geo.egg-info/requires.txt
 src/myanmar_agri_geo.egg-info/top_level.txt
 tests/test_chirps_v3.py
 tests/test_cli_and_gee_contract.py
+tests/test_drive_exports.py
 tests/test_labeling.py
+tests/test_observed_labels.py
+tests/test_official_stats.py
+tests/test_pilot_bundle.py
 tests/test_pipeline.py
 tests/test_soilgrids.py
 tests/test_validation.py

@@ -46,12 +46,32 @@ def load_config(path: str | Path) -> tuple[dict[str, Any], Path]:
     if str(project["start_month"]) > str(project["end_month"]):
         raise ConfigError("project.start_month must not be after end_month")
 
+    sampling_geometry = str(
+        config["earth_engine"].get("sampling_geometry", "centroid")
+    )
+    if sampling_geometry not in {"centroid", "cell"}:
+        raise ConfigError(
+            "earth_engine.sampling_geometry must be 'centroid' or 'cell'"
+        )
+    feature_set = str(config["earth_engine"].get("feature_set", "split"))
+    if feature_set not in {"split", "all", "dynamic", "static"}:
+        raise ConfigError(
+            "earth_engine.feature_set must be split, all, dynamic, or static"
+        )
+
     try:
         max_missing = float(config["quality"]["max_missing_feature_fraction"])
     except (KeyError, TypeError, ValueError) as exc:
         raise ConfigError("quality.max_missing_feature_fraction must be a number from 0 through 1") from exc
     if not 0.0 <= max_missing <= 1.0:
         raise ConfigError("quality.max_missing_feature_fraction must be a number from 0 through 1")
+
+    try:
+        min_usable = float(config["quality"].get("min_usable_row_fraction", 1.0))
+    except (TypeError, ValueError) as exc:
+        raise ConfigError("quality.min_usable_row_fraction must be a number from 0 through 1") from exc
+    if not 0.0 <= min_usable <= 1.0:
+        raise ConfigError("quality.min_usable_row_fraction must be a number from 0 through 1")
 
     try:
         rule_confidence = float(config["labels"]["default_rule_confidence"])

@@ -28,8 +28,39 @@ def test_cli_plan_and_gee_preflight_are_side_effect_free(capsys) -> None:
 
     assert main(["gee-export", "--config", "config/default.yaml", "--dry-run"]) == 0
     preflight = json.loads(capsys.readouterr().out)
-    assert preflight["task_count"] == 96
+    assert preflight["feature_set"] == "split"
+    assert preflight["sampling_geometry"] == "centroid"
+    assert preflight["monthly_task_count"] == 96
+    assert preflight["static_task_count"] == 1
+    assert preflight["task_count"] == 97
     assert preflight["end_month_exclusive"] == "2026-01"
+
+
+def test_regional_one_month_split_preflight_creates_two_tasks(capsys) -> None:
+    assert (
+        main(
+            [
+                "gee-export",
+                "--config",
+                "config/default.yaml",
+                "--admin1",
+                "Ayeyawaddy",
+                "--start",
+                "2018-01",
+                "--end",
+                "2018-02",
+                "--feature-set",
+                "split",
+                "--dry-run",
+            ]
+        )
+        == 0
+    )
+    preflight = json.loads(capsys.readouterr().out)
+    assert preflight["admin1_scope"] == "Ayeyawaddy"
+    assert preflight["monthly_task_count"] == 1
+    assert preflight["static_task_count"] == 1
+    assert preflight["task_count"] == 2
 
 
 def test_resource_audit_command_writes_metadata_only(tmp_path, capsys) -> None:
@@ -59,6 +90,9 @@ def test_grid_creation_passes_resolved_epsg_6933_wkt_to_earth_engine() -> None:
 
     class FakeFeatureCollection:
         def map(self, _callback: Any) -> FakeFeatureCollection:
+            return self
+
+        def filterBounds(self, _region: Any) -> FakeFeatureCollection:
             return self
 
     class FakeRegion:

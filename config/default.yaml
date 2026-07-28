@@ -19,6 +19,18 @@ earth_engine:
   project: "gen-lang-client-0956667941"
   drive_folder: "myanmar_agri_geo_exports"
   export_scale_m: 5000
+  # Competition/default architecture: export static terrain/water/soil once,
+  # then export only time-varying satellite/climate bands for each month.
+  feature_set: "split"
+  # Fast pilot samples at each stable 5 km equal-area cell centroid. Switch to
+  # "cell" only for the more expensive polygon-mean production run.
+  sampling_geometry: "centroid"
+  include_admin1: false
+  tile_size_m: 100000
+  reduce_regions_tile_scale: 4
+  # Approximate the capped JRC water-distance proxy on a 1 km binary grid,
+  # rather than a 50 km search at native 30 m resolution.
+  water_distance_scale_m: 1000
   tile_id_property: "tile_id"
   max_pixels: 10000000000000
   include_sentinel1: true
@@ -36,6 +48,7 @@ sources:
   srtm: "USGS/SRTMGL1_003"
   jrc_surface_water: "JRC/GSW1_4/GlobalSurfaceWater"
   fao_gaul_level0: "FAO/GAUL/2015/level0"
+  fao_gaul_level1: "FAO/GAUL/2015/level1"
   soilgrids_webdav: "https://files.isric.org/soilgrids/latest/data"
 
 soilgrids:
@@ -88,6 +101,9 @@ labels:
 quality:
   min_valid_s2_observations: 1
   max_missing_feature_fraction: 0.35
+  # Retain low-coverage cells for mapping/QA, but refuse a release when fewer
+  # than 95% of rows meet the per-row training-coverage threshold.
+  min_usable_row_fraction: 0.95
   min_latitude: 9.0
   max_latitude: 29.0
   min_longitude: 92.0

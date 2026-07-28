@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from .crop_profiles import CROP_PROFILES, DEFAULT_SUITABILITY_THRESHOLD, RULE_BASED_CONFIDENCE_CAP
+from .observed_labels import validate_observed_labels_frame
 
 
 CANONICAL_FEATURE_ALIASES = {
@@ -101,29 +102,30 @@ def _read_observed_labels(path: str | Path) -> pd.DataFrame:
     if not observed_path.is_file():
         raise FileNotFoundError(f"Observed-label file does not exist: {observed_path}")
     observed = pd.read_csv(observed_path)
-    required = {"grid_id", "year_month", "crop_id"}
-    missing = required.difference(observed.columns)
-    if missing:
-        raise ValueError(
-            "Observed labels must be long-form and include "
-            f"{sorted(required)}; missing {sorted(missing)}"
+    accepted, rejected, _ = validate_observed_labels_frame(observed)
+    if not rejected.empty:
+        reason_counts = (
+            rejected["rejection_reasons"]
+            .str.split("|")
+            .explode()
+            .value_counts()
+            .to_dict()
         )
-    score_col = next((name for name in ("observed_suitability_score", "observed_score") if name in observed.columns), None)
-    bool_col = next((name for name in ("observed_is_suitable", "observed_suitable") if name in observed.columns), None)
-    if score_col is None and bool_col is None:
-        raise ValueError("Observed labels need observed_suitability_score/observed_score or observed_is_suitable")
-    output = observed.loc[:, ["grid_id", "year_month", "crop_id"]].copy()
-    if score_col:
-        output["observed_score"] = pd.to_numeric(observed[score_col], errors="coerce")
-    else:
-        truthy = observed[bool_col].astype(str).str.lower().isin(["1", "true", "yes", "y"])
-        falsy = observed[bool_col].astype(str).str.lower().isin(["0", "false", "no", "n"])
-        output["observed_score"] = np.where(truthy, 100.0, np.where(falsy, 0.0, np.nan))
-    output["observed_score"] = output["observed_score"].clip(0, 100)
-    duplicate_keys = output.duplicated(["grid_id", "year_month", "crop_id"], keep=False)
-    if duplicate_keys.any():
-        raise ValueError("Observed labels contain duplicate grid_id/year_month/crop_id keys")
-    return output
+        raise ValueError(
+            "Observed labels failed the production provenance/review gate: "
+            f"{reason_counts}"
+        )
+    if accepted.empty:
+        raise ValueError("Observed-label file contains no accepted records")
+    with_score = accepted.loc[
+        accepted["observed_score"].notna(),
+        ["grid_id", "year_month", "crop_id", "observed_score"],
+    ]
+    if with_score.empty:
+        raise ValueError(
+            "Observed labels contain no suitability/presence targets for calibration"
+        )
+    return with_score
 
 
 def calibrate_with_observed_labels(

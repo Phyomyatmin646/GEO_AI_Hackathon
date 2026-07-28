@@ -249,6 +249,7 @@ def validate_dataset(
     strict_schema: bool = True,
     suitability_threshold: float = DEFAULT_SUITABILITY_THRESHOLD,
     max_feature_missing_fraction: float | None = None,
+    min_usable_row_fraction: float | None = 1.0,
     start_year_month: str = DEFAULT_START_YEAR_MONTH,
     end_year_month: str = DEFAULT_END_YEAR_MONTH,
     myanmar_bounds: Mapping[str, float] = MYANMAR_BOUNDS,
@@ -288,6 +289,10 @@ def validate_dataset(
         max_feature_missing_fraction = float(max_feature_missing_fraction)
         if not isfinite(max_feature_missing_fraction) or not 0.0 <= max_feature_missing_fraction <= 1.0:
             raise ValueError("max_feature_missing_fraction must be a finite value from 0 through 1")
+    if min_usable_row_fraction is not None:
+        min_usable_row_fraction = float(min_usable_row_fraction)
+        if not isfinite(min_usable_row_fraction) or not 0.0 <= min_usable_row_fraction <= 1.0:
+            raise ValueError("min_usable_row_fraction must be a finite value from 0 through 1")
     if (
         not _YEAR_MONTH_RE.fullmatch(start_year_month)
         or not _YEAR_MONTH_RE.fullmatch(end_year_month)
@@ -319,6 +324,7 @@ def validate_dataset(
         checks,
         strict_schema=strict_schema,
         max_feature_missing_fraction=max_feature_missing_fraction,
+        min_usable_row_fraction=min_usable_row_fraction,
         sample_limit=sample_limit,
     )
     _validate_ranges(frame, checks, range_rules, sample_limit)
@@ -353,6 +359,7 @@ def validate_dataset(
             "strict_schema": strict_schema,
             "suitability_threshold": threshold,
             "max_feature_missing_fraction": max_feature_missing_fraction,
+            "min_usable_row_fraction": min_usable_row_fraction,
             "year_month_range": [start_year_month, end_year_month],
             "myanmar_bounds": dict(myanmar_bounds),
         },
@@ -804,6 +811,7 @@ def _validate_feature_missingness(
     *,
     strict_schema: bool,
     max_feature_missing_fraction: float | None,
+    min_usable_row_fraction: float | None,
     sample_limit: int,
 ) -> None:
     """Verify that row-level missingness is honest and within the release gate."""
@@ -874,16 +882,41 @@ def _validate_feature_missingness(
         _add_check(
             checks,
             name="feature_missing_fraction_release_gate",
-            status="pass" if not bool(excess.any()) else "fail",
+            status="pass" if not bool(excess.any()) else "warning",
             message=(
                 "Every row satisfies the configured feature-missingness release gate."
                 if not bool(excess.any())
-                else "Some rows exceed the configured feature-missingness release gate."
+                else "Some rows exceed the per-row feature-missingness threshold; "
+                "they are retained for coverage auditing and must remain unusable for training."
             ),
             invalid_count=int(excess.sum()),
             examples=_sample_records(frame, excess, ["grid_id", "year_month", column], sample_limit),
             details={"max_feature_missing_fraction": max_feature_missing_fraction},
         )
+
+        if min_usable_row_fraction is not None:
+            usable_rows = numeric.notna() & ~excess
+            usable_fraction = (
+                float(usable_rows.sum()) / float(len(frame)) if len(frame) else 0.0
+            )
+            meets_dataset_gate = usable_fraction >= min_usable_row_fraction
+            _add_check(
+                checks,
+                name="usable_row_fraction_release_gate",
+                status="pass" if meets_dataset_gate else "fail",
+                message=(
+                    "The dataset satisfies the minimum usable-row fraction."
+                    if meets_dataset_gate
+                    else "Too few rows satisfy the per-row feature-coverage threshold."
+                ),
+                invalid_count=0 if meets_dataset_gate else int(len(frame) - usable_rows.sum()),
+                details={
+                    "usable_rows": int(usable_rows.sum()),
+                    "total_rows": int(len(frame)),
+                    "usable_row_fraction": round(usable_fraction, 6),
+                    "min_usable_row_fraction": min_usable_row_fraction,
+                },
+            )
 
         usable_column = _first_present_column(frame, ("usable_for_training",))
         if usable_column is None:

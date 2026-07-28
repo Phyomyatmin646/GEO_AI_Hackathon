@@ -35,10 +35,25 @@ def test_observed_calibration_updates_only_the_matching_crop_and_row(tmp_path) -
     observed_path = tmp_path / "observed.csv"
     pd.DataFrame(
         {
+            "observation_id": ["OBS-001"],
             "grid_id": ["MMR_A"],
             "year_month": ["2022-06"],
             "crop_id": ["durian"],
+            "longitude": [96.1],
+            "latitude": [18.2],
+            "observed_crop_present": [True],
             "observed_suitability_score": [100.0],
+            "observed_yield_t_ha": [8.5],
+            "planting_date": ["2022-05-01"],
+            "harvest_date": ["2022-10-01"],
+            "source_type": ["ground_survey"],
+            "source_org": ["Pilot field team"],
+            "source_reference": ["survey-batch-2022-06"],
+            "reviewer_role": ["agronomist"],
+            "review_status": ["approved"],
+            "consent_or_public_basis": ["informed_consent"],
+            "location_precision_m": [250],
+            "is_synthetic": [False],
         }
     ).to_csv(observed_path, index=False)
     output = calibrate_with_observed_labels(

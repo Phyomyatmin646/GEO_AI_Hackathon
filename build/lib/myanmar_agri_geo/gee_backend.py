@@ -37,6 +37,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 import argparse
 import importlib
+import math
 from typing import Any, Iterable, Iterator, Mapping, Sequence
 
 
@@ -150,8 +151,14 @@ class DatasetIds:
 class GEEConfig:
     """Configuration for equal-area sampling and monthly feature creation.
 
-    The defaults implement the 5 km Myanmar pilot. ``tile_size_m`` only labels
-    grid cells for export sharding; it does not change feature resolution.
+    The defaults implement the compute-bounded 5 km pilot.  Centroid geometry
+    keeps the stable equal-area cell identifiers while avoiding tens of
+    thousands of polygon intersections and per-cell administrative lookups in
+    every monthly task.  Set ``sampling_geometry="cell"`` for the more
+    expensive polygon-mean production path.
+
+    ``tile_size_m`` only labels grid cells for export sharding; it does not
+    change feature resolution.
     """
 
     datasets: DatasetIds = DatasetIds()
@@ -163,6 +170,9 @@ class GEEConfig:
     reduce_regions_tile_scale: int = 4
     jrc_water_occurrence_threshold_pct: int = 20
     max_water_distance_m: int = 50_000
+    water_distance_scale_m: int = 1_000
+    sampling_geometry: str = "centroid"
+    include_admin1: bool = False
 
 
 def require_ee(ee_module: Any | None = None) -> Any:
@@ -273,6 +283,14 @@ def _validate_config(config: GEEConfig) -> None:
         raise ValueError("jrc_water_occurrence_threshold_pct must be 0..100")
     if config.max_water_distance_m <= 0:
         raise ValueError("max_water_distance_m must be positive")
+    if config.water_distance_scale_m <= 0:
+        raise ValueError("water_distance_scale_m must be positive")
+    if config.water_distance_scale_m > config.max_water_distance_m:
+        raise ValueError(
+            "water_distance_scale_m cannot exceed max_water_distance_m"
+        )
+    if config.sampling_geometry not in {"centroid", "cell"}:
+        raise ValueError("sampling_geometry must be 'centroid' or 'cell'")
 
 
 def _resolve_earth_engine_crs(crs: str) -> str:
@@ -314,6 +332,22 @@ def get_myanmar_admin1(
     )
 
 
+def get_myanmar_admin1_region(
+    admin1_name: str,
+    *,
+    ee_module: Any | None = None,
+    datasets: DatasetIds = DatasetIds(),
+) -> Any:
+    """Return one named Myanmar GAUL level-1 geometry server-side."""
+
+    if not admin1_name or not admin1_name.strip():
+        raise ValueError("admin1_name is required")
+    ee = require_ee(ee_module)
+    return get_myanmar_admin1(ee_module=ee, datasets=datasets).filter(
+        ee.Filter.eq("ADM1_NAME", admin1_name.strip())
+    ).geometry()
+
+
 def _as_geometry(region: Any, ee: Any) -> Any:
     """Coerce a Geometry/Feature/FeatureCollection-compatible region to Geometry."""
 
@@ -324,17 +358,22 @@ def create_5km_grid(
     region: Any | None = None,
     *,
     config: GEEConfig = GEEConfig(),
-    include_admin1: bool = True,
+    include_admin1: bool | None = None,
     ee_module: Any | None = None,
 ) -> Any:
-    """Create a 5 km equal-area grid over Myanmar (or a supplied subregion).
+    """Create a stable 5 km equal-area grid for a Myanmar region.
 
-    Each feature geometry is the intersection of a 5 km EPSG:6933 cell with
-    the requested boundary.  ``grid_id`` is still derived from the full global
-    equal-area cell, so it is stable across repeated runs.  Border cells can
-    therefore have ``cell_area_km2`` below 25.  Grid properties include
-    ``grid_id``, ``tile_id``, projected indices, longitude/latitude of the
-    cell centre, and optional FAO GAUL admin-1 fields.
+    In the default ``centroid`` mode the output feature geometry is the full
+    equal-area cell's centroid, filtered to the requested region.  This is the
+    competition/pilot path: it preserves 5 km identifiers and samples source
+    rasters at 5 km scale without materialising clipped polygons.  In
+    ``cell`` mode, output geometries are clipped cell polygons and sampling
+    computes polygon means.
+
+    ``grid_id`` is derived from the global equal-area cell and is therefore
+    stable across modes and repeated runs.  Administrative lookup is disabled
+    by default because it can be attached once during local assembly instead
+    of being repeated in every Earth Engine task.
     """
 
     _validate_config(config)
@@ -350,20 +389,24 @@ def create_5km_grid(
     )
     cells_per_tile = config.tile_size_m // config.grid_size_m
     max_error = config.geometry_max_error_m
+    use_centroids = config.sampling_geometry == "centroid"
+    attach_admin1 = config.include_admin1 if include_admin1 is None else include_admin1
 
     def annotate_cell(cell: Any) -> Any:
         cell = ee.Feature(cell)
         full_cell_geometry = cell.geometry()
-        # Sampling only within Myanmar/subregion prevents cross-border pixels in
-        # edge cells while preserving a stable global equal-area grid identifier.
-        clipped_geometry = full_cell_geometry.intersection(region_geometry, max_error)
         centre = full_cell_geometry.centroid(max_error)
         centre_6933 = centre.transform(projection, max_error)
         centre_wgs84 = centre.transform("EPSG:4326", max_error)
         xy = ee.List(centre_6933.coordinates())
         lon_lat = ee.List(centre_wgs84.coordinates())
-        grid_x = ee.Number(xy.get(0)).divide(config.grid_size_m).floor()
-        grid_y = ee.Number(xy.get(1)).divide(config.grid_size_m).floor()
+        # ``projection`` has already been scaled to one projection unit per
+        # grid cell by ``atScale(grid_size_m)``.  Earth Engine therefore
+        # returns grid-cell coordinates here (for example 1799.5), not metre
+        # coordinates.  Dividing by ``grid_size_m`` a second time collapses
+        # thousands of cells onto the same ID.
+        grid_x = ee.Number(xy.get(0)).floor()
+        grid_y = ee.Number(xy.get(1)).floor()
         tile_x = grid_x.divide(cells_per_tile).floor()
         tile_y = grid_y.divide(cells_per_tile).floor()
         grid_id = (
@@ -378,7 +421,17 @@ def create_5km_grid(
             .cat("_")
             .cat(tile_y.format("%d"))
         )
-        return ee.Feature(clipped_geometry).set(
+        output_geometry = (
+            centre
+            if use_centroids
+            else full_cell_geometry.intersection(region_geometry, max_error)
+        )
+        cell_area_km2: Any = (
+            config.grid_size_m * config.grid_size_m / 1_000_000
+            if use_centroids
+            else output_geometry.area(max_error).divide(1_000_000)
+        )
+        return ee.Feature(output_geometry).set(
             {
                 "grid_id": grid_id,
                 "tile_id": tile_id,
@@ -388,13 +441,23 @@ def create_5km_grid(
                 "tile_y": tile_y,
                 "latitude": ee.Number(lon_lat.get(1)),
                 "longitude": ee.Number(lon_lat.get(0)),
+                # The grid is already bounded by the configured Myanmar
+                # geometry. Admin-1 lookup is optional, but country context is
+                # deterministic and should not disappear with that choice.
+                "admin0_name": "Myanmar",
                 "grid_cell_size_m": config.grid_size_m,
-                "cell_area_km2": clipped_geometry.area(max_error).divide(1_000_000),
+                "cell_area_km2": cell_area_km2,
+                "sampling_geometry": config.sampling_geometry,
             }
         )
 
     grid = raw_grid.map(annotate_cell)
-    if not include_admin1:
+    if use_centroids:
+        # Since mapped feature geometries are points, this removes boundary
+        # cells whose centres fall outside the requested region without a
+        # costly per-cell polygon intersection.
+        grid = grid.filterBounds(region_geometry)
+    if not attach_admin1:
         return grid
 
     admin1 = get_myanmar_admin1(ee_module=ee, datasets=config.datasets)
@@ -616,16 +679,35 @@ def _static_jrc_water_features(region: Any, config: GEEConfig, ee: Any) -> Any:
     water = ee.Image(config.datasets.jrc_global_surface_water)
     occurrence = water.select("occurrence").rename("surface_water_occurrence_pct")
     seasonality = water.select("seasonality").rename("surface_water_seasonality_months")
-    recurrent_water = occurrence.gte(config.jrc_water_occurrence_threshold_pct).unmask(0)
-    # fastDistanceTransform returns squared distance in pixels here.  JRC GSW
-    # is nominally 30 m, so convert after sqrt and cap at the configured range.
-    max_distance_pixels = max(1, int(config.max_water_distance_m / 30))
+    recurrent_water = occurrence.gte(
+        config.jrc_water_occurrence_threshold_pct
+    ).unmask(0)
+    # A 50 km distance transform on the native 30 m JRC image requires a
+    # 1,667-pixel neighbourhood and dominated the original export. Aggregate
+    # the binary water mask once to a documented coarser grid first. This
+    # retains a useful bounded proximity proxy while making the static,
+    # one-time export tractable for the Community tier.
+    distance_scale_m = config.water_distance_scale_m
+    distance_region = ee.Geometry(region).buffer(config.max_water_distance_m)
+    recurrent_water_coarse = (
+        recurrent_water.reduceResolution(
+            reducer=ee.Reducer.max(), maxPixels=2048
+        )
+        .clipToBoundsAndScale(
+            geometry=distance_region,
+            scale=distance_scale_m,
+        )
+    )
+    # fastDistanceTransform returns squared distance in coarse-grid pixels.
+    max_distance_pixels = max(
+        1, int(math.ceil(config.max_water_distance_m / distance_scale_m))
+    )
     distance = (
-        recurrent_water.fastDistanceTransform(
+        recurrent_water_coarse.fastDistanceTransform(
             max_distance_pixels, "pixels", "squared_euclidean"
         )
         .sqrt()
-        .multiply(30)
+        .multiply(distance_scale_m)
         .min(config.max_water_distance_m)
         .rename("distance_to_surface_water_m")
     )
@@ -726,6 +808,7 @@ def build_monthly_feature_image(
     soil_source_label: str | None = None,
     soil_uncertainty_available: bool = False,
     include_gee_soil: bool = True,
+    feature_set: str = "all",
     ee_module: Any | None = None,
 ) -> Any:
     """Build a single month's unnormalised Geo-AI predictor image.
@@ -755,6 +838,8 @@ def build_monthly_feature_image(
     """
 
     _validate_config(config)
+    if feature_set not in {"all", "dynamic"}:
+        raise ValueError("feature_set must be 'all' or 'dynamic'")
     ee = require_ee(ee_module)
     month_start = _coerce_month_start(month)
     start = ee.Date(month_start.isoformat())
@@ -768,30 +853,34 @@ def build_monthly_feature_image(
     sentinel1 = _monthly_sentinel1_features(start, end, region_geometry, config, ee)
     chirps = _monthly_chirps_features(start, end, region_geometry, config, ee)
     era5 = _monthly_era5_land_features(start, end, region_geometry, config, ee)
-    terrain = _static_terrain_features(region_geometry, config, ee)
-    water = _static_jrc_water_features(region_geometry, config, ee)
-    soil = _resolve_soil_image(
-        soil_image, ee=ee, config=config, include_gee_soil=include_gee_soil
-    )
-
-    source_label = soil_source_label or (
-        "deferred_to_local_soilgrids_fallback"
-        if soil is None
-        else "soilgrids_gee_mean_0_30cm"
-        if soil_image is None
-        else "caller_supplied_soil_image"
-    )
     combined = (
         sentinel2.addBands(sentinel1)
         .addBands(chirps)
         .addBands(era5)
-        .addBands(terrain)
-        .addBands(water)
     )
-    if soil is not None:
-        combined = combined.addBands(soil)
+    soil: Any | None = None
+    source_label = "separate_static_export"
+    if feature_set == "all":
+        terrain = _static_terrain_features(region_geometry, config, ee)
+        water = _static_jrc_water_features(region_geometry, config, ee)
+        soil = _resolve_soil_image(
+            soil_image, ee=ee, config=config, include_gee_soil=include_gee_soil
+        )
+        source_label = soil_source_label or (
+            "deferred_to_local_soilgrids_fallback"
+            if soil is None
+            else "soilgrids_gee_mean_0_30cm"
+            if soil_image is None
+            else "caller_supplied_soil_image"
+        )
+        combined = combined.addBands(terrain).addBands(water)
+        if soil is not None:
+            combined = combined.addBands(soil)
     return combined.clip(region_geometry).set(
         {
+            "table_kind": (
+                "monthly_combined" if feature_set == "all" else "monthly_dynamic"
+            ),
             "year_month": month_start.strftime("%Y-%m"),
             "period_start": month_start.isoformat(),
             "period_end": _next_month(month_start).isoformat(),
@@ -805,13 +894,67 @@ def build_monthly_feature_image(
             "source_srtm": config.datasets.srtm_elevation,
             "source_jrc_water": config.datasets.jrc_global_surface_water,
             "source_soil": source_label,
-            "soil_features_in_export": int(soil is not None),
+            "soil_features_in_export": int(feature_set == "all" and soil is not None),
             "soil_uncertainty_available": int(soil_uncertainty_available),
             "s2_native_resolution_m": 10,
             "s1_native_resolution_m": 10,
             "soilgrids_native_resolution_m": 250,
             "chirps_native_resolution_deg": 0.05,
             "era5_land_native_resolution_deg": 0.1,
+        }
+    )
+
+
+def build_static_feature_image(
+    region: Any | None = None,
+    *,
+    config: GEEConfig = GEEConfig(),
+    soil_image: Any | None = None,
+    soil_source_label: str | None = None,
+    soil_uncertainty_available: bool = False,
+    include_gee_soil: bool = True,
+    ee_module: Any | None = None,
+) -> Any:
+    """Build terrain, water-history and soil bands once per spatial shard."""
+
+    _validate_config(config)
+    ee = require_ee(ee_module)
+    region_geometry = _as_geometry(
+        region
+        if region is not None
+        else get_myanmar_boundary(ee_module=ee, datasets=config.datasets),
+        ee,
+    )
+    terrain = _static_terrain_features(region_geometry, config, ee)
+    water = _static_jrc_water_features(region_geometry, config, ee)
+    soil = _resolve_soil_image(
+        soil_image, ee=ee, config=config, include_gee_soil=include_gee_soil
+    )
+    source_label = soil_source_label or (
+        "deferred_to_local_soilgrids_fallback"
+        if soil is None
+        else "soilgrids_gee_mean_0_30cm"
+        if soil_image is None
+        else "caller_supplied_soil_image"
+    )
+    combined = terrain.addBands(water)
+    if soil is not None:
+        combined = combined.addBands(soil)
+    return combined.clip(region_geometry).set(
+        {
+            "table_kind": "static",
+            # Retain the common field in raw CSVs.  The local assembler drops
+            # this sentinel before joining static rows by grid_id.
+            "year_month": "__static__",
+            "feature_schema_version": "myanmar_agri_geo_v1",
+            "grid_crs": config.grid_crs,
+            "grid_resolution_m": config.grid_size_m,
+            "source_srtm": config.datasets.srtm_elevation,
+            "source_jrc_water": config.datasets.jrc_global_surface_water,
+            "source_soil": source_label,
+            "soil_features_in_export": int(soil is not None),
+            "soil_uncertainty_available": int(soil_uncertainty_available),
+            "soilgrids_native_resolution_m": 250,
         }
     )
 
@@ -828,6 +971,7 @@ def _sample_metadata(feature_image: Any, config: GEEConfig) -> dict[str, Any]:
     """Build constant source/unit metadata copied onto every sampled grid row."""
 
     return {
+        "table_kind": feature_image.get("table_kind"),
         "year_month": feature_image.get("year_month"),
         "period_start": feature_image.get("period_start"),
         "period_end": feature_image.get("period_end"),
@@ -849,7 +993,12 @@ def _sample_metadata(feature_image: Any, config: GEEConfig) -> dict[str, Any]:
         "chirps_native_resolution_deg": feature_image.get("chirps_native_resolution_deg"),
         "era5_land_native_resolution_deg": feature_image.get("era5_land_native_resolution_deg"),
         "processing_date_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
-        "sampling_reducer": "mean",
+        "sampling_geometry": config.sampling_geometry,
+        "sampling_reducer": (
+            "centroid_sample_at_scale"
+            if config.sampling_geometry == "centroid"
+            else "cell_mean"
+        ),
         "sample_scale_m": config.sample_scale_m,
     }
 
@@ -862,12 +1011,11 @@ def sample_feature_image_to_grid(
     tile_id: str | None = None,
     ee_module: Any | None = None,
 ) -> Any:
-    """Reduce a monthly feature image to grid-cell means as a FeatureCollection.
+    """Sample an image using the configured centroid or cell geometry.
 
-    ``s2_features_missing`` and ``s1_features_missing`` are explicit quality
-    flags.  They are set from absent optical/radar values rather than filling
-    them.  ``s2_scene_count`` and ``s2_cloudy_pixel_fraction`` remain available to
-    distinguish no acquisition from a fully cloudy acquisition.
+    Centroid mode is the compute-bounded pilot path; cell mode calculates
+    polygon means. ``s2_features_missing`` and ``s1_features_missing`` remain
+    explicit rather than being filled.
     """
 
     _validate_config(config)
@@ -910,6 +1058,7 @@ def sample_month_to_grid(
     soil_source_label: str | None = None,
     soil_uncertainty_available: bool = False,
     include_gee_soil: bool = True,
+    feature_set: str = "all",
     ee_module: Any | None = None,
 ) -> Any:
     """Build and sample one monthly image; convenience wrapper for exports."""
@@ -923,6 +1072,7 @@ def sample_month_to_grid(
         soil_source_label=soil_source_label,
         soil_uncertainty_available=soil_uncertainty_available,
         include_gee_soil=include_gee_soil,
+        feature_set=feature_set,
         ee_module=ee,
     )
     return sample_feature_image_to_grid(
@@ -989,6 +1139,7 @@ def create_monthly_export_tasks(
     soil_source_label: str | None = None,
     soil_uncertainty_available: bool = False,
     include_gee_soil: bool = True,
+    feature_set: str = "all",
     start_tasks: bool = False,
     ee_module: Any | None = None,
 ) -> list[Any]:
@@ -1001,6 +1152,8 @@ def create_monthly_export_tasks(
     """
 
     _validate_config(config)
+    if feature_set not in {"all", "dynamic"}:
+        raise ValueError("feature_set must be 'all' or 'dynamic'")
     ee = require_ee(ee_module)
     region_geometry = _as_geometry(
         region if region is not None else get_myanmar_boundary(ee_module=ee, datasets=config.datasets),
@@ -1029,10 +1182,12 @@ def create_monthly_export_tasks(
                 soil_source_label=soil_source_label,
                 soil_uncertainty_available=soil_uncertainty_available,
                 include_gee_soil=include_gee_soil,
+                feature_set=feature_set,
                 ee_module=ee,
             )
             suffix = f"_{tile_id}" if tile_id else ""
-            description = f"{description_prefix}_{month_label}{suffix}"
+            family = "_dynamic" if feature_set == "dynamic" else ""
+            description = f"{description_prefix}{family}_{month_label}{suffix}"
             task = create_table_export_task(
                 sampled,
                 description=description,
@@ -1045,6 +1200,74 @@ def create_monthly_export_tasks(
             if start_tasks:
                 task.start()
             tasks.append(task)
+    return tasks
+
+
+def create_static_export_tasks(
+    *,
+    grid: Any | None = None,
+    region: Any | None = None,
+    tile_ids: Iterable[str] | None = None,
+    config: GEEConfig = GEEConfig(),
+    destination: str = "drive",
+    folder: str | None = None,
+    bucket: str | None = None,
+    description_prefix: str = "myanmar_agri_geo",
+    soil_image: Any | None = None,
+    soil_source_label: str | None = None,
+    soil_uncertainty_available: bool = False,
+    include_gee_soil: bool = True,
+    start_tasks: bool = False,
+    ee_module: Any | None = None,
+) -> list[Any]:
+    """Create one static-feature task per requested spatial shard."""
+
+    _validate_config(config)
+    ee = require_ee(ee_module)
+    region_geometry = _as_geometry(
+        region
+        if region is not None
+        else get_myanmar_boundary(ee_module=ee, datasets=config.datasets),
+        ee,
+    )
+    export_grid = (
+        grid
+        if grid is not None
+        else create_5km_grid(region_geometry, config=config, ee_module=ee)
+    )
+    shard_ids: tuple[str | None, ...] = (
+        tuple(tile_ids) if tile_ids is not None else (None,)
+    )
+    if not shard_ids:
+        raise ValueError("tile_ids must contain at least one tile when supplied")
+    image = build_static_feature_image(
+        region_geometry,
+        config=config,
+        soil_image=soil_image,
+        soil_source_label=soil_source_label,
+        soil_uncertainty_available=soil_uncertainty_available,
+        include_gee_soil=include_gee_soil,
+        ee_module=ee,
+    )
+    tasks: list[Any] = []
+    for tile_id in shard_ids:
+        sampled = sample_feature_image_to_grid(
+            image, export_grid, config=config, tile_id=tile_id, ee_module=ee
+        )
+        suffix = f"_{tile_id}" if tile_id else ""
+        description = f"{description_prefix}_static{suffix}"
+        task = create_table_export_task(
+            sampled,
+            description=description,
+            destination=destination,
+            folder=folder,
+            bucket=bucket,
+            file_name_prefix=description,
+            ee_module=ee,
+        )
+        if start_tasks:
+            task.start()
+        tasks.append(task)
     return tasks
 
 
@@ -1112,12 +1335,15 @@ __all__ = [
     "GEEConfig",
     "SOIL_OUTPUT_BANDS",
     "build_monthly_feature_image",
+    "build_static_feature_image",
     "build_soilgrids_0_30cm_image",
     "create_5km_grid",
     "create_monthly_export_tasks",
+    "create_static_export_tasks",
     "create_table_export_task",
     "filter_grid_to_tile",
     "get_myanmar_admin1",
+    "get_myanmar_admin1_region",
     "get_myanmar_boundary",
     "initialize_earth_engine",
     "iter_month_starts",

@@ -1,0 +1,122 @@
+[
+  {
+    "year": 2006,
+    "gdp_usd": 14502553709.8303,
+    "agri_pct_of_gdp": 43.918958474559,
+    "exports_usd": null
+  },
+  {
+    "year": 2007,
+    "gdp_usd": 20182477480.5512,
+    "agri_pct_of_gdp": 43.3227660063537,
+    "exports_usd": null
+  },
+  {
+    "year": 2008,
+    "gdp_usd": 31862554101.9378,
+    "agri_pct_of_gdp": 40.2750956375485,
+    "exports_usd": null
+  },
+  {
+    "year": 2009,
+    "gdp_usd": 36906181380.8127,
+    "agri_pct_of_gdp": 38.1081206105058,
+    "exports_usd": null
+  },
+  {
+    "year": 2010,
+    "gdp_usd": 49540813342.4834,
+    "agri_pct_of_gdp": 36.853075751266,
+    "exports_usd": null
+  },
+  {
+    "year": 2011,
+    "gdp_usd": 59977326085.9908,
+    "agri_pct_of_gdp": 32.4961825024034,
+    "exports_usd": null
+  },
+  {
+    "year": 2012,
+    "gdp_usd": 59937796648.2158,
+    "agri_pct_of_gdp": 30.5901997024538,
+    "exports_usd": null
+  },
+  {
+    "year": 2013,
+    "gdp_usd": 60269732854.827,
+    "agri_pct_of_gdp": 29.5337253604993,
+    "exports_usd": null
+  },
+  {
+    "year": 2014,
+    "gdp_usd": 65531374199.6663,
+    "agri_pct_of_gdp": 27.8298025759612,
+    "exports_usd": null
+  },
+  {
+    "year": 2015,
+    "gdp_usd": 59607290407.6191,
+    "agri_pct_of_gdp": 26.771778645598,
+    "exports_usd": null
+  },
+  {
+    "year": 2016,
+    "gdp_usd": 63298361996.2153,
+    "agri_pct_of_gdp": 25.6286228737595,
+    "exports_usd": null
+  },
+  {
+    "year": 2017,
+    "gdp_usd": 66053040483.0016,
+    "agri_pct_of_gdp": 23.4041280962744,
+    "exports_usd": null
+  },
+  {
+    "year": 2018,
+    "gdp_usd": 67860515989.517,
+    "agri_pct_of_gdp": 22.0756064041111,
+    "exports_usd": null
+  },
+  {
+    "year": 2019,
+    "gdp_usd": 75065106227.6892,
+    "agri_pct_of_gdp": 20.8421577754282,
+    "exports_usd": null
+  },
+  {
+    "year": 2020,
+    "gdp_usd": 79006113643.1906,
+    "agri_pct_of_gdp": 22.4186525400503,
+    "exports_usd": null
+  },
+  {
+    "year": 2021,
+    "gdp_usd": 66345291160.1683,
+    "agri_pct_of_gdp": 22.7852901568211,
+    "exports_usd": null
+  },
+  {
+    "year": 2022,
+    "gdp_usd": 62253049891.6449,
+    "agri_pct_of_gdp": 22.3343500768495,
+    "exports_usd": null
+  },
+  {
+    "year": 2023,
+    "gdp_usd": 66757619000,
+    "agri_pct_of_gdp": 22.7222309725462,
+    "exports_usd": null
+  },
+  {
+    "year": 2024,
+    "gdp_usd": 74068349523.8095,
+    "agri_pct_of_gdp": 25.3,
+    "exports_usd": null
+  },
+  {
+    "year": 2025,
+    "gdp_usd": 81665773809.5238,
+    "agri_pct_of_gdp": 25.3,
+    "exports_usd": null
+  }
+]

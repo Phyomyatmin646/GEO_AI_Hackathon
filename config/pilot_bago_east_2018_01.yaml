@@ -1,0 +1,88 @@
+# FAO GAUL 2015 represents Bago as separate East and West ADM1 features.
+# This config covers only the exact "Bago (E)" feature.
+project:
+  name: myanmar_agri_suitability_bago_east_2018_01
+  country_name: Myanmar
+  iso3: MMR
+  scope_admin1: "Bago (E)"
+  release_stage: regional_pilot
+  start_month: "2018-01"
+  end_month: "2018-01"
+  grid_size_m: 5000
+  grid_crs: "EPSG:6933"
+  output_dir: "data/output/pilot_bago_east_2018_01"
+  raw_gee_dir: "data/raw/gee/pilot_bago_east_2018_01"
+  chirps_v3_cache_dir: "data/raw/chirps_v3"
+  soil_cache_dir: "data/raw/soilgrids"
+  observed_labels_path: null
+
+earth_engine:
+  project: "gen-lang-client-0956667941"
+  drive_folder: "myanmar_agri_geo_exports"
+  export_scale_m: 5000
+  feature_set: "split"
+  sampling_geometry: "centroid"
+  include_admin1: false
+  tile_size_m: 100000
+  reduce_regions_tile_scale: 4
+  water_distance_scale_m: 1000
+  tile_id_property: "tile_id"
+  max_pixels: 10000000000000
+  include_sentinel1: true
+
+sources:
+  sentinel2: "COPERNICUS/S2_SR_HARMONIZED"
+  sentinel1: "COPERNICUS/S1_GRD"
+  chirps: "UCSB-CHG/CHIRPS/DAILY"
+  chirps_v3_monthly_base_url: "https://data.chc.ucsb.edu/products/CHIRPS/v3.0/monthly/global/tifs"
+  era5_land: "ECMWF/ERA5_LAND/DAILY_AGGR"
+  srtm: "USGS/SRTMGL1_003"
+  jrc_surface_water: "JRC/GSW1_4/GlobalSurfaceWater"
+  fao_gaul_level0: "FAO/GAUL/2015/level0"
+  fao_gaul_level1: "FAO/GAUL/2015/level1"
+  soilgrids_webdav: "https://files.isric.org/soilgrids/latest/data"
+
+soilgrids:
+  use_gee_community_assets: true
+  properties: ["phh2o", "sand", "silt", "clay", "soc", "cec"]
+  uncertainty_properties: ["phh2o"]
+  depth_intervals_cm: ["0-5", "5-15", "15-30"]
+  allow_remote_vrt: true
+
+chirps_v3:
+  enabled: true
+  require_complete_cache: true
+  download_timeout_seconds: 120
+
+resource_audit:
+  catalog_url: "https://geoai-collabhub.com/resources"
+  audit_date: "2026-07-27"
+  external_raw_dir: "data/raw/external"
+  external_processed_dir: "data/processed/external"
+
+labels:
+  suitability_threshold: 70
+  default_rule_confidence: 0.45
+  observed_label_confidence: 0.85
+  calibration_weight: 0.35
+  crops:
+    - monsoon_rice
+    - dry_season_rice
+    - maize
+    - sugarcane
+    - cassava
+    - durian
+    - mangosteen
+    - longan
+    - mango
+    - chili
+    - tomato
+
+quality:
+  min_valid_s2_observations: 1
+  max_missing_feature_fraction: 0.35
+  min_usable_row_fraction: 0.95
+  min_latitude: 9.0
+  max_latitude: 29.0
+  min_longitude: 92.0
+  max_longitude: 102.0
