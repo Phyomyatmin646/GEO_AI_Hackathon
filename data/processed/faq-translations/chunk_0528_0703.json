@@ -1,0 +1,1058 @@
+[
+  {
+    "index": 528,
+    "faq_id": "616a8243-a2b2-44a2-8f13-8e3487a5016a",
+    "question_en": "What is air pollution?",
+    "answer_en": "Air pollution is the presence of harmful particles, chemicals, or biological materials in the air. It can adversely affect people, animals, and the environment."
+  },
+  {
+    "index": 529,
+    "faq_id": "53ccf4aa-a5bc-49e7-af56-ffb81e2f5123",
+    "question_en": "What causes air pollution?",
+    "answer_en": "Air pollution is caused by factory smoke, vehicle exhaust, gases emitted during electricity generation, forest fires, and natural disasters."
+  },
+  {
+    "index": 530,
+    "faq_id": "50c1668d-f98d-43b3-96fb-1f157a447671",
+    "question_en": "Describe the harmful effects of air pollution.",
+    "answer_en": "Harmful effects include respiratory diseases, heart disease, lung cancer, environmental degradation, depletion of the ozone layer, and global warming."
+  },
+  {
+    "index": 531,
+    "faq_id": "482661f1-3e4e-4dc8-a662-f7176bf9aaf8",
+    "question_en": "How can air pollution be reduced?",
+    "answer_en": "Air pollution can be reduced by using public transport, conserving energy, using renewable energy, installing pollution-control systems in factories, and planting trees."
+  },
+  {
+    "index": 532,
+    "faq_id": "adef0f76-75ac-4313-8213-d800606d9a3d",
+    "question_en": "How is air quality measured?",
+    "answer_en": "Air quality is measured with the Air Quality Index (AQI). It measures levels of PM2.5, PM10, natural gas, carbon monoxide, sulfur dioxide, and ozone and assigns an air-quality rating."
+  },
+  {
+    "index": 533,
+    "faq_id": "37db0192-5588-4d2b-97c1-e24768da9cbc",
+    "question_en": "What should the government do to reduce air pollution?",
+    "answer_en": "The government should enact air-pollution control laws, set standards for factories and vehicles, promote clean energy, conserve forests, and educate the public."
+  },
+  {
+    "index": 534,
+    "faq_id": "cbcfc973-d8e3-486d-88ad-13dfa15cc8a1",
+    "question_en": "Explain the relationship between air pollution and global warming.",
+    "answer_en": "Air pollution increases greenhouse-gas emissions. These gases raise global temperatures and cause climate change. Reducing air pollution is therefore important for reducing global warming."
+  },
+  {
+    "index": 535,
+    "faq_id": "8515e05a-50b5-4967-989a-f035bf2d982a",
+    "question_en": "What should you do if air pollution causes health problems?",
+    "answer_en": "Consult a doctor immediately. Use an indoor air purifier, avoid highly polluted areas, wear an N95 mask, and monitor symptoms carefully."
+  },
+  {
+    "index": 536,
+    "faq_id": "45777dc2-2f56-4117-aa3d-531efd05401c",
+    "question_en": "How can technology be used to monitor air pollution?",
+    "answer_en": "IoT sensors, satellite imagery, mobile applications, and big-data analytics can monitor air pollution. They provide real-time data, improve understanding of air quality, and support effective policymaking."
+  },
+  {
+    "index": 537,
+    "faq_id": "967c52d1-d506-4c2d-a8aa-d323c20767f5",
+    "question_en": "What is PM2.5?",
+    "answer_en": "PM2.5 consists of airborne particles smaller than 2.5 micrometres in diameter. They are small enough to enter the lungs and can harm health."
+  },
+  {
+    "index": 538,
+    "faq_id": "07b4c0fd-b9c9-4f4b-ae01-1e32bddf9198",
+    "question_en": "How can industries reduce air pollution?",
+    "answer_en": "Industries can install pollution-control equipment, use appropriate technologies, switch to renewable energy, improve waste management, and adopt environmental-conservation practices."
+  },
+  {
+    "index": 539,
+    "faq_id": "e91f925b-6836-412f-8650-18553525da89",
+    "question_en": "What role can individuals play in reducing air pollution?",
+    "answer_en": "Individuals can use public transport and energy-efficient appliances, reduce and recycle waste, plant trees, and raise awareness of air pollution."
+  },
+  {
+    "index": 540,
+    "faq_id": "0caed7c5-c072-4681-8441-cfeffab666a2",
+    "question_en": "Describe the economic impacts of air pollution.",
+    "answer_en": "Air pollution can increase healthcare costs, cause absenteeism and lower productivity, reduce agricultural output, harm tourism, and damage buildings."
+  },
+  {
+    "index": 541,
+    "faq_id": "8097b22c-92f9-437e-ab28-23b3f8718c81",
+    "question_en": "Describe health problems that air pollution causes in children.",
+    "answer_en": "Air pollution can cause asthma, pneumonia, respiratory infections, delayed brain development, poor concentration, and problems during pregnancy."
+  },
+  {
+    "index": 542,
+    "faq_id": "ef934956-476e-4005-8c8c-133e87aa13d0",
+    "question_en": "How can urban planning help reduce air pollution?",
+    "answer_en": "Urban planning can expand green spaces, build infrastructure that encourages cycling and walking, improve public transport, and separate industrial zones from residential areas."
+  },
+  {
+    "index": 543,
+    "faq_id": "6a6d0a36-9da6-48c7-bc46-985eb0959f62",
+    "question_en": "Describe the main sources and effects of sulfur dioxide (SO2).",
+    "answer_en": "Its main sources are the burning of coal and petroleum products, mining, and industrial activity. It can cause respiratory problems, acid rain, plant damage, and corrosion of buildings."
+  },
+  {
+    "index": 544,
+    "faq_id": "d0c1aa23-0d8d-46ae-8222-66405dda0512",
+    "question_en": "Why are international agreements important for reducing air pollution?",
+    "answer_en": "International agreements promote cooperation among countries and help set global air-pollution reduction targets. They encourage research and technology exchange and hold countries accountable for reducing their emissions."
+  },
+  {
+    "index": 545,
+    "faq_id": "1ee6c994-3d93-4aa8-9510-c35b26d250a7",
+    "question_en": "How does planting trees help reduce air pollution?",
+    "answer_en": "Trees absorb carbon dioxide and release oxygen. They filter pollutants from the air and lower temperatures. They also prevent soil erosion and create habitats for biodiversity."
+  },
+  {
+    "index": 546,
+    "faq_id": "a49b4ece-5703-498e-8312-9d6c4d4627bf",
+    "question_en": "Discuss the relationship between nuclear energy and air pollution.",
+    "answer_en": "Nuclear energy can reduce air pollution because it emits few greenhouse gases while generating electricity. It remains controversial, however, because radioactive waste must be managed and there are potential risks."
+  },
+  {
+    "index": 547,
+    "faq_id": "10cb4f1d-fc60-4af8-8cb5-cf284254dba7",
+    "question_en": "How do Low Emission Zones help reduce air pollution in cities?",
+    "answer_en": "Low Emission Zones restrict highly polluting vehicles and encourage vehicles that use cleaner technology. They improve urban air quality, protect public health, and promote sustainable transport."
+  },
+  {
+    "index": 548,
+    "faq_id": "7b4afc80-efc6-482b-a9cc-8579985f2ab8",
+    "question_en": "What is natural farming?",
+    "answer_en": "Natural farming is a system that grows crops by natural methods without using chemicals or synthetic fertilizers."
+  },
+  {
+    "index": 549,
+    "faq_id": "1288d5c1-86ad-432f-987c-643a94c92d99",
+    "question_en": "What types of fertilizer are used in natural farming?",
+    "answer_en": "They include natural fertilizer, manure, bone meal, leaf compost, and soil-conserving crops."
+  },
+  {
+    "index": 550,
+    "faq_id": "9cc3cb81-4441-47e5-802c-bbc7fd3599eb",
+    "question_en": "How are pests managed in natural farming?",
+    "answer_en": "Methods include using natural enemies, rotating crops, companion planting, and applying natural pesticides."
+  },
+  {
+    "index": 551,
+    "faq_id": "c517f561-6359-460c-be7b-32f93da7deb3",
+    "question_en": "Describe soil-management methods for natural farming.",
+    "answer_en": "Methods include cover cropping, applying manure, incorporating crop residues, growing soil-conserving crops, and leaving land fallow."
+  },
+  {
+    "index": 552,
+    "faq_id": "fa3b050a-78da-4adb-9ce4-13ab34a8b7bf",
+    "question_en": "Describe the benefits of natural farming.",
+    "answer_en": "Benefits include environmental conservation, production of healthy food, long-term soil sustainability, and protection of water resources."
+  },
+  {
+    "index": 553,
+    "faq_id": "b1f5bf00-7ab3-4faa-89d5-b8cb3125ec51",
+    "question_en": "How is irrigation managed in natural farming?",
+    "answer_en": "Improve drainage, harvest rainwater, use drip irrigation and mulch, and select crops with low water requirements."
+  },
+  {
+    "index": 554,
+    "faq_id": "8bd84bc8-9aa9-4213-a6f7-03af368292aa",
+    "question_en": "Describe cultivation methods used in natural farming.",
+    "answer_en": "Methods include crop rotation, mixed cropping, intercropping, permaculture, multi-tier cropping, and natural upland farming."
+  },
+  {
+    "index": 555,
+    "faq_id": "452110b8-ffb1-4591-9adb-55b024549e54",
+    "question_en": "How are seeds selected in natural farming?",
+    "answer_en": "Select local varieties, varieties suited to the climate, disease-resistant varieties, and open-pollinated varieties."
+  },
+  {
+    "index": 556,
+    "faq_id": "eaf4503f-d2ad-4abf-b7ac-29b906bc4375",
+    "question_en": "How can natural-farming products be marketed at higher value?",
+    "answer_en": "Obtain natural-product certification, market directly, innovate packaging, educate consumers, and produce value-added products."
+  },
+  {
+    "index": 557,
+    "faq_id": "d5870044-f33d-4ae5-9591-6f32ee6a0708",
+    "question_en": "What advice is there for people who want to start natural farming?",
+    "answer_en": "Test the soil, select suitable crops, learn to make natural fertilizer, manage water resources, study the market, and attend natural-farming courses."
+  },
+  {
+    "index": 558,
+    "faq_id": "3739ab65-048d-4a8d-b427-504b90422265",
+    "question_en": "What is organic farming?",
+    "answer_en": "Organic farming is a system that grows crops by natural methods without using chemicals, synthetic fertilizers, or GMO varieties."
+  },
+  {
+    "index": 559,
+    "faq_id": "c5f021a9-3d9e-4210-a917-35481592d6ff",
+    "question_en": "What are the main objectives of organic farming?",
+    "answer_en": "The objectives are to conserve the environment, produce chemical-free food, sustain soil over the long term, and conserve biodiversity."
+  },
+  {
+    "index": 560,
+    "faq_id": "03859df0-bb21-4d89-a848-bb45195dbf57",
+    "question_en": "How is soil conserved in organic farming?",
+    "answer_en": "Methods include using natural fertilizers, mulching, rotating crops, growing soil-conserving crops, and composting."
+  },
+  {
+    "index": 561,
+    "faq_id": "198307e4-f93f-41b4-a82c-abc156669f80",
+    "question_en": "How are pests controlled in organic farming?",
+    "answer_en": "Methods include using natural enemies, mixed cropping, applying natural pesticides, and maintaining healthy soil."
+  },
+  {
+    "index": 562,
+    "faq_id": "d7f64423-97e1-4c2e-98c7-93e0e8282017",
+    "question_en": "How are weeds controlled in organic farming?",
+    "answer_en": "Methods include hand weeding, mulching, crop rotation, dense planting, and natural herbicides."
+  },
+  {
+    "index": 563,
+    "faq_id": "3c4f1c3c-c1b7-4545-872d-92b35b2c6393",
+    "question_en": "How is irrigation managed in organic farming?",
+    "answer_en": "Improve the soil for better infiltration, use drip irrigation, harvest rainwater, and apply mulch."
+  },
+  {
+    "index": 564,
+    "faq_id": "0c4bf509-b09b-420f-bd8e-d6e2ba025a6a",
+    "question_en": "How are seeds selected in organic farming?",
+    "answer_en": "Select local varieties, varieties suited to the climate, and disease-resistant varieties, and avoid GMO varieties."
+  },
+  {
+    "index": 565,
+    "faq_id": "2bcb2d8a-92f8-422d-bcfa-41bd10472b27",
+    "question_en": "Describe the types of natural fertilizer used in organic farming.",
+    "answer_en": "They include manure, compost, bone meal, leaf compost, biofertilizer, and natural rock powders."
+  },
+  {
+    "index": 566,
+    "faq_id": "9865b874-0710-44f3-81e8-0ce5e2dc1cab",
+    "question_en": "Describe natural pesticides used in organic farming.",
+    "answer_en": "They include sesame oil, chili oil, soapy water, garlic extract, a mixture of honey and lime juice, and bacterial pesticides."
+  },
+  {
+    "index": 567,
+    "faq_id": "746a4773-9c7a-48c0-a4c3-87e06a3347c2",
+    "question_en": "Describe cropping systems used in organic farming.",
+    "answer_en": "Systems include crop rotation, mixed cropping, intercropping, permaculture, multi-tier cropping, and agroforestry."
+  },
+  {
+    "index": 568,
+    "faq_id": "261c1be1-0fb4-4ee2-9439-2056c30d0e1d",
+    "question_en": "Describe the economic benefits of organic farming.",
+    "answer_en": "Benefits include higher product prices, lower input costs, greater consumer confidence, and sustainable long-term crop yields."
+  },
+  {
+    "index": 569,
+    "faq_id": "c5508821-422b-462b-b8df-5488dfe64c50",
+    "question_en": "Describe the environmental benefits of organic farming.",
+    "answer_en": "Benefits include conserving biodiversity, reducing soil erosion, reducing pollution of water resources, and improving carbon sequestration."
+  },
+  {
+    "index": 570,
+    "faq_id": "76c6638b-d384-41d6-9b2b-2243a8c66a40",
+    "question_en": "Describe the health benefits of organic farming.",
+    "answer_en": "Benefits include consuming chemical-free food, producing more nutrient-rich crops, and protecting farmers from chemical hazards."
+  },
+  {
+    "index": 571,
+    "faq_id": "2a1587ae-6692-4efc-bff5-be43a8c08cc2",
+    "question_en": "Describe the challenges of organic farming.",
+    "answer_en": "Challenges include high production costs, low yields, difficulty controlling pest infestations, high labor requirements, and difficulty obtaining certification."
+  },
+  {
+    "index": 572,
+    "faq_id": "d25284d5-3a0f-4199-b9cd-1a7d1cfc2c0c",
+    "question_en": "What are the main differences between organic and conventional farming?",
+    "answer_en": "The main differences concern chemical use, soil conservation, biodiversity conservation, water-resource conservation, seed selection, and product quality."
+  },
+  {
+    "index": 573,
+    "faq_id": "d16aa4ba-54ba-4288-9f14-3189eeb9d4cf",
+    "question_en": "Explain the importance of composting in organic farming.",
+    "answer_en": "Composting converts waste into high-quality fertilizer, improves soil structure, and increases the abundance of soil microorganisms."
+  },
+  {
+    "index": 574,
+    "faq_id": "7d6bdcd6-e9f8-4af7-9317-168bfc067088",
+    "question_en": "Explain the importance of microorganisms in organic farming.",
+    "answer_en": "Microorganisms are important for nutrient cycling, soil structure, pest and disease control, and support of plant growth."
+  },
+  {
+    "index": 575,
+    "faq_id": "28507f46-5521-4dea-ba6b-c8d535411d8f",
+    "question_en": "What is pollination?",
+    "answer_en": "Pollination is the process by which pollen from the male part of a plant reaches the female part."
+  },
+  {
+    "index": 576,
+    "faq_id": "b4c102dc-711e-4f95-9174-c616d7ae1762",
+    "question_en": "Explain the importance of pollination.",
+    "answer_en": "Pollination is important for plant reproduction, fruit production, and genetic diversity."
+  },
+  {
+    "index": 577,
+    "faq_id": "c41e984d-af32-49b8-b26d-312293aabebe",
+    "question_en": "Which organisms act as pollinators?",
+    "answer_en": "Pollinators include bees, insects, birds, bats, butterflies, beetles, and flies."
+  },
+  {
+    "index": 578,
+    "faq_id": "9f41263a-a1da-4e6b-a6b5-49bb87c4a7df",
+    "question_en": "Describe the types of pollination.",
+    "answer_en": "Types include self-pollination, wind pollination, animal pollination, and water pollination."
+  },
+  {
+    "index": 579,
+    "faq_id": "f808f17f-37fb-4cfc-a09e-a227079e3204",
+    "question_en": "Explain the stages of pollination.",
+    "answer_en": "The stages are pollen production, pollen release, pollen transfer, pollen reception, and fertilization."
+  },
+  {
+    "index": 580,
+    "faq_id": "2e669834-d0e3-48e2-aa6c-734be3f0b1e8",
+    "question_en": "Describe plant adaptations for pollination.",
+    "answer_en": "Adaptations include attractive colors, scents, and shapes; nectar production; and the positions of the stamens and pistil."
+  },
+  {
+    "index": 581,
+    "faq_id": "7fa34cab-b7ea-470e-85ab-441bcc3a689a",
+    "question_en": "Explain the importance of bees for pollination.",
+    "answer_en": "Bees are efficient pollinators, are important to many plant species, and are especially important for economically valuable crops."
+  },
+  {
+    "index": 582,
+    "faq_id": "d8c88210-ac6a-4a6e-bf3f-69dc21325199",
+    "question_en": "Explain the relationship between pollination and food security.",
+    "answer_en": "Pollination directly affects food production by increasing crop yields and quality."
+  },
+  {
+    "index": 583,
+    "faq_id": "0dac924c-602c-40ec-8333-b5cddaa8bf54",
+    "question_en": "What factors harm pollination?",
+    "answer_en": "Factors include excessive pesticide use, climate change, habitat loss, monoculture, and disease."
+  },
+  {
+    "index": 584,
+    "faq_id": "409059c9-3a04-4dcf-9f36-aea833dd88bf",
+    "question_en": "How can pollination be promoted?",
+    "answer_en": "Grow suitable plants for pollinators, reduce pesticide use, and create pollinator habitats."
+  },
+  {
+    "index": 585,
+    "faq_id": "5fcd9141-074c-4120-89d4-09fabed9ec87",
+    "question_en": "Explain the relationship between pollination and biodiversity.",
+    "answer_en": "Pollination supports plant reproduction and maintains food chains and ecosystems, making it important for conserving biodiversity."
+  },
+  {
+    "index": 586,
+    "faq_id": "4a38dcfa-eaa2-4a2e-9c54-2c50b3ecdc5a",
+    "question_en": "Describe the characteristics of wind pollination.",
+    "answer_en": "Characteristics include lightweight and abundant pollen, long stamens, large stigmas, and inconspicuous flowers."
+  },
+  {
+    "index": 587,
+    "faq_id": "195e2069-c6e2-45bc-afa8-0ef95531d266",
+    "question_en": "Describe the characteristics of water pollination.",
+    "answer_en": "Characteristics include conspicuous pollen with a smooth surface, short stamens, and flowers that open on the water."
+  },
+  {
+    "index": 588,
+    "faq_id": "4af03ebf-5ca2-463d-9d2e-1f7123400937",
+    "question_en": "Describe the advantages and disadvantages of self-pollination.",
+    "answer_en": "Advantages are that pollinating animals are not needed and there is less dependence on weather. Disadvantages are low genetic diversity and the possibility of genetic defects."
+  },
+  {
+    "index": 589,
+    "faq_id": "ab50e3aa-3872-4663-99b6-404f1c02166f",
+    "question_en": "Explain the relationship between pollination and agricultural production.",
+    "answer_en": "Pollination directly benefits agricultural production by increasing crop yields, improving crop quality, and enabling production of hybrid plants."
+  },
+  {
+    "index": 590,
+    "faq_id": "85b2e74a-f017-4f6b-8ac3-0236e0b174e3",
+    "question_en": "Explain the relationship between pollination and climate change.",
+    "answer_en": "Climate change can alter pollinator behavior and distribution and disrupt synchronization between plants and their pollinators."
+  },
+  {
+    "index": 591,
+    "faq_id": "80984b99-8445-46c0-a2f3-d175c9e1d89e",
+    "question_en": "Explain the importance of pollination research.",
+    "answer_en": "Pollination research is important for improving agricultural production, conserving biodiversity, and understanding the impacts of climate change."
+  },
+  {
+    "index": 592,
+    "faq_id": "92a5d38b-7f7f-479b-be9a-5373663eca69",
+    "question_en": "Describe methods for monitoring pollination.",
+    "answer_en": "Methods include counting pollinators, setting up cameras, measuring pollination rates, studying crop yields, and surveying pollinator species diversity."
+  },
+  {
+    "index": 593,
+    "faq_id": "84135287-9681-4437-9bc2-e6b283293613",
+    "question_en": "What is climate change?",
+    "answer_en": "Climate change is the long-term alteration of global climate patterns and average temperatures as greenhouse-gas emissions rise because of human activities."
+  },
+  {
+    "index": 594,
+    "faq_id": "d7b09977-1aab-4b50-bd05-890b36c346a9",
+    "question_en": "What are the main causes of climate change?",
+    "answer_en": "The main human causes are fuel combustion, deforestation, industrial processes, agricultural practices, and expansion of livestock production."
+  },
+  {
+    "index": 595,
+    "faq_id": "db8f721e-dd72-464b-8da5-60854a12c5b4",
+    "question_en": "What is the greenhouse effect?",
+    "answer_en": "The greenhouse effect is the warming of Earth's surface when the atmosphere traps heat radiated from the surface toward space."
+  },
+  {
+    "index": 596,
+    "faq_id": "2cbbe781-cda2-45fd-8d37-d459b487343b",
+    "question_en": "What are the main greenhouse gases?",
+    "answer_en": "The main greenhouse gases are carbon dioxide (CO2), methane (CH4), nitrous oxide (N2O), and water vapor (H2O)."
+  },
+  {
+    "index": 597,
+    "faq_id": "97faa85f-8b7c-43fd-b432-ecd68770ce40",
+    "question_en": "How does deforestation cause climate change?",
+    "answer_en": "Deforestation reduces the planet's capacity to absorb CO2 and releases stored carbon back into the atmosphere, accelerating global warming."
+  },
+  {
+    "index": 598,
+    "faq_id": "0228751f-f083-416b-80e2-d48429fece95",
+    "question_en": "What is the Paris Agreement?",
+    "answer_en": "The Paris Agreement is an international treaty adopted in 2015 with the goal of keeping the global average temperature increase below 2 degrees Celsius above pre-industrial levels."
+  },
+  {
+    "index": 599,
+    "faq_id": "1d162eb5-8271-434e-8fde-3a84727f8bf8",
+    "question_en": "How does climate change affect sea level?",
+    "answer_en": "Climate change raises sea level through ocean warming and the melting of land ice, threatening coastal areas and islands."
+  },
+  {
+    "index": 600,
+    "faq_id": "40c89df4-34db-4d1b-b625-ca3c5fa3a62a",
+    "question_en": "Describe some effects of climate change on biodiversity.",
+    "answer_en": "Climate change causes habitat loss, species extinction, altered migration patterns, and ecosystem disruption."
+  },
+  {
+    "index": 601,
+    "faq_id": "991874ed-c928-4a35-a31d-01b318880238",
+    "question_en": "How does climate change affect agriculture?",
+    "answer_en": "It affects crop yields, shifts growing seasons, increases extreme-weather events, and affects water availability for agriculture."
+  },
+  {
+    "index": 602,
+    "faq_id": "60f70bfc-13f2-44d2-9ac6-2dca09832c00",
+    "question_en": "What is carbon sequestration?",
+    "answer_en": "Carbon sequestration is the process of capturing and storing carbon dioxide from the atmosphere to mitigate climate change."
+  },
+  {
+    "index": 603,
+    "faq_id": "cb1132a1-88fd-4227-8eb0-de8002163731",
+    "question_en": "How does climate change affect human health?",
+    "answer_en": "It can increase heat-related illnesses, spread infectious diseases, cause malnutrition through food insecurity, and create mental-health problems."
+  },
+  {
+    "index": 604,
+    "faq_id": "d0eef063-04cf-43ed-b040-2efadf8d3e8c",
+    "question_en": "Explain the role of renewable energy in combating climate change.",
+    "answer_en": "Renewable sources such as solar, wind, and hydropower reduce fossil-fuel use and therefore lower greenhouse-gas emissions."
+  },
+  {
+    "index": 605,
+    "faq_id": "60bd736f-81a8-4998-8fe5-00ec95be8850",
+    "question_en": "How does climate change affect extreme-weather events?",
+    "answer_en": "Climate change increases the frequency and intensity of events such as hurricanes, droughts, floods, and heatwaves."
+  },
+  {
+    "index": 606,
+    "faq_id": "78b3b84e-308f-401d-a36b-b7a3716f0e31",
+    "question_en": "What is ocean acidification?",
+    "answer_en": "Ocean acidification is the continuing decline in seawater pH as the ocean absorbs atmospheric CO2. It harms aquatic ecosystems."
+  },
+  {
+    "index": 607,
+    "faq_id": "76654837-9a44-4e23-9ebe-95de70f845aa",
+    "question_en": "What is photosynthesis in botany?",
+    "answer_en": "Photosynthesis is the process by which plants use sunlight, water, and carbon dioxide to produce food."
+  },
+  {
+    "index": 608,
+    "faq_id": "c421197f-ffeb-4fa1-848f-c04712f2c1a6",
+    "question_en": "Explain the importance of chlorophyll.",
+    "answer_en": "Chlorophyll is the green substance in plants that absorbs light energy and plays an important role in food production."
+  },
+  {
+    "index": 609,
+    "faq_id": "5440417f-f14a-4605-a0e2-252b849c098d",
+    "question_en": "Compare the functions of xylem and phloem.",
+    "answer_en": "Xylem carries water and minerals from the roots to other parts of the plant, while phloem distributes food produced by the leaves throughout the plant."
+  },
+  {
+    "index": 610,
+    "faq_id": "03e5e06c-98b9-40ae-b4be-c00ac47bfe9b",
+    "question_en": "What is pollination?",
+    "answer_en": "Pollination is the transfer of pollen from the male part of a flower to the female part and is essential for plant reproduction."
+  },
+  {
+    "index": 611,
+    "faq_id": "1ae69df5-f89f-4161-b152-9a04df71ec5d",
+    "question_en": "Explain the germination process.",
+    "answer_en": "Germination is the process by which a plant emerges from a seed. Under suitable conditions of water, temperature, and oxygen, the seed sprouts and develops into a seedling."
+  },
+  {
+    "index": 612,
+    "faq_id": "e8e7062c-06de-4e31-9b99-ea8e60943c2c",
+    "question_en": "What does the horticultural term pruning mean?",
+    "answer_en": "Pruning means cutting or removing parts of a plant to improve its health and productivity."
+  },
+  {
+    "index": 613,
+    "faq_id": "5b69d6c0-fbb6-4661-b075-825de675eefa",
+    "question_en": "What is fertilizer?",
+    "answer_en": "Fertilizer consists of nutrients added to soil to improve plant growth and productivity."
+  },
+  {
+    "index": 614,
+    "faq_id": "8433bbaa-5d3a-46a8-adba-a13e02c35571",
+    "question_en": "Explain the importance of an irrigation system.",
+    "answer_en": "An irrigation system distributes water efficiently to plants, increasing crop yields and helping conserve and manage water."
+  },
+  {
+    "index": 615,
+    "faq_id": "37198704-868a-4342-85c4-416d006c46db",
+    "question_en": "What is pest control?",
+    "answer_en": "Pest control means protecting plants from or controlling damaging organisms such as pests, disease agents, and weeds."
+  },
+  {
+    "index": 616,
+    "faq_id": "27c8be76-adc1-4e15-af23-33dbaa963140",
+    "question_en": "Explain the usefulness of a greenhouse.",
+    "answer_en": "A greenhouse is a glass- or plastic-covered structure in which temperature, humidity, and light can be controlled, allowing plants to be grown year-round."
+  },
+  {
+    "index": 617,
+    "faq_id": "58863978-9aac-4fe9-bdc5-c48434c1a1ad",
+    "question_en": "What is the English term for land used to grow rice?",
+    "answer_en": "Paddy field."
+  },
+  {
+    "index": 618,
+    "faq_id": "1ee490eb-5805-469c-9079-91978d8dee04",
+    "question_en": "What is the English term for seed used to grow rice?",
+    "answer_en": "Rice seed."
+  },
+  {
+    "index": 619,
+    "faq_id": "3cf4a22a-91e6-473f-a819-bb6c36594627",
+    "question_en": "What is the English term for the roots of a rice plant?",
+    "answer_en": "Root system."
+  },
+  {
+    "index": 620,
+    "faq_id": "b373a0bb-60f2-447f-918f-8af2765d5a4f",
+    "question_en": "What is the English term for the main stalk of a rice plant?",
+    "answer_en": "Stem."
+  },
+  {
+    "index": 621,
+    "faq_id": "947e663c-01f4-40c5-a53d-14205b9ee78f",
+    "question_en": "What is the English term for a rice plant's foliage?",
+    "answer_en": "Leaf."
+  },
+  {
+    "index": 622,
+    "faq_id": "c54b1d7e-9cfa-4751-9dcf-f5c42db40de3",
+    "question_en": "What is the English term for the flowering head of a rice plant?",
+    "answer_en": "Panicle."
+  },
+  {
+    "index": 623,
+    "faq_id": "d123f308-aea7-4a3b-9e83-923b1725b207",
+    "question_en": "What is the English term for the nutrients applied in rice cultivation?",
+    "answer_en": "Fertilizer."
+  },
+  {
+    "index": 624,
+    "faq_id": "95da5058-a69d-4128-b364-dd923cc8335c",
+    "question_en": "What is the English term for the product used to control pests in rice cultivation?",
+    "answer_en": "Pesticide."
+  },
+  {
+    "index": 625,
+    "faq_id": "a7930cc3-1d4c-4851-a356-fea5b76fd174",
+    "question_en": "What is the English term for the product used to control weeds in rice cultivation?",
+    "answer_en": "Herbicide."
+  },
+  {
+    "index": 626,
+    "faq_id": "e8416c52-6456-4863-91a5-dacbed0631b0",
+    "question_en": "What is the English term for supplying water in rice cultivation?",
+    "answer_en": "Irrigation."
+  },
+  {
+    "index": 627,
+    "faq_id": "6d66f91f-1ba3-4ef1-a49e-f537638c324d",
+    "question_en": "What is rice blast?",
+    "answer_en": "Rice blast is a major fungal disease of rice. It is caused by the fungus Magnaporthe oryzae and can significantly reduce rice yields."
+  },
+  {
+    "index": 628,
+    "faq_id": "07af6e8c-e372-4046-ac18-c808c75a1b47",
+    "question_en": "Describe the symptoms of bacterial leaf blight.",
+    "answer_en": "Symptoms include yellow or gray streaks at leaf tips, wilting, and death of leaf tissue."
+  },
+  {
+    "index": 629,
+    "faq_id": "5ff26333-7429-4091-af6d-0f9ca0b63eee",
+    "question_en": "How can sheath blight be prevented?",
+    "answer_en": "Use crop rotation, grow resistant varieties, apply fungicides, and maintain field sanitation."
+  },
+  {
+    "index": 630,
+    "faq_id": "200536eb-50ff-42a6-9135-7f1892cd6271",
+    "question_en": "What causes brown spot disease?",
+    "answer_en": "Brown spot is caused by the fungus Cochliobolus miyabeanus (Bipolaris oryzae). It is more common in nutrient-deficient rice plants, especially those deficient in nitrogen."
+  },
+  {
+    "index": 631,
+    "faq_id": "e625e2e7-b7f7-4572-abce-bc432118d022",
+    "question_en": "Explain how rice tungro virus disease spreads.",
+    "answer_en": "Rice tungro virus disease is transmitted by green leafhoppers."
+  },
+  {
+    "index": 632,
+    "faq_id": "1837d9e1-cc0e-4c1b-b5a2-75b88a858644",
+    "question_en": "What is bacterial leaf blight?",
+    "answer_en": "Bacterial leaf blight is a major rice disease caused by the bacterium Xanthomonas oryzae pathovar oryzae."
+  },
+  {
+    "index": 633,
+    "faq_id": "10338d37-662a-4526-ad74-2ae9ed4cb986",
+    "question_en": "Describe the symptoms of bacterial leaf blight.",
+    "answer_en": "Symptoms include yellowish-brown streaks along leaf margins, wilted and dried leaves, and bleached leaf tips."
+  },
+  {
+    "index": 634,
+    "faq_id": "f399d2e4-e1cc-4b36-823a-f1f76d16254a",
+    "question_en": "Explain how bacterial leaf blight spreads.",
+    "answer_en": "The pathogen can spread through rain, wind, irrigation water, and contaminated farm tools. It can also be seed-borne."
+  },
+  {
+    "index": 635,
+    "faq_id": "e814f197-0cf4-4c56-9dce-df3b7d8047bc",
+    "question_en": "How can bacterial leaf blight be prevented?",
+    "answer_en": "Grow resistant varieties, follow clean cultivation practices, and avoid excessive use of nitrogen fertilizer."
+  },
+  {
+    "index": 636,
+    "faq_id": "4c5bd32b-fa1c-4c24-8837-1740118b72cc",
+    "question_en": "What is rice blast?",
+    "answer_en": "Rice blast is a dangerous fungal disease of rice caused by the fungus Magnaporthe oryzae."
+  },
+  {
+    "index": 637,
+    "faq_id": "29b52bc9-e116-4882-a04f-e49d0a71b290",
+    "question_en": "Describe the symptoms of rice blast.",
+    "answer_en": "Symptoms include burn-like streaks and brown or black spots on leaves. Severe infection can kill the leaves."
+  },
+  {
+    "index": 638,
+    "faq_id": "ce06ac0a-7b7e-43ae-ae38-075301b89f3b",
+    "question_en": "Explain how rice blast spreads.",
+    "answer_en": "Rice blast spreads through wind-borne fungal spores. Wet conditions and temperatures of 20-30 degrees Celsius favor its spread."
+  },
+  {
+    "index": 639,
+    "faq_id": "15111c1f-c721-402a-ad89-53eddcc2dbc7",
+    "question_en": "Describe methods for preventing rice blast.",
+    "answer_en": "Methods include growing resistant varieties, managing fertilizer and water properly, and applying fungicides."
+  },
+  {
+    "index": 640,
+    "faq_id": "9c419976-2c26-4c1b-840a-0a5e17f6365f",
+    "question_en": "Describe the economic impacts of rice blast.",
+    "answer_en": "Rice blast can significantly reduce yields and sometimes cause losses of up to 70-80%. This reduces farmers' income."
+  },
+  {
+    "index": 641,
+    "faq_id": "9d4a37c0-40c3-4270-84d1-9fd182f44301",
+    "question_en": "What is Fair Trade?",
+    "answer_en": "Fair Trade is a form of trade that guarantees fair prices and working conditions for producers."
+  },
+  {
+    "index": 642,
+    "faq_id": "8b63e4b6-ac7f-4c9a-ac8d-042e3b7e2c17",
+    "question_en": "What is the main purpose of Fair Trade?",
+    "answer_en": "Its main purpose is to create better economic conditions for farmers and workers in developing countries."
+  },
+  {
+    "index": 643,
+    "faq_id": "6d9b221c-05a0-471c-a52a-ee0337504bd5",
+    "question_en": "What are the Fair Trade standards?",
+    "answer_en": "Standards include fair prices, safe working conditions, environmental-conservation measures, and a prohibition on child labor."
+  },
+  {
+    "index": 644,
+    "faq_id": "1ca95911-5ff4-4693-a759-808d108dd79f",
+    "question_en": "What are Fair Trade products?",
+    "answer_en": "Fair Trade products include coffee, tea, bananas, cotton, apples, and handicrafts."
+  },
+  {
+    "index": 645,
+    "faq_id": "934d154e-ef61-4ee2-9dd9-146f32139804",
+    "question_en": "How can Fair Trade products be identified?",
+    "answer_en": "They can usually be identified by a Fair Trade label or mark, which certifies that a product meets Fair Trade standards."
+  },
+  {
+    "index": 646,
+    "faq_id": "0123a42c-c39a-4d45-9d78-5f408ed0b09a",
+    "question_en": "How does Fair Trade benefit producers?",
+    "answer_en": "It benefits producers by providing fair prices, long-term relationships, and premium payments for social development."
+  },
+  {
+    "index": 647,
+    "faq_id": "f0ce6f8b-598f-4543-8923-7182bf12e1ac",
+    "question_en": "What is the Fair Trade Premium?",
+    "answer_en": "The Fair Trade Premium is an additional amount paid for Fair Trade products and used for social and economic development projects."
+  },
+  {
+    "index": 648,
+    "faq_id": "2b890775-c12d-4523-8cc6-46dd55c48a06",
+    "question_en": "How does Fair Trade benefit consumers?",
+    "answer_en": "It enables consumers to choose ethically produced goods and support communities in developing countries."
+  },
+  {
+    "index": 649,
+    "faq_id": "92595b4f-41f6-4a38-93e7-5531d4f178f2",
+    "question_en": "How are Fair Trade and environmental conservation related?",
+    "answer_en": "Fair Trade promotes sustainable farming, reduced chemical use, and biodiversity conservation, linking it closely to environmental conservation."
+  },
+  {
+    "index": 650,
+    "faq_id": "d5857138-0ad1-4c18-9fdb-ebd41bbac437",
+    "question_en": "What challenges does the Fair Trade movement face?",
+    "answer_en": "Challenges include raising consumer awareness, gaining access to wider markets, and confronting the influence of large corporations."
+  },
+  {
+    "index": 651,
+    "faq_id": "043b7fb7-55a0-4707-a245-94c7e860bd90",
+    "question_en": "What does the abbreviation NPK mean?",
+    "answer_en": "NPK represents the symbols for the three main fertilizer nutrients: nitrogen, phosphorus, and potassium."
+  },
+  {
+    "index": 652,
+    "faq_id": "7cae8539-7f8c-4461-9358-f8d9761f4d06",
+    "question_en": "What are the main benefits of NPK fertilizer?",
+    "answer_en": "NPK fertilizer improves plant growth and health, supports leaf and root development, and promotes flowering and fruiting."
+  },
+  {
+    "index": 653,
+    "faq_id": "563bec6b-5af2-4534-a061-abe6b76977f6",
+    "question_en": "Explain the role of nitrogen in NPK fertilizer.",
+    "answer_en": "Nitrogen promotes leaf growth and green color. It plays an important role in chlorophyll production and protein synthesis."
+  },
+  {
+    "index": 654,
+    "faq_id": "5d269ab7-e3de-4131-a5dc-e36f5afa169f",
+    "question_en": "Explain the role of phosphorus in NPK fertilizer.",
+    "answer_en": "Phosphorus supports root-system development and helps transfer and store energy. It also supports flowering and fruiting."
+  },
+  {
+    "index": 655,
+    "faq_id": "9b16f615-17c9-475b-a473-58d15f9cd392",
+    "question_en": "Explain the role of potassium in NPK fertilizer.",
+    "answer_en": "Potassium improves plant resistance to disease and stress. It assists the transport of water and nutrients and improves fruit quality."
+  },
+  {
+    "index": 656,
+    "faq_id": "e54a2d25-e210-42bd-8cfe-c116ad247566",
+    "question_en": "What do the numbers on NPK fertilizer mean?",
+    "answer_en": "They represent the percentages of nitrogen, phosphorus, and potassium. For example, 10-5-5 means 10% nitrogen, 5% phosphorus, and 5% potassium."
+  },
+  {
+    "index": 657,
+    "faq_id": "c546e56f-655f-4860-9378-f7fc06c4af76",
+    "question_en": "How should NPK fertilizer be applied?",
+    "answer_en": "Work NPK fertilizer into the soil after watering. Spread it evenly around the plant's root zone and avoid direct contact with the stem or leaves."
+  },
+  {
+    "index": 658,
+    "faq_id": "cb2c88aa-8457-44a5-8fb8-48a55942f126",
+    "question_en": "When should NPK fertilizer be applied?",
+    "answer_en": "Apply it at the beginning of the growing season. It may be reapplied when plants begin growing, flowering, and fruiting. Apply it at least twice a year to seasonal plants."
+  },
+  {
+    "index": 659,
+    "faq_id": "53093032-e273-49bb-870a-64faf2786cbb",
+    "question_en": "Describe the harmful effects of excessive NPK fertilizer use.",
+    "answer_en": "Excessive use can burn plants, alter soil pH, and interfere with uptake of other nutrients. It can also pollute the environment and water."
+  },
+  {
+    "index": 660,
+    "faq_id": "19098cb8-4c81-4d61-823c-a0e6cf2a7391",
+    "question_en": "From a chemical perspective, what is organic fertilizer?",
+    "answer_en": "Organic fertilizer is derived from the remains of living organisms and contains no synthetic chemicals. It supplies nutrients to plants."
+  },
+  {
+    "index": 661,
+    "faq_id": "e01a5bee-a3c3-4ab2-ab86-dce05ec71e7b",
+    "question_en": "Explain the main chemical composition of organic fertilizer.",
+    "answer_en": "Organic fertilizers contain carbon, nitrogen, phosphorus, and potassium. They also contain other minerals and biological materials."
+  },
+  {
+    "index": 662,
+    "faq_id": "5e2fde76-9c21-4a38-939b-6d30f7211f31",
+    "question_en": "Describe the role of nitrogen in organic fertilizer.",
+    "answer_en": "Nitrogen is important for leaf development and green color. It also supports production of proteins and amino acids."
+  },
+  {
+    "index": 663,
+    "faq_id": "f3dfc842-6662-4143-8d40-5458dd6c9242",
+    "question_en": "Explain the importance of phosphorus in organic fertilizer.",
+    "answer_en": "Phosphorus is important for root-system development, flowering, and fruiting. It is also involved in energy transfer and DNA formation."
+  },
+  {
+    "index": 664,
+    "faq_id": "66fba693-eaca-43e2-8664-9e1d206f67d8",
+    "question_en": "Describe the function of potassium in organic fertilizer.",
+    "answer_en": "Potassium assists plant uptake of water and nutrients. It improves disease resistance and supports the development of high-quality produce."
+  },
+  {
+    "index": 665,
+    "faq_id": "cf88099e-f08f-4c6c-ba15-22f38dd54a79",
+    "question_en": "How do organic fertilizers affect pH?",
+    "answer_en": "Organic fertilizers can adjust soil pH. They generally make soil neutral or slightly acidic, creating a suitable environment for plants."
+  },
+  {
+    "index": 666,
+    "faq_id": "d3522fcf-2ee4-4476-abe4-64423eed2419",
+    "question_en": "Explain the role of microorganisms in organic fertilizers.",
+    "answer_en": "Bacteria and fungi in organic fertilizers break down organic matter into nutrients that plants can absorb easily. They also improve soil structure."
+  },
+  {
+    "index": 667,
+    "faq_id": "0d61981b-3658-45cf-aa03-0456c069f405",
+    "question_en": "What is humic acid, and how is it related to organic fertilizer?",
+    "answer_en": "Humic acid consists of complex organic molecules formed by the decomposition of plant and animal remains. It is present in organic fertilizers and improves soil structure."
+  },
+  {
+    "index": 668,
+    "faq_id": "1d3b20f9-30f3-45e0-a4b1-bc387fef9158",
+    "question_en": "Explain the reaction rate of organic fertilizers.",
+    "answer_en": "Organic fertilizers react more slowly than chemical fertilizers. They release nutrients gradually and have long-lasting effects, providing plants with nutrients over time."
+  },
+  {
+    "index": 669,
+    "faq_id": "ef65d277-5b04-431a-8023-a0ea23e66ac4",
+    "question_en": "Describe the importance of trace elements in organic fertilizers.",
+    "answer_en": "Trace elements such as iron, manganese, zinc, and copper are needed only in small amounts but are important for plant health and growth. Organic fertilizers naturally supply these elements."
+  },
+  {
+    "index": 670,
+    "faq_id": "d014dc30-264d-4a1b-bfb8-8a2c015f6131",
+    "question_en": "What are microorganisms that cause pest and disease problems called?",
+    "answer_en": "Microorganisms that cause plant diseases are called plant pathogens."
+  },
+  {
+    "index": 671,
+    "faq_id": "35a60c9a-2ec4-4c37-9a86-483a480b984f",
+    "question_en": "Name a major rice disease found in Myanmar.",
+    "answer_en": "Rice blast disease is a major rice disease found in Myanmar."
+  },
+  {
+    "index": 672,
+    "faq_id": "578ae1ae-550c-419d-b56b-317d1b6ae0a3",
+    "question_en": "Name a bacterial disease of bean plants.",
+    "answer_en": "Bacterial blight of bean is a bacterial disease of bean plants."
+  },
+  {
+    "index": 673,
+    "faq_id": "553b214e-7844-40ea-8075-4682ec2ff721",
+    "question_en": "Name a fungal disease affecting rubber trees in Myanmar.",
+    "answer_en": "White root disease is a fungal disease affecting rubber trees in Myanmar."
+  },
+  {
+    "index": 674,
+    "faq_id": "3a8905db-16fa-406d-b55d-0f01b7586723",
+    "question_en": "Name a viral disease of banana plants.",
+    "answer_en": "Banana bunchy top virus disease is a viral disease of banana plants."
+  },
+  {
+    "index": 675,
+    "faq_id": "a5c839a4-f2af-42c7-9c45-08996e9b3eb6",
+    "question_en": "Name a nematode disease of tomato plants.",
+    "answer_en": "Root-knot nematode disease is a nematode disease of tomato plants."
+  },
+  {
+    "index": 676,
+    "faq_id": "56de426a-55ac-4126-ab6e-a42e4cd042f2",
+    "question_en": "Name an insect pest that affects cotton plants in Myanmar.",
+    "answer_en": "Cotton bollworm is an insect pest that affects cotton plants in Myanmar."
+  },
+  {
+    "index": 677,
+    "faq_id": "d43f38f7-c074-4bdd-86c1-90b087b8d76a",
+    "question_en": "Name a bacterial disease affecting mango trees in Myanmar.",
+    "answer_en": "Bacterial black spot is a bacterial disease affecting mango trees in Myanmar."
+  },
+  {
+    "index": 678,
+    "faq_id": "9fc5eb2e-b001-43b4-97da-a1435e069487",
+    "question_en": "Name a fungal disease found in garlic plants.",
+    "answer_en": "Garlic rust is a fungal disease found in garlic plants."
+  },
+  {
+    "index": 679,
+    "faq_id": "14c2bebc-e439-45c4-be12-5722379a1075",
+    "question_en": "Give examples of pest- and disease-resistant plant varieties.",
+    "answer_en": "Examples include disease-resistant rice varieties, pest-resistant bean varieties, and virus-resistant tomato varieties."
+  },
+  {
+    "index": 680,
+    "faq_id": "f341438b-5d95-4d37-8983-d5788f1cb76d",
+    "question_en": "Explain plant-breeding technology.",
+    "answer_en": "Plant breeding uses genetic methods to develop new plant varieties with desired traits."
+  },
+  {
+    "index": 681,
+    "faq_id": "3b0994cc-e158-44ab-9762-253e1ffe0ac5",
+    "question_en": "What is genetic engineering?",
+    "answer_en": "Genetic engineering is a technology that changes an organism's characteristics by directly modifying its DNA."
+  },
+  {
+    "index": 682,
+    "faq_id": "74fe9262-f14e-48a3-a4db-191ec7fe6599",
+    "question_en": "What are pathogen-resistant crops?",
+    "answer_en": "They are crops capable of resisting pathogens. They withstand pathogen attacks and suffer less damage."
+  },
+  {
+    "index": 683,
+    "faq_id": "463bfd95-4870-4dae-8b95-5045b15c9a58",
+    "question_en": "Explain Integrated Pest Management (IPM).",
+    "answer_en": "Integrated Pest Management is a system that protects crops from pests through environmentally compatible and economically effective methods."
+  },
+  {
+    "index": 684,
+    "faq_id": "5101fcb6-ca8e-43e9-a2cf-1ccfc8c456f9",
+    "question_en": "What is biological control?",
+    "answer_en": "Biological control uses natural enemies, such as predators, parasites, and disease-causing organisms, to control harmful pests."
+  },
+  {
+    "index": 685,
+    "faq_id": "d0c91f97-ab64-430b-8a5f-b0f28172b7d1",
+    "question_en": "Describe the benefits of crop rotation.",
+    "answer_en": "Crop rotation improves soil, reduces pests and diseases, controls weeds, and increases yields."
+  },
+  {
+    "index": 686,
+    "faq_id": "bed31a1d-60af-4c37-a4b2-d843c2655e1e",
+    "question_en": "What are biopesticides?",
+    "answer_en": "Biopesticides are pesticides produced from living organisms, such as bacteria, fungi, and viruses, or from natural substances. They are environmentally compatible and less hazardous than chemical pesticides."
+  },
+  {
+    "index": 687,
+    "faq_id": "eea2cd7e-3e30-4bbc-8558-e8860ce1d5c0",
+    "question_en": "Explain Systemic Acquired Resistance (SAR).",
+    "answer_en": "SAR is a whole-plant defense system in which resistance increases after the plant is exposed to a pathogen or chemical."
+  },
+  {
+    "index": 688,
+    "faq_id": "6d1da484-2399-4708-925e-b3ff27a5dfc7",
+    "question_en": "Explain marker-assisted selection.",
+    "answer_en": "Marker-assisted selection is a breeding method that uses DNA markers to identify plants with desired genetic traits more quickly and efficiently."
+  },
+  {
+    "index": 689,
+    "faq_id": "97ec742a-d00d-418a-a04c-8e32cff9b01f",
+    "question_en": "What are transgenic crops?",
+    "answer_en": "Transgenic crops are genetically modified plants containing one or more genes from other species. The method can produce crop varieties resistant to pests or diseases."
+  },
+  {
+    "index": 690,
+    "faq_id": "2a463ef4-7cfb-4e5e-99ca-c2f8e2f4d141",
+    "question_en": "Explain induced resistance.",
+    "answer_en": "Induced resistance uses chemical or biological substances to stimulate a plant's natural defenses and increase its resistance to pathogens."
+  },
+  {
+    "index": 691,
+    "faq_id": "cfa91856-8495-4a40-8815-a5305786692c",
+    "question_en": "Explain gene-silencing technology.",
+    "answer_en": "Gene silencing stops the function of a specific gene. Plants can be protected from disease by silencing genes that cause disease."
+  },
+  {
+    "index": 692,
+    "faq_id": "1b889468-50d1-4664-b13d-b096c3f153e1",
+    "question_en": "Explain CRISPR-Cas9 technology.",
+    "answer_en": "CRISPR-Cas9 is a precise DNA-editing technology. It can modify plant genes accurately and create new disease-resistant varieties."
+  },
+  {
+    "index": 693,
+    "faq_id": "cd8b7a9b-8ceb-4da3-8a9f-fbc407e8bf36",
+    "question_en": "What are phytosanitary measures?",
+    "answer_en": "Phytosanitary measures are rules and procedures established to prevent pests and diseases from spreading through plants and plant products."
+  },
+  {
+    "index": 694,
+    "faq_id": "c8dfc201-3871-428c-87d5-b944b1206113",
+    "question_en": "Explain the difference between vertical and horizontal resistance.",
+    "answer_en": "Vertical resistance protects against one specific pathogen, while horizontal resistance provides some protection against several pathogens. Vertical resistance is stronger but may be overcome by the pathogen; horizontal resistance is more durable."
+  },
+  {
+    "index": 695,
+    "faq_id": "b3cf3f72-f594-4ca3-a3d8-350fd8a35ab6",
+    "question_en": "Describe the stages of flowering-plant growth.",
+    "answer_en": "1. Seed stage: the seed becomes active. 2. Germination stage: the first roots and shoot emerge. 3. Seedling stage: the first leaves appear and a young plant forms. 4. Leaf development stage: new leaves continue to emerge. 5. Stem elongation stage: the stem becomes taller and stronger. 6. Flowering stage: flower buds begin to open. 7. Fruit development stage: fruits develop from flowers. 8. Ripening stage: fruits mature and become ready to eat. 9. Reproduction stage: new seeds form in the fruits, ready for the next generation."
+  },
+  {
+    "index": 696,
+    "faq_id": "fddd4f15-f540-4fa4-8d72-a9a0301fefd9",
+    "question_en": "What is a foliar fertilizer?",
+    "answer_en": "A foliar fertilizer is a nutrient-containing liquid sprayed onto plant leaves."
+  },
+  {
+    "index": 697,
+    "faq_id": "ff27c339-4fd7-4cea-80a9-b62308e5771a",
+    "question_en": "How is foliar fertilizer applied?",
+    "answer_en": "Mix the foliar fertilizer with water and spray it onto the plant's leaves."
+  },
+  {
+    "index": 698,
+    "faq_id": "62385260-5b24-4130-b1eb-ae14bbb1107e",
+    "question_en": "Describe the benefits of foliar fertilizer.",
+    "answer_en": "Foliar fertilizer accelerates plant growth, improves pest resistance, and increases yields. It also corrects nutrient deficiencies."
+  },
+  {
+    "index": 699,
+    "faq_id": "d196403c-df93-427f-b10f-1ba3ea7c1a8b",
+    "question_en": "What are the main nutrients in foliar fertilizer?",
+    "answer_en": "Foliar fertilizer contains nitrogen, phosphorus, potassium, and other micronutrients."
+  },
+  {
+    "index": 700,
+    "faq_id": "ad29639c-8c05-4b1f-876a-30069aad0466",
+    "question_en": "When should foliar fertilizer be applied?",
+    "answer_en": "Apply it during the vegetative and fruiting stages. Spray in the early morning or evening."
+  },
+  {
+    "index": 701,
+    "faq_id": "41bae9f3-826c-4742-9297-49281a1f8d3d",
+    "question_en": "Which crops can receive foliar fertilizer?",
+    "answer_en": "It can be used on rice, pulses, vegetables, fruit crops, and other cash crops."
+  },
+  {
+    "index": 702,
+    "faq_id": "3dc8f758-4b5a-41f3-9471-029ce446bf4c",
+    "question_en": "Describe the harmful effects of excessive foliar-fertilizer use.",
+    "answer_en": "Excessive use can damage plants and cause leaf burn. It can also cause environmental pollution."
+  },
+  {
+    "index": 703,
+    "faq_id": "c9f592c1-1ba6-4c9c-8cca-aeb44e1b4d7d",
+    "question_en": "Explain the difference between foliar fertilizer and soil-applied fertilizer.",
+    "answer_en": "Foliar fertilizer is sprayed on leaves, while soil-applied fertilizer is incorporated into the soil. Foliar fertilizer acts more quickly, whereas soil-applied fertilizer has a longer-lasting effect."
+  }
+]

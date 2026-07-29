@@ -1,0 +1,1058 @@
+[
+  {
+    "index": 0,
+    "faq_id": "d73e48aa-3932-42d1-a960-d19be9f5681f",
+    "question_en": "What is the best time to plant trees?",
+    "answer_en": "The beginning of the rainy season is the best time to plant trees."
+  },
+  {
+    "index": 1,
+    "faq_id": "537f325a-7b1c-4e6d-924f-63858bc1333e",
+    "question_en": "How should the soil be prepared for planting trees?",
+    "answer_en": "Dig and loosen the soil, then incorporate organic matter."
+  },
+  {
+    "index": 2,
+    "faq_id": "0a92afc4-c9dc-4993-973a-826b83895ec8",
+    "question_en": "What is the difference between a seed and a seedling?",
+    "answer_en": "A seed is the starting stage of a plant, while a seedling is a young plant."
+  },
+  {
+    "index": 3,
+    "faq_id": "83b84a66-4796-4717-8643-df3f18869867",
+    "question_en": "How much water do newly planted trees need?",
+    "answer_en": "They need daily watering during the first few weeks."
+  },
+  {
+    "index": 4,
+    "faq_id": "33a560da-b510-4aae-9e71-83f3da378650",
+    "question_en": "How should I choose which tree species to plant?",
+    "answer_en": "Choose a tree species suited to the local climate and soil type."
+  },
+  {
+    "index": 5,
+    "faq_id": "f413718a-286b-4493-bf50-7be07f526e39",
+    "question_en": "Why is soil pH important when planting trees?",
+    "answer_en": "Soil pH affects a plant's ability to absorb nutrients."
+  },
+  {
+    "index": 6,
+    "faq_id": "6bcb6e01-1709-4a41-bc79-8d88a25f0ab1",
+    "question_en": "Why is spacing important when planting trees?",
+    "answer_en": "Proper spacing gives trees enough room to grow and remain healthy."
+  },
+  {
+    "index": 7,
+    "faq_id": "a36b616b-0e53-4180-8269-736c979f3efd",
+    "question_en": "How should trees be cared for after planting?",
+    "answer_en": "Care for them through regular watering, fertilizing, and weeding."
+  },
+  {
+    "index": 8,
+    "faq_id": "3e153e26-d179-40f7-b770-5c2428322f80",
+    "question_en": "What is mulching, and why is it important for trees?",
+    "answer_en": "Mulching means covering the soil; it helps retain moisture and control weeds."
+  },
+  {
+    "index": 9,
+    "faq_id": "7b062188-e210-4c01-87f6-a3ed7ffc9eeb",
+    "question_en": "Please explain mulching.",
+    "answer_en": "Mulching is covering the soil with materials such as straw, leaf compost, or plastic to keep it from drying out, suppress weeds, and protect roots."
+  },
+  {
+    "index": 10,
+    "faq_id": "2406f4e7-20e3-4422-a914-40f9438359c6",
+    "question_en": "How should fertilizer be used when planting trees?",
+    "answer_en": "Use organic or inorganic fertilizer according to the directions and the plant's needs."
+  },
+  {
+    "index": 11,
+    "faq_id": "b1478279-1a3d-4e8b-b80e-5b8f0e8c25ef",
+    "question_en": "What are the most common mistakes when planting trees?",
+    "answer_en": "Common mistakes include overwatering, inadequate sunlight, and unsuitable soil."
+  },
+  {
+    "index": 12,
+    "faq_id": "ac50d22c-2b30-4140-89fd-1434b55b9f89",
+    "question_en": "What is companion planting in tree cultivation?",
+    "answer_en": "Companion planting means growing plants together that benefit one another."
+  },
+  {
+    "index": 13,
+    "faq_id": "dcddd633-91aa-4581-84ec-174aaa4ab1c3",
+    "question_en": "How can pests be managed when growing trees?",
+    "answer_en": "Pests can be managed with natural methods or organic pesticides."
+  },
+  {
+    "index": 14,
+    "faq_id": "5bf80dd6-7507-42d0-bfbb-77a928f24c93",
+    "question_en": "How can disease symptoms be identified in a tree?",
+    "answer_en": "Watch for signs such as leaf discoloration, abnormal growth, and wilting leaves."
+  },
+  {
+    "index": 15,
+    "faq_id": "84515256-57f2-438e-ad25-c44489d15a0b",
+    "question_en": "Why is pruning important for a tree?",
+    "answer_en": "Pruning helps maintain a tree's shape, improve its health, and promote growth."
+  },
+  {
+    "index": 16,
+    "faq_id": "9b7ecf3c-711f-43a0-b98a-704610f86923",
+    "question_en": "How can soil erosion be prevented when planting trees?",
+    "answer_en": "Soil erosion can be prevented through mulching, planting cover crops, and terracing."
+  },
+  {
+    "index": 17,
+    "faq_id": "bde390d0-0ce3-4cf5-8883-e4445a2e3953",
+    "question_en": "Why is an irrigation system important when planting trees?",
+    "answer_en": "An efficient irrigation system enables orderly water use and supports tree growth."
+  },
+  {
+    "index": 18,
+    "faq_id": "99df0458-e340-4f35-8b7c-92a6dbd7bea1",
+    "question_en": "Why is soil testing important when planting trees?",
+    "answer_en": "Soil testing reveals soil quality and nutrient content, allowing suitable amendments to be made."
+  },
+  {
+    "index": 19,
+    "faq_id": "b653be1d-f130-4173-879c-1cc7c7185df6",
+    "question_en": "How can sustainability be maintained when planting trees?",
+    "answer_en": "Sustainability can be maintained by using sustainable methods and organic fertilizers and by conserving biodiversity."
+  },
+  {
+    "index": 20,
+    "faq_id": "8bafc19c-8a71-4d36-886e-24c4fcc9b642",
+    "question_en": "Why is the root system important when planting trees?",
+    "answer_en": "The root system anchors the plant in the soil and helps it absorb water and nutrients."
+  },
+  {
+    "index": 21,
+    "faq_id": "b60c2f41-60d5-44b8-951a-b9f6ab3abd80",
+    "question_en": "How does climate affect tree cultivation?",
+    "answer_en": "Climate affects plant growth and the plant's water and nutrient requirements."
+  },
+  {
+    "index": 22,
+    "faq_id": "2a4a41b5-9e4b-4dfe-aa6a-d7b6f557ae4f",
+    "question_en": "What is grafting, and how is it useful in tree cultivation?",
+    "answer_en": "Grafting joins two plants and is used to obtain improved genetic traits."
+  },
+  {
+    "index": 23,
+    "faq_id": "c461d3b1-8306-444f-a9c8-e8e3ed5e6d88",
+    "question_en": "Why is environmental conservation important in tree cultivation?",
+    "answer_en": "Environmental conservation protects biodiversity and promotes sustainable agriculture."
+  },
+  {
+    "index": 24,
+    "faq_id": "25faf80c-fbe3-4b40-8ad5-37d55c7c6a90",
+    "question_en": "Why is soil aeration important when planting trees?",
+    "answer_en": "Soil aeration supplies oxygen to roots and supports healthy growth."
+  },
+  {
+    "index": 25,
+    "faq_id": "09ba6c48-9cde-40ae-8509-d1130e8c3a1b",
+    "question_en": "What are the benefits of leaf compost when planting trees?",
+    "answer_en": "Leaf compost is a natural fertilizer that improves soil structure and reduces waste."
+  },
+  {
+    "index": 26,
+    "faq_id": "d476a071-96a2-48e6-85d9-5f25a74ea6e8",
+    "question_en": "How can biodiversity be conserved when planting trees?",
+    "answer_en": "It can be conserved by planting native species and reducing pesticide use."
+  },
+  {
+    "index": 27,
+    "faq_id": "83a6172f-781b-4d6d-a0ba-b838525f4a25",
+    "question_en": "What is intercropping in tree cultivation?",
+    "answer_en": "Intercropping means growing different types of crops together at the same time."
+  },
+  {
+    "index": 28,
+    "faq_id": "41e60388-dd1e-47a3-99da-6ae36d06fcde",
+    "question_en": "How should seasonal changes be managed when growing trees?",
+    "answer_en": "Adjust watering, fertilizing, and care practices according to the season."
+  },
+  {
+    "index": 29,
+    "faq_id": "ea4abf8a-cba3-40fb-9b1f-2a61f7124eea",
+    "question_en": "Why is moisture conservation important when planting trees?",
+    "answer_en": "Moisture conservation reduces a plant's water requirement and helps maintain soil health."
+  },
+  {
+    "index": 30,
+    "faq_id": "93148e38-d3b4-4a73-9fce-2015ffa5b445",
+    "question_en": "How does a water-supply system support tree cultivation?",
+    "answer_en": "It enables efficient water use and delivers the precise amount of water plants need."
+  },
+  {
+    "index": 31,
+    "faq_id": "39f4067d-0c06-4fe9-8958-c47c319ee427",
+    "question_en": "How can soil compaction be avoided when planting trees?",
+    "answer_en": "Designate walking paths, lightly cultivate the soil, and apply suitable mulch."
+  },
+  {
+    "index": 32,
+    "faq_id": "2596f904-b5ce-4fc4-ae2f-823c3f469382",
+    "question_en": "Why is pollination important in tree cultivation?",
+    "answer_en": "Pollination is essential for reproduction and seed production and is necessary for fruit set in some fruit trees."
+  },
+  {
+    "index": 33,
+    "faq_id": "e2ad9cbe-97fe-4e87-b63a-83dc49e4a1ae",
+    "question_en": "How can natural methods replace chemical pesticides in tree cultivation?",
+    "answer_en": "Chemical pesticides can be replaced with biological control, companion planting, and natural pesticides."
+  },
+  {
+    "index": 34,
+    "faq_id": "9ced8608-ee6b-4303-b693-42b31717783f",
+    "question_en": "What are the benefits of harvesting rainwater for tree cultivation?",
+    "answer_en": "Rainwater harvesting reduces water costs and provides a reserve source during water shortages."
+  },
+  {
+    "index": 35,
+    "faq_id": "be96d608-f187-4197-96ba-c0b382b3e92e",
+    "question_en": "How can cover crops be used to combat soil erosion in tree cultivation?",
+    "answer_en": "Cover crops protect the soil surface from erosion and also improve soil quality."
+  },
+  {
+    "index": 36,
+    "faq_id": "06904fdc-ba73-4397-ac32-1154596d68dd",
+    "question_en": "Why should native species be prioritized when planting trees?",
+    "answer_en": "Native species are better adapted to the local climate and environment and help conserve local biodiversity."
+  },
+  {
+    "index": 37,
+    "faq_id": "a4c645f8-92e7-4507-a775-d452cdb45f78",
+    "question_en": "What special measures are needed for growing trees in tropical climates?",
+    "answer_en": "Give special attention to water conservation, planting shade trees, and protecting the soil."
+  },
+  {
+    "index": 38,
+    "faq_id": "13f87991-d502-416b-a026-d921eb75aee4",
+    "question_en": "How can sustainable farming practices be applied in tree cultivation?",
+    "answer_en": "Sustainable farming can be practiced by using organic fertilizer, conserving water, and rotating crops."
+  },
+  {
+    "index": 39,
+    "faq_id": "fff227a9-654e-4cb5-ad47-2858dde5dc5c",
+    "question_en": "Which plants are suitable for cultivation in Myanmar?",
+    "answer_en": "Plants suitable for cultivation in Myanmar include rice, pulses, onion, chili, ginger, sesame, taro, and mango."
+  },
+  {
+    "index": 40,
+    "faq_id": "b67ba24b-96f9-418c-9ee3-659e10e740b7",
+    "question_en": "Which plants are recommended for hot-climate regions?",
+    "answer_en": "Plants that can be grown in hot-climate regions include mustard, tomato, bitter gourd, cucumber, and watermelon."
+  },
+  {
+    "index": 41,
+    "faq_id": "402b1e04-4edc-455c-9b70-9812d8327149",
+    "question_en": "Describe irrigation systems used for agriculture in Myanmar.",
+    "answer_en": "Systems used in Myanmar include surface irrigation, rainwater harvesting, and sprinkler irrigation. The appropriate system is selected according to local water availability."
+  },
+  {
+    "index": 42,
+    "faq_id": "988ba7f7-d46f-42f4-9c13-ff456837d5d1",
+    "question_en": "What are the recommendations for organic farming in Myanmar?",
+    "answer_en": "Recommendations include using organic fertilizer, rotating crops, managing pests biologically, and conserving soil. More organic products should be produced in response to market demand."
+  },
+  {
+    "index": 43,
+    "faq_id": "d6e61929-b9a6-4a57-8430-627a191069a6",
+    "question_en": "Discuss climate-resilient plant varieties in Myanmar.",
+    "answer_en": "Climate-resilient varieties include drought-tolerant rice, heat- and drought-tolerant pulses, and flood-tolerant vegetables. Growing these varieties can improve resilience to climate impacts."
+  },
+  {
+    "index": 44,
+    "faq_id": "1691140b-9d22-4101-95ca-01612a57ec95",
+    "question_en": "Explain agroforestry systems in Myanmar.",
+    "answer_en": "Agroforestry combines forestry and agriculture. In Myanmar, commercial crops such as coffee, banana, and toddy palm are grown with hardwood trees such as teak and padauk. This can increase income while conserving the environment."
+  },
+  {
+    "index": 45,
+    "faq_id": "ef4c218e-5e4c-4e2e-aa27-e8ea4f568d97",
+    "question_en": "Describe the use of hydroponic systems in Myanmar.",
+    "answer_en": "Hydroponics grows plants in water without soil. In Myanmar it is used for vegetables such as lettuce, basil, and tomato. The method is becoming more popular in urban areas because demand is higher and space is limited."
+  },
+  {
+    "index": 46,
+    "faq_id": "ca14fb46-ff70-4dfa-bc53-1661d6c70261",
+    "question_en": "How can traditional Myanmar agricultural knowledge be passed on to younger generations?",
+    "answer_en": "It can be passed on through village-based courses, practical field training, digital knowledge-sharing, and inclusion in school curricula."
+  },
+  {
+    "index": 47,
+    "faq_id": "56d849c7-92d3-4a10-b0f9-73f08314dd62",
+    "question_en": "What are the best places for indoor plants?",
+    "answer_en": "Suitable places include near windows, on desks, and in bedrooms, bathrooms, and kitchens. Choose a location according to its sunlight and humidity."
+  },
+  {
+    "index": 48,
+    "faq_id": "70aaadc6-4be5-4298-add3-cf7e233c6692",
+    "question_en": "List indoor plants that purify the air.",
+    "answer_en": "Air-purifying indoor plants include lemongrass, snake plant, and aloe vera. These plants can absorb and remove toxins from the air."
+  },
+  {
+    "index": 49,
+    "faq_id": "606c61d0-d99a-4504-b79d-fadb618257bf",
+    "question_en": "Which indoor plants are recommended for low-light locations?",
+    "answer_en": "Snake plant, ZZ plant, Chinese evergreen, and pothos can grow well in low-light conditions."
+  },
+  {
+    "index": 50,
+    "faq_id": "21fca25a-f01c-408d-b54a-98c359f495e3",
+    "question_en": "How should indoor plants be watered?",
+    "answer_en": "Check the soil moisture before watering and avoid overwatering. Some plants need water once a week and others once every two weeks. Bottom watering is best. Remember that water requirements change with the season."
+  },
+  {
+    "index": 51,
+    "faq_id": "84745a5b-ee87-4f6a-91da-b912d6d6ae24",
+    "question_en": "What soil types are suitable for indoor plants?",
+    "answer_en": "Suitable types include light, well-drained soil and mixes containing peat moss or perlite. Choose the soil according to the plant species."
+  },
+  {
+    "index": 52,
+    "faq_id": "89ded133-1154-4604-a626-9548b05bba18",
+    "question_en": "Which easy-care indoor plants are recommended?",
+    "answer_en": "Easy-care choices include snake plant, ZZ plant, pothos, spider plant, and dracaena. They can grow with regular watering and also have good disease tolerance."
+  },
+  {
+    "index": 53,
+    "faq_id": "14aecc55-6ded-44ed-9ebc-9d7fc8ff0ff1",
+    "question_en": "Describe common indoor-plant pests and diseases and their treatments.",
+    "answer_en": "Common problems include spider mites, aphids, mealybugs, and fungal diseases. Treatments include steam cleaning, wiping with alcohol, using natural pesticides, and removing damaged parts."
+  },
+  {
+    "index": 54,
+    "faq_id": "7e9174bc-5d42-4b4f-a7fc-38cc0ceb8341",
+    "question_en": "How can indoor plants be propagated?",
+    "answer_en": "Methods include stem cuttings, division, leaf cuttings, and seeds. Pothos and spider plant can be rooted in water, while snake plant can be grown from leaf cuttings. The appropriate method varies by plant species."
+  },
+  {
+    "index": 55,
+    "faq_id": "e366a974-ade2-4087-8f74-c51141f8c05e",
+    "question_en": "How should indoor plants be fed?",
+    "answer_en": "Use a fertilizer containing plant nutrients such as NPK. Nitrogen supports green leaves, phosphorus supports root growth, and potassium supports flowering. Organic or fish fertilizer may also be used. Follow the product directions."
+  },
+  {
+    "index": 56,
+    "faq_id": "e3c6f688-b69c-42a5-97dc-7295d0944b2b",
+    "question_en": "What types of pots are best for indoor plants?",
+    "answer_en": "Good options include clay pots, plastic pots, and wire baskets. Clay pots provide aeration and allow water to seep out, while plastic pots are light and easy to move. Every pot should have drainage holes."
+  },
+  {
+    "index": 57,
+    "faq_id": "b1a8dffe-fb76-4a2e-8606-d41e4ee12549",
+    "question_en": "Discuss flowering indoor plants.",
+    "answer_en": "Flowering indoor plants include orchids, peace lilies, and anthuriums. They beautify rooms and refresh the mind. They need adequate light, humidity, and nutrients to flower, and require more care to bloom regularly."
+  },
+  {
+    "index": 58,
+    "faq_id": "9ce4329f-c8e7-44d9-8919-0843adfb74ee",
+    "question_en": "How can indoor plants be protected from pests?",
+    "answer_en": "Inspect plants regularly, spray natural pesticide or soapy water, apply alcohol, or wash them with water. Natural treatments such as lemongrass oil or pepper solution can be effective. Keeping plants vigorous also helps prevent pests."
+  },
+  {
+    "index": 59,
+    "faq_id": "f0c467ef-9fee-400e-a14f-3b60b186dab7",
+    "question_en": "Explain how indoor plants produce oxygen.",
+    "answer_en": "When they receive light, indoor plants produce oxygen through photosynthesis. They take in carbon dioxide and water and convert them into oxygen and glucose."
+  },
+  {
+    "index": 60,
+    "faq_id": "09bc9c7f-2ea4-4ef6-bc58-e002f5a63935",
+    "question_en": "Which indoor plants produce the most oxygen?",
+    "answer_en": "Indoor plants with high oxygen production include lemongrass, snake plant, pothos, spider plant, and weeping fig. These plants have a high capacity to produce oxygen during both day and night."
+  },
+  {
+    "index": 61,
+    "faq_id": "3665ac8d-a13b-4fd3-8d77-9d850d634480",
+    "question_en": "Which oxygen-producing plants are suitable for bedrooms?",
+    "answer_en": "Suitable plants include lemongrass, snake plant, aloe vera, lavender, and jasmine. They can also produce oxygen at night and may support sleep."
+  },
+  {
+    "index": 62,
+    "faq_id": "66406dcd-e765-4cc6-ad3c-d8ad523f025a",
+    "question_en": "Compare oxygen production and carbon-dioxide absorption by indoor plants.",
+    "answer_en": "Indoor plants produce more oxygen when they receive light during the day, while carbon-dioxide uptake is slightly greater at night. Some plants can continue producing oxygen at night. Overall, indoor plants help purify the air."
+  },
+  {
+    "index": 63,
+    "faq_id": "2eda70f2-6b5e-4217-9459-1c9d503d3f16",
+    "question_en": "How can oxygen production by indoor plants be increased?",
+    "answer_en": "Provide adequate light, maintain a suitable temperature, supply necessary nutrients, keep leaves clean, and water regularly. Growing more plants can also increase the amount of oxygen."
+  },
+  {
+    "index": 64,
+    "faq_id": "d7cc5119-e8ea-44c3-b9fc-19b50e40e5f9",
+    "question_en": "How do plants improve indoor air quality?",
+    "answer_en": "Indoor plants improve air quality by producing oxygen, absorbing carbon dioxide, and removing toxins. They also regulate humidity and capture airborne particles."
+  },
+  {
+    "index": 65,
+    "faq_id": "fe926bf3-784d-403d-823e-1a41e64ba689",
+    "question_en": "Discuss the relationship between plant size and oxygen production.",
+    "answer_en": "Plant size and oxygen production are directly related: larger plants generally produce more oxygen because they have more leaf area. Some small plants, however, have high production rates and generate substantial oxygen for their size. Plant type as well as size should therefore be considered."
+  },
+  {
+    "index": 66,
+    "faq_id": "9165a72c-3723-484e-ac41-03c081442d7d",
+    "question_en": "What methods can measure oxygen production?",
+    "answer_en": "Methods include using an oxygen sensor, placing a plant under water and observing oxygen bubbles, and using a specialized laboratory gas analyzer. Scientific measurement requires specialized equipment."
+  },
+  {
+    "index": 67,
+    "faq_id": "029904b0-fae5-4295-b8d2-f9ec0fe4db6b",
+    "question_en": "How does oxygen from indoor plants affect human health?",
+    "answer_en": "Oxygen from indoor plants offers several health benefits, including improved circulation, reduced stress, better concentration, enhanced healing capacity, and improved sleep."
+  },
+  {
+    "index": 68,
+    "faq_id": "63116b9a-909f-40ef-ac0d-efe50269af4c",
+    "question_en": "Discuss how weather affects indoor plants and their oxygen production.",
+    "answer_en": "Weather affects oxygen production by indoor plants. More sunlight in summer can increase production, while less light and lower temperatures in winter can reduce it. Humidity also has an effect. Regulating indoor temperature and light can reduce seasonal impacts."
+  },
+  {
+    "index": 69,
+    "faq_id": "1c8d2985-39d3-41ac-907c-50252fb0b24e",
+    "question_en": "How should indoor plants with high oxygen-production rates be cared for?",
+    "answer_en": "Provide suitable light, water regularly, supply necessary nutrients, maintain temperature and humidity, and clean the plants regularly."
+  },
+  {
+    "index": 70,
+    "faq_id": "c69e87a5-ede9-4c42-ad7c-4d2f13eb23aa",
+    "question_en": "What is soil?",
+    "answer_en": "Soil is the surface layer of the Earth in which plants and other organisms live and grow. It contains rock, sand, silt, clay, organic remains, and chemical substances."
+  },
+  {
+    "index": 71,
+    "faq_id": "709282c6-c656-4a0c-82a1-8d2422f9c8ba",
+    "question_en": "Explain the importance of soil.",
+    "answer_en": "Soil is essential for plant growth, water storage, carbon storage, and biodiversity habitat. It is fundamental to agriculture, environmental conservation, and ecosystem stability."
+  },
+  {
+    "index": 72,
+    "faq_id": "c79f8154-c0b9-40fa-bfda-760c775aa599",
+    "question_en": "What are the main components of soil?",
+    "answer_en": "The main components are rock particles, sand, silt, clay, organic matter, water, air, and microorganisms."
+  },
+  {
+    "index": 73,
+    "faq_id": "e2cde544-6942-4418-ae43-6b1dc46ecbc8",
+    "question_en": "What does soil pH indicate?",
+    "answer_en": "Soil pH indicates its acidity or alkalinity. A pH of 7 is neutral; below 7 is acidic and above 7 is alkaline."
+  },
+  {
+    "index": 74,
+    "faq_id": "b06235e1-d802-45d9-a7e1-c0614ea12c76",
+    "question_en": "Explain the importance of nitrogen in soil.",
+    "answer_en": "Nitrogen is an essential nutrient for plant growth and biological processes. It is needed for green leaves, protein production, and DNA formation. Adequate soil nitrogen increases crop yields."
+  },
+  {
+    "index": 75,
+    "faq_id": "60c9b4fe-1a37-4b5e-a98e-180816d23114",
+    "question_en": "How can soil erosion be prevented?",
+    "answer_en": "Methods include crop rotation, row planting, reducing land clearing, covering the soil, and controlling land excavation."
+  },
+  {
+    "index": 76,
+    "faq_id": "58e5f8a0-913a-406b-9332-4f6d2486a656",
+    "question_en": "Explain the role of microorganisms in soil.",
+    "answer_en": "Soil microorganisms decompose organic remains, participate in the nitrogen cycle, and interact with plant roots. They also improve soil structure and chemical properties."
+  },
+  {
+    "index": 77,
+    "faq_id": "35d62e8d-dbc2-441f-a71f-7b620052609a",
+    "question_en": "What is soil texture?",
+    "answer_en": "Soil texture is the proportion of sand, silt, and clay in soil. It affects water absorption, nutrient retention, and aeration."
+  },
+  {
+    "index": 78,
+    "faq_id": "fe9568e4-523d-47f7-b331-9b169f1a4c36",
+    "question_en": "What are the benefits of soil conservation?",
+    "answer_en": "Benefits include higher crop yields, conservation of water resources, protection of biodiversity, increased carbon storage, mitigation of climate change, and flood control."
+  },
+  {
+    "index": 79,
+    "faq_id": "fdf35c2b-a2d3-4f68-bbba-159cfc305192",
+    "question_en": "Explain the importance of organic matter in soil.",
+    "answer_en": "Organic matter improves soil structure, retains water and nutrients, supplies energy to microorganisms, and increases carbon storage. It is vital to soil health and productivity."
+  },
+  {
+    "index": 80,
+    "faq_id": "2446b2e9-b9bc-49a5-bd24-8d63f1c8b6e1",
+    "question_en": "What problems are caused by soil salinity?",
+    "answer_en": "Soil salinity reduces plant water uptake, slows growth, yellows leaves, damages soil structure, reduces microorganism activity, and lowers crop yields."
+  },
+  {
+    "index": 81,
+    "faq_id": "945f1255-c31c-480c-b23e-ef69512223b1",
+    "question_en": "Explain the importance of soil drainage.",
+    "answer_en": "Good soil drainage removes excess water, improves aeration, supplies oxygen to roots, warms the soil, and promotes microorganism activity. It improves plant health and crop yields."
+  },
+  {
+    "index": 82,
+    "faq_id": "adf1da7d-e5ca-4e60-9fe2-ef5bd65d9784",
+    "question_en": "How can soil pollution be prevented?",
+    "answer_en": "Methods include reducing chemical pesticide and fertilizer use, using organic fertilizers, managing waste properly, treating industrial effluent, preventing oil spills, and conserving natural forests."
+  },
+  {
+    "index": 83,
+    "faq_id": "b186952e-392e-45c9-85fc-0b6d6ff4d283",
+    "question_en": "What is a soil amendment?",
+    "answer_en": "A soil amendment is a material added or a change made to improve the physical, chemical, or biological properties of soil. Examples include applying fertilizer or limestone and covering the soil with straw."
+  },
+  {
+    "index": 84,
+    "faq_id": "dbafba1f-f728-43c9-bb30-f4b6942d6b47",
+    "question_en": "Explain the role of phosphorus in soil.",
+    "answer_en": "Phosphorus is an essential plant nutrient. It supports root development, flowering and fruiting, photosynthesis, and energy production. Adequate soil phosphorus improves crop yield and quality."
+  },
+  {
+    "index": 85,
+    "faq_id": "da7d23b9-a122-4c0a-95a7-00fa5c9599e2",
+    "question_en": "List the main nutrients found in soil.",
+    "answer_en": "The main nutrients are nitrogen (N), phosphorus (P), potassium (K), calcium (Ca), magnesium (Mg), sulfur (S), iron (Fe), manganese (Mn), zinc (Zn), copper (Cu), boron (B), and molybdenum (Mo)."
+  },
+  {
+    "index": 86,
+    "faq_id": "6f876dd3-15fa-47a0-9079-27aa868d8ffa",
+    "question_en": "How can soil pH be adjusted?",
+    "answer_en": "Apply limestone or dolomite to acidic soil and sulfur to alkaline soil. Suitable fertilizers, crop rotation, and appropriate irrigation can also help adjust pH."
+  },
+  {
+    "index": 87,
+    "faq_id": "e8b9ac2b-4aea-47df-b102-9a95209b53e9",
+    "question_en": "Explain the importance of soil structure.",
+    "answer_en": "Soil structure describes how soil particles are arranged. Good structure improves water and air movement, supports root development, reduces erosion, and improves nutrient retention."
+  },
+  {
+    "index": 88,
+    "faq_id": "f1c99134-6954-4b18-bf63-06dbc822e01f",
+    "question_en": "Describe the role of potassium in soil.",
+    "answer_en": "Potassium is an essential plant nutrient. It supports water regulation, photosynthesis, protein production, disease resistance, and product quality. Adequate potassium increases crop yields."
+  },
+  {
+    "index": 89,
+    "faq_id": "b309f67f-e95d-4bd3-bdc9-8e967ae20458",
+    "question_en": "How can soil water-holding capacity be increased?",
+    "answer_en": "Add organic matter, mulch the soil, grow crops that improve soil structure, reduce tillage, and apply materials such as compost and biochar."
+  },
+  {
+    "index": 90,
+    "faq_id": "4f602919-dd57-4c88-8a4c-809f579d7648",
+    "question_en": "What are the signs of zinc deficiency in soil?",
+    "answer_en": "Signs include white spots on leaves, small leaves, abnormal new-leaf growth, slow plant growth, and yellowing leaf margins."
+  },
+  {
+    "index": 91,
+    "faq_id": "67e95819-a91f-45d7-9752-d31ccf561d06",
+    "question_en": "Explain the consequences of soil erosion.",
+    "answer_en": "Consequences include declining soil fertility, loss of farmland, pollution of water resources, more frequent flooding, loss of biodiversity, and worsening global warming."
+  },
+  {
+    "index": 92,
+    "faq_id": "49fe5487-a556-48e8-91fe-815806aef7dc",
+    "question_en": "Explain the role of calcium in soil.",
+    "answer_en": "Calcium is important for root and cell-wall development. It improves soil structure, regulates soil pH, supports uptake of other nutrients, and increases plant disease resistance."
+  },
+  {
+    "index": 93,
+    "faq_id": "6aaadb11-605e-4f3f-b2cb-65790209a497",
+    "question_en": "What causes soil acidification?",
+    "answer_en": "Causes include acid rain, excessive use of nitrogen fertilizers, nutrient removal through crop harvest, removal of natural vegetation, and some mining activities."
+  },
+  {
+    "index": 94,
+    "faq_id": "3109f022-8815-4741-a2d9-c20c94da7175",
+    "question_en": "How can soil quality be assessed?",
+    "answer_en": "Methods include measuring soil pH, testing nutrient and organic-matter content, examining soil structure and microorganism activity, and testing soil drainage."
+  },
+  {
+    "index": 95,
+    "faq_id": "9e0ca535-935f-4e2b-919b-ef4934f057ca",
+    "question_en": "Describe the importance of magnesium in soil.",
+    "answer_en": "Magnesium is central to chlorophyll. It is important for photosynthesis, protein production, cell-wall formation, and transport of other nutrients. Adequate magnesium improves plant growth and crop yield."
+  },
+  {
+    "index": 96,
+    "faq_id": "2c3ac182-3fc2-4c09-8664-5ed649ee4ddc",
+    "question_en": "Explain the role of sulfur in soil.",
+    "answer_en": "Sulfur is an essential plant nutrient involved in producing proteins and enzymes. It is needed to form certain vitamins, develop green color, and use nitrogen efficiently. Deficiency can reduce crop yield and quality."
+  },
+  {
+    "index": 97,
+    "faq_id": "4c3c1a37-9db8-4f5e-ac20-60e6af64e1b0",
+    "question_en": "How can soil compaction be prevented?",
+    "answer_en": "Reduce the use of heavy machinery, avoid working wet soil, rotate crops, grow deep-rooted crops, add organic matter, and mulch the soil."
+  },
+  {
+    "index": 98,
+    "faq_id": "2ee4ffdf-b6e9-4222-a404-d1a97e71b8c6",
+    "question_en": "What is soil erosion?",
+    "answer_en": "Soil erosion is the removal and movement of topsoil from one place to another by wind, water, or other natural forces. It occurs naturally but is often accelerated by human activity."
+  },
+  {
+    "index": 99,
+    "faq_id": "616e682c-4a47-4343-b336-592430b62704",
+    "question_en": "What are the main types of soil erosion?",
+    "answer_en": "The main types are water erosion, wind erosion, glacial erosion, mass movement, and human-caused or anthropogenic erosion."
+  },
+  {
+    "index": 100,
+    "faq_id": "96a8c363-ab01-4bd3-aa82-2b5727e5a513",
+    "question_en": "What causes soil erosion?",
+    "answer_en": "Causes include deforestation, inappropriate land use, excessive tillage, reduced soil cover, heavy rain, strong winds, poor irrigation, and overgrazing."
+  },
+  {
+    "index": 101,
+    "faq_id": "ba4dd8f6-e8d7-4b41-8ffc-227cbc0ce2ca",
+    "question_en": "Explain the consequences of soil erosion.",
+    "answer_en": "Consequences include declining soil fertility, loss of farmland, lower crop yields, pollution of water resources, more frequent flooding, loss of biodiversity, and worsening global warming."
+  },
+  {
+    "index": 102,
+    "faq_id": "71e4505f-7070-4f97-90f4-3bc497fd7634",
+    "question_en": "How can soil erosion be prevented?",
+    "answer_en": "Methods include crop rotation, cover cropping, row planting, reducing land clearing, mulching, constructing embankments, and planting trees."
+  },
+  {
+    "index": 103,
+    "faq_id": "acaaa861-f7ca-4bf7-80c7-122784298e1f",
+    "question_en": "What are the types of water erosion?",
+    "answer_en": "They are splash erosion, sheet erosion, rill erosion, gully erosion, and riverbank or bank erosion."
+  },
+  {
+    "index": 104,
+    "faq_id": "fcd971ee-31d9-4399-bec5-167ae8c2bef9",
+    "question_en": "How can wind erosion be controlled?",
+    "answer_en": "Plant windbreaks, mulch the soil, grow cover crops, divide fields into suitable sizes, build barriers to reduce wind speed, and maintain soil moisture."
+  },
+  {
+    "index": 105,
+    "faq_id": "dfef4c7f-4ad4-4b7e-ba6a-6c89109b66de",
+    "question_en": "How does mulching prevent soil erosion?",
+    "answer_en": "Mulching reduces direct raindrop impact and slows runoff. It retains soil moisture, reduces wind erosion, and regulates soil temperature, thereby supporting microorganism activity."
+  },
+  {
+    "index": 106,
+    "faq_id": "41854349-3f79-4d4a-98be-f5051791cd6f",
+    "question_en": "What methods can measure soil erosion?",
+    "answer_en": "Methods include weighing eroded soil, observing changes in landform, using photographs and satellite imagery, installing soil markers and runoff plots, and conducting field surveys."
+  },
+  {
+    "index": 107,
+    "faq_id": "44b67b0f-d138-48a2-bae8-1263c9f6ea87",
+    "question_en": "How does crop rotation reduce soil erosion?",
+    "answer_en": "Crop rotation improves soil structure and increases organic matter. It reduces susceptibility to erosion, improves moisture retention, and helps control pests, diseases, and weeds."
+  },
+  {
+    "index": 108,
+    "faq_id": "387adb26-6d50-4647-9b2a-e6f0f7b30aab",
+    "question_en": "What is contour farming?",
+    "answer_en": "Contour farming means planting crops along lines parallel to the contours of hillsides. It slows runoff, reduces soil erosion, and improves soil-moisture retention."
+  },
+  {
+    "index": 109,
+    "faq_id": "4a75261b-719a-4093-b082-90a77a396902",
+    "question_en": "What is cover cropping?",
+    "answer_en": "Cover cropping is the practice of planting secondary crops between cash-crop cycles to keep the soil covered."
+  },
+  {
+    "index": 110,
+    "faq_id": "bad04c83-a59f-420f-b363-70aef4eb4cf1",
+    "question_en": "Briefly explain plant diseases.",
+    "answer_en": "Plant diseases are conditions caused by pathogens, viruses, bacteria, or fungi that impair normal plant development and health. They can damage leaves, roots, stems, or fruit and significantly reduce crop yields."
+  },
+  {
+    "index": 111,
+    "faq_id": "c0810f97-5265-46c7-b8ac-8135e9056674",
+    "question_en": "List the types of plant disease.",
+    "answer_en": "Types include: 1. Fungal diseases, such as powdery mildew and rust; 2. Viral diseases, such as mosaic virus; 3. Bacterial diseases, such as leaf rot and dry-root disease; 4. Nematode diseases; and 5. Phytoplasma diseases."
+  },
+  {
+    "index": 112,
+    "faq_id": "1598b523-ecaf-4183-8d5e-75e31e086729",
+    "question_en": "Describe methods for preventing plant diseases.",
+    "answer_en": "Methods include: 1. Growing resistant varieties; 2. Using hygienic cultivation practices; 3. Irrigating and fertilizing appropriately; 4. Rotating crops; 5. Using disease-free seed; 6. Applying pesticides and fungicides; and 7. Using biological control."
+  },
+  {
+    "index": 113,
+    "faq_id": "16011551-18a3-411d-a3f1-3a13d98696cc",
+    "question_en": "Explain the symptoms of plant diseases.",
+    "answer_en": "Symptoms include: 1. Spots or discoloration on leaves; 2. Wilting or leaf drop; 3. Lesions on stems or branches; 4. Fruit rot or deformity; 5. Slow or abnormal shoot growth; and 6. Root rot or poor root development."
+  },
+  {
+    "index": 114,
+    "faq_id": "a4f5a835-4dd8-48f4-be4a-f1c06673ffb9",
+    "question_en": "Describe methods for diagnosing plant diseases.",
+    "answer_en": "Methods include: 1. Visual inspection; 2. Microscopic examination; 3. Laboratory tests such as ELISA and PCR; 4. Isolating and testing pathogens; 5. Biochemical methods; and 6. Reviewing disease history and environmental conditions."
+  },
+  {
+    "index": 115,
+    "faq_id": "9f00c6fe-f7a2-4ad5-8777-c85a834e5a93",
+    "question_en": "Describe methods for treating plant diseases.",
+    "answer_en": "Methods include: 1. Applying chemicals such as fungicides and pesticides; 2. Removing diseased plant parts; 3. Using biological control; 4. Applying plant tonics; 5. Adjusting irrigation and fertilization; and 6. Replacing plants with resistant varieties."
+  },
+  {
+    "index": 116,
+    "faq_id": "408d5f79-0eae-45e1-a4b9-dc7cbb6f3ee3",
+    "question_en": "Explain the economic impacts of plant diseases.",
+    "answer_en": "Impacts include: 1. Lower crop yields; 2. Reduced crop quality; 3. Higher prevention and treatment costs; 4. Higher agricultural-product prices; 5. Lower farmer income; and 6. Potential harm to food security."
+  },
+  {
+    "index": 117,
+    "faq_id": "0d12d1ca-8cda-490b-8709-a688f8e49d3d",
+    "question_en": "Which organizations conduct research on plant diseases?",
+    "answer_en": "They include: 1. Myanmar's Department of Agricultural Research; 2. Yezin Agricultural University; 3. The International Rice Research Institute (IRRI); 4. The American Phytopathological Society (APS); 5. The European Foundation for Plant Pathology (EFPP); and 6. The UN Food and Agriculture Organization (FAO)."
+  },
+  {
+    "index": 118,
+    "faq_id": "3e9e85ce-3bd0-4f1e-8ba9-c767c4fe54fd",
+    "question_en": "Describe the potential environmental impacts of plant diseases.",
+    "answer_en": "Impacts include: 1. Declining biodiversity; 2. Pollution from excessive chemical use; 3. Soil degradation; 4. Water pollution; 5. Fewer natural enemies and beneficial insects; and 6. Possible deforestation when farmland is abandoned."
+  },
+  {
+    "index": 119,
+    "faq_id": "c432e75c-a34a-43d7-ae0c-5c525f8d8ea7",
+    "question_en": "What is sesame phyllody disease?",
+    "answer_en": "A sesame plant has phyllody when green flowers appear in clusters at its tip instead of the normal white flowers. The deformed plant does not bear capsules, or its seeds fail to mature if capsules form. Such plants occur to varying degrees almost every year, although the causal organism cannot be seen with the naked eye. Sometimes the green capsules split open."
+  },
+  {
+    "index": 120,
+    "faq_id": "749c233e-b1d3-44c8-90d5-f7717700fb80",
+    "question_en": "Explain how and when sesame phyllody occurs.",
+    "answer_en": "The disease is caused when microscopic organisms called mycoplasmas infect the plant. Sap-feeding leafhoppers transmit it to healthy sesame plants. It is more common in pre-monsoon and early-planted sesame fields because farmers cannot plant every field before the monsoon, leaving fewer crop plants relative to the large leafhopper population."
+  },
+  {
+    "index": 121,
+    "faq_id": "bf36b354-77af-4122-bdd1-178128e10371",
+    "question_en": "Describe methods for preventing sesame phyllody.",
+    "answer_en": "Spray a systemic insecticide while sesame plants are young. Clear weeds that serve as alternative hosts for leafhoppers and uproot and remove infected plants. These measures can help prevent sesame phyllody."
+  },
+  {
+    "index": 122,
+    "faq_id": "6694625f-1782-4879-8b73-0ff6c1e534ef",
+    "question_en": "Describe the symptoms of rust disease.",
+    "answer_en": "Symptoms include: 1. Brown or red spots on leaves; 2. Spots enlarging and merging; 3. Leaves turning yellow and falling; 4. Slower plant growth; and 5. Possible plant death in severe cases."
+  },
+  {
+    "index": 123,
+    "faq_id": "6be8a96a-bcf3-41f2-b71c-e6083c1f5d92",
+    "question_en": "How can plant diseases be prevented?",
+    "answer_en": "Methods include: 1. Growing resistant varieties; 2. Using disease-free seed; 3. Rotating crops; 4. Removing plants likely to carry disease; 5. Applying suitable pesticides; and 6. Maintaining field hygiene."
+  },
+  {
+    "index": 124,
+    "faq_id": "263f45d9-80ac-4076-b357-5515f8bc18f2",
+    "question_en": "Describe the characteristics of mosaic virus disease.",
+    "answer_en": "Characteristics include: 1. Mottled green and yellow patches on leaves; 2. Distorted or undersized leaves; 3. Stunted plant growth; 4. Small or deformed fruit; and 5. Reduced yield."
+  },
+  {
+    "index": 125,
+    "faq_id": "127a3b6c-8f52-4593-bad2-b6e729af6d36",
+    "question_en": "Which bacteria cause leaf rot disease?",
+    "answer_en": "Leaf rot is commonly caused by bacteria such as Erwinia carotovora and Xanthomonas. They destroy plant tissues and cause leaves to rot. The disease is more common under high humidity."
+  },
+  {
+    "index": 126,
+    "faq_id": "51292611-4312-4e13-b728-cab332946f65",
+    "question_en": "Describe the cause, prevention, and treatment of dry-root disease.",
+    "answer_en": "Dry-root disease is caused by fungi such as Fusarium oxysporum. Measures include: 1. Growing resistant varieties; 2. Rotating crops; 3. Sanitizing the soil; 4. Improving drainage; 5. Applying fungicides; and 6. Using biological control."
+  },
+  {
+    "index": 127,
+    "faq_id": "8d6a5c7a-af25-49a9-a1cc-248aedf44e88",
+    "question_en": "How do nematode diseases affect plants?",
+    "answer_en": "They affect plants by: 1. Damaging roots; 2. Disrupting water and nutrient uptake; 3. Slowing growth; 4. Causing leaf yellowing and wilting; 5. Reducing yield; and 6. Creating entry points for other pathogens."
+  },
+  {
+    "index": 128,
+    "faq_id": "5e7a5d5e-ac1a-4ea2-9a24-0006867c44d9",
+    "question_en": "Describe the distinctive symptoms of phytoplasma diseases.",
+    "answer_en": "Symptoms include: 1. Yellow leaves; 2. Flowers turning green, or phyllody; 3. Excessive branching, or witches' broom; 4. Distorted leaves; 5. Abnormal plant growth; and 6. Small or absent fruit."
+  },
+  {
+    "index": 129,
+    "faq_id": "61229974-72d3-4a2b-ba22-bc05e3f29557",
+    "question_en": "List common diseases of groundnut.",
+    "answer_en": "Common diseases include: 1. Leaf spot; 2. Rust; 3. Root rot; 4. Stem rot; 5. Viral diseases such as peanut mottle virus; 6. Sclerotinia blight; and 7. Rosette disease."
+  },
+  {
+    "index": 130,
+    "faq_id": "66e1477b-69dc-4ef5-8f5f-1c8288e47755",
+    "question_en": "Describe diseases that occur in rice.",
+    "answer_en": "Rice diseases include: 1. Blast; 2. Bacterial blight; 3. Sheath blight; 4. Bakanae; 5. Stem rot; 6. Brown spot; 7. Leaf streak; and 8. Rice tungro virus disease."
+  },
+  {
+    "index": 131,
+    "faq_id": "0f51288f-9efb-4b5f-9ec9-cc96e9bc0ed2",
+    "question_en": "Describe rubber-tree diseases and their symptoms.",
+    "answer_en": "They include: 1. Leaf disease, which causes leaf spots; 2. Bark rot, which rots the bark and releases moisture; 3. Root rot, which rots roots and kills the tree; 4. Thread blight, which forms thread-like fungal growth on branches; and 5. Powdery mildew, which coats leaves with white powder."
+  },
+  {
+    "index": 132,
+    "faq_id": "464e8a26-9865-4cfe-8a25-7304ca76bf26",
+    "question_en": "What is cedar-apple rust?",
+    "answer_en": "Cedar-apple rust is a plant disease caused by the fungus Gymnosporangium juniperi-virginianae. It affects cedar and apple trees."
+  },
+  {
+    "index": 133,
+    "faq_id": "b3fc022c-d2fa-4e01-8dd7-3ed10a18b6c7",
+    "question_en": "Describe the symptoms of cedar-apple rust.",
+    "answer_en": "Symptoms include: 1. Brown fungal galls on cedar trees; 2. Orange spots on apple leaves; and 3. Brown spots on apples."
+  },
+  {
+    "index": 134,
+    "faq_id": "2afcda8c-305e-40f1-9265-06019b1f1339",
+    "question_en": "Explain the life cycle of cedar-apple rust.",
+    "answer_en": "The cycle is: 1. Fungal galls develop on cedar; 2. Spores emerge from the galls in spring; 3. Spores infect apple trees; 4. Symptoms appear on apple trees; and 5. The disease passes from apple trees back to cedar."
+  },
+  {
+    "index": 135,
+    "faq_id": "e7e1e1bf-e6cc-4000-9020-bc5fc9e5c750",
+    "question_en": "Describe methods for preventing cedar-apple rust.",
+    "answer_en": "Methods include: 1. Growing resistant apple varieties; 2. Separating cedar and apple trees; 3. Removing fungal galls from cedar; 4. Applying fungicides; and 5. Replacing cedar trees with other plants."
+  },
+  {
+    "index": 136,
+    "faq_id": "128d1f83-8876-4ea6-8c40-e7bbb98e7a71",
+    "question_en": "How does cedar-apple rust affect apple production?",
+    "answer_en": "It causes: 1. Lower apple quality; 2. Reduced apple yields; 3. Weaker apple trees; 4. Higher disease-control costs; and 5. Lower income for apple growers."
+  },
+  {
+    "index": 137,
+    "faq_id": "48064ddd-edeb-4cb8-b19e-996e30cb3886",
+    "question_en": "What environmental conditions favor cedar-apple rust?",
+    "answer_en": "Favorable conditions include: 1. High humidity in spring; 2. Temperatures of 10-20 degrees Celsius; 3. Cedar and apple trees growing close together; 4. Moderate winds; and 5. Adequate rainfall."
+  },
+  {
+    "index": 138,
+    "faq_id": "1d60fd24-41e6-469c-a8e0-53b7e035df2b",
+    "question_en": "How does the cedar-apple rust pathogen spread?",
+    "answer_en": "It spreads through: 1. Airborne spores; 2. Spores carried by rainwater; 3. Insect transport; 4. Movement of infected plant parts; and 5. Contaminated agricultural tools."
+  },
+  {
+    "index": 139,
+    "faq_id": "7152a154-f111-4443-a4ca-8c3451d70eba",
+    "question_en": "Which fungicides can be used to treat cedar-apple rust?",
+    "answer_en": "Fungicides include: 1. Myclobutanil; 2. Propiconazole; 3. Tebuconazole; 4. Captan; 5. Mancozeb; 6. Chlorothalonil; and 7. Ferbam. They may be used preventively before disease develops or when symptoms first appear."
+  },
+  {
+    "index": 140,
+    "faq_id": "63e2614c-061b-474a-997e-e681e0fe4cbc",
+    "question_en": "Which apple varieties are resistant to cedar-apple rust?",
+    "answer_en": "Resistant varieties include: 1. Liberty; 2. Enterprise; 3. Redfree; 4. Williams Pride; 5. GoldRush; 6. Pristine; 7. Sundance; 8. Freedom; 9. Jonafree; and 10. Nova Easygro. Growing these varieties can help prevent cedar-apple rust."
+  },
+  {
+    "index": 141,
+    "faq_id": "3cb84998-5b55-4d61-901a-7ff62dc88ad3",
+    "question_en": "Which parts of an apple tree can cedar-apple rust affect?",
+    "answer_en": "It can affect: 1. Leaves; 2. Fruit; 3. Flowers; 4. New shoots; and 5. Small branches. Severe disease can weaken the whole tree and may kill it."
+  },
+  {
+    "index": 142,
+    "faq_id": "5a9d691a-d97f-4034-a09d-463005053716",
+    "question_en": "Briefly describe the history of cedar-apple rust.",
+    "answer_en": "Its history includes: 1. First identification in 1867; 2. Discovery of its life cycle in 1880; 3. Major damage in the United States during the 1930s; 4. The start of breeding resistant apple varieties in the 1950s; and 5. Its continued importance as an agricultural disease today."
+  },
+  {
+    "index": 143,
+    "faq_id": "712af11e-e9c9-4226-8f05-0a8cdd4a08e8",
+    "question_en": "How can cedar-apple rust be monitored?",
+    "answer_en": "Methods include: 1. Regular field inspections; 2. Monitoring weather conditions; 3. Checking cedar trees for fungal galls; 4. Checking apple leaves for orange spots; and 5. Using disease-forecasting models."
+  },
+  {
+    "index": 144,
+    "faq_id": "7be24e7d-343a-48ec-83f2-16b1ce78e11c",
+    "question_en": "When does apple-cedar rust occur?",
+    "answer_en": "Apple-cedar rust is most common in spring and early summer."
+  },
+  {
+    "index": 145,
+    "faq_id": "e2654a50-d8e0-4de4-bb4d-afd9878f8253",
+    "question_en": "Explain the infection cycle of apple-cedar rust.",
+    "answer_en": "Apple-cedar rust begins in spring and continues throughout the summer."
+  },
+  {
+    "index": 146,
+    "faq_id": "dbcaa571-0974-4770-933f-5a2887e0bde6",
+    "question_en": "When is apple-cedar rust most damaging?",
+    "answer_en": "It is most damaging when apple trees are flowering and beginning to set fruit."
+  },
+  {
+    "index": 147,
+    "faq_id": "248c7653-0ed6-4c4b-b096-b995d6127834",
+    "question_en": "When should apple trees be inspected for apple-cedar rust?",
+    "answer_en": "Apple trees should be inspected regularly in spring and early summer."
+  },
+  {
+    "index": 148,
+    "faq_id": "3237c516-b151-4426-9841-5240aa60ca9f",
+    "question_en": "When should preventive action against apple-cedar rust begin?",
+    "answer_en": "Preventive spraying should begin before spring or in early spring."
+  },
+  {
+    "index": 149,
+    "faq_id": "d04e9353-4562-466a-a087-354c30785949",
+    "question_en": "When can the first symptoms of apple-cedar rust be detected?",
+    "answer_en": "The first symptoms can be seen from mid- to late spring."
+  },
+  {
+    "index": 150,
+    "faq_id": "8ec6effe-ffcf-4ffa-8225-7725496e1351",
+    "question_en": "When should apple-cedar rust be treated?",
+    "answer_en": "Begin treatment as soon as symptoms appear and continue it throughout the summer."
+  },
+  {
+    "index": 151,
+    "faq_id": "beeb56ba-1fac-4677-bdc2-8e9fc9ecb126",
+    "question_en": "When should pruning be done to prevent apple-cedar rust?",
+    "answer_en": "Pruning should be done in late winter or early spring."
+  },
+  {
+    "index": 152,
+    "faq_id": "c040dbbe-133a-440b-8691-933637130046",
+    "question_en": "When is the spread of apple-cedar rust pathogens at its peak?",
+    "answer_en": "Apple-cedar rust pathogens spread most extensively in early summer."
+  },
+  {
+    "index": 153,
+    "faq_id": "2a008ffc-b902-4ac0-8358-d7464b19d941",
+    "question_en": "Name the pathogen that causes rice neck blast disease.",
+    "answer_en": "Pyricularia oryzae."
+  },
+  {
+    "index": 154,
+    "faq_id": "2f526848-7067-4389-9d5f-cfe50d5368f4",
+    "question_en": "Describe the symptoms of rice neck blast disease.",
+    "answer_en": "The disease can begin in the nursery. Spindle-shaped lesions appear on rice leaves, and large lesions may develop gray centers. Lesions can merge and kill the leaves."
+  },
+  {
+    "index": 155,
+    "faq_id": "d08eab08-eade-40a1-9f7c-ffeffcdbfae2",
+    "question_en": "What happens when rice neck blast infects the panicle?",
+    "answer_en": "When the panicle is infected, brown lesions develop at the neck and it may break."
+  },
+  {
+    "index": 156,
+    "faq_id": "a564d9b3-d8c4-44dd-93d1-ce32e8776d13",
+    "question_en": "What happens when rice neck blast occurs before the milk stage?",
+    "answer_en": "If infection occurs before the milk stage, grain may not form. Empty panicles remain white and upright even before the crop matures."
+  },
+  {
+    "index": 157,
+    "faq_id": "624ffa7c-fa56-46ba-83a2-626004e428f2",
+    "question_en": "State the optimum and minimum temperatures for the spread of rice neck blast.",
+    "answer_en": "Disease spread is greatest at 20 degrees Celsius and lowest at 28 degrees Celsius."
+  },
+  {
+    "index": 158,
+    "faq_id": "2ac99fc1-de55-41c4-8cc4-570d232e824c",
+    "question_en": "How severe is the disease under low nighttime temperatures?",
+    "answer_en": "The disease also tends to be severe when nighttime temperatures are low."
+  },
+  {
+    "index": 159,
+    "faq_id": "f21c9e26-8ea3-42e3-9c46-18db12965cad",
+    "question_en": "How does keeping water continuously in a rice field affect the disease?",
+    "answer_en": "Keeping water continuously in the rice field helps prevent the disease, so dry-seeded rice is less resistant."
+  },
+  {
+    "index": 160,
+    "faq_id": "4c8b268c-1776-4f01-bccf-3b89ec96cf75",
+    "question_en": "What are the main factors causing the disease in tropical regions?",
+    "answer_en": "In tropical regions with little temperature variation, atmospheric humidity and dew formation are the main factors that cause disease."
+  },
+  {
+    "index": 161,
+    "faq_id": "c1b7ab05-1db2-4dbe-b34f-0b5571d8f7e2",
+    "question_en": "What variety-selection advice helps control rice neck blast?",
+    "answer_en": "Grow resistant varieties and use varieties with resistance suited to the local area."
+  },
+  {
+    "index": 162,
+    "faq_id": "f7129a9c-bb41-4dff-8ca5-1480dc57b2bf",
+    "question_en": "What cultivation practices help control rice neck blast?",
+    "answer_en": "Burn infected crop residues. Keep summer rice fields continuously flooded. Avoid planting in months with temperatures that favor neck blast, and do not plant too densely."
+  },
+  {
+    "index": 163,
+    "faq_id": "a4aee4b8-862f-44cb-96ca-b4610eed7c57",
+    "question_en": "Which chemicals can be used to control rice neck blast?",
+    "answer_en": "Treat seed with Homai 80%. Other products that may be used include azoxystrobin, isoprothiolane, tricyclazole, and thiophanate-methyl."
+  },
+  {
+    "index": 164,
+    "faq_id": "02298100-7b8d-41b5-afd2-0c26a0f10e80",
+    "question_en": "What are the main consequences of pesticide hazards?",
+    "answer_en": "The main consequences are health problems, environmental pollution, and loss of biodiversity."
+  },
+  {
+    "index": 165,
+    "faq_id": "b93d1ce4-c193-47bf-a891-65bf2f1f86d1",
+    "question_en": "List health problems that pesticides can cause.",
+    "answer_en": "Pesticides can cause skin and eye irritation, headaches, dizziness, vomiting, cancer, and reproductive problems."
+  },
+  {
+    "index": 166,
+    "faq_id": "f39d6f6e-aa40-4e33-9a6d-4a15db154b80",
+    "question_en": "Describe ways to reduce pesticide hazards.",
+    "answer_en": "Use natural methods and integrated pest management, choose safer pesticides, and reduce pesticide use."
+  },
+  {
+    "index": 167,
+    "faq_id": "fa38fe15-a8b7-47f7-b626-bbe8a74123fe",
+    "question_en": "How do pesticides harm the environment?",
+    "answer_en": "Pesticides pollute soil and water resources and can kill other organisms such as bees and birds. They can also cause biodiversity loss."
+  },
+  {
+    "index": 168,
+    "faq_id": "649ade96-b5c8-4505-95e0-1f49ef25fe0c",
+    "question_en": "Explain personal protective equipment (PPE) for preventing pesticide exposure.",
+    "answer_en": "Wear gloves, a mask, long-sleeved clothing and trousers, waterproof boots, goggles, and a respirator. PPE prevents direct contact with pesticides."
+  },
+  {
+    "index": 169,
+    "faq_id": "12a2957f-3c47-4cae-9d19-6e7b15b8c663",
+    "question_en": "Describe cropping practices that can reduce pesticide hazards.",
+    "answer_en": "Use crop rotation, mixed cropping, biological control, resistant plant varieties, and organic fertilizers."
+  },
+  {
+    "index": 170,
+    "faq_id": "9940f8cc-6702-47d6-b683-980ac747137a",
+    "question_en": "How do pesticide hazards affect consumers?",
+    "answer_en": "Consumers may experience health problems from eating food containing pesticide residues. Long-term effects can include chronic diseases, immune-system problems, and developmental disorders in children."
+  },
+  {
+    "index": 171,
+    "faq_id": "e0d2e49c-6a07-4497-bfd4-4f48bbc39876",
+    "question_en": "How should farmers be educated about pesticide hazards?",
+    "answer_en": "Provide training on pesticide hazards, distribute leaflets, conduct practical demonstrations, and teach safe-use methods."
+  },
+  {
+    "index": 172,
+    "faq_id": "f54baef0-4dcf-4141-a604-f0bfae245f93",
+    "question_en": "What should the government do to reduce pesticide hazards?",
+    "answer_en": "The government should enact laws controlling pesticide use, ban hazardous pesticides, promote organic agriculture, and educate farmers."
+  },
+  {
+    "index": 173,
+    "faq_id": "ac3ee39c-c448-4602-a381-16ebc32a0400",
+    "question_en": "Describe the long-term environmental impacts of pesticide hazards.",
+    "answer_en": "Long-term impacts can include declining biodiversity, poorer soil quality, polluted water resources, pesticide resistance in pests, and harm to food security."
+  },
+  {
+    "index": 174,
+    "faq_id": "24e791c4-7af2-4aa8-9bea-37d5a1fe0f69",
+    "question_en": "Describe the harmful effects of pesticides on human health.",
+    "answer_en": "Pesticides can cause lung disease, skin disease, cancer, reproductive-system problems, and damage to the nervous system."
+  },
+  {
+    "index": 175,
+    "faq_id": "87bdde1a-8ad6-4ccb-8c27-b02ea7f667ac",
+    "question_en": "List environmental damage that pesticides can cause.",
+    "answer_en": "Pesticides can cause soil degradation, water pollution, biodiversity loss, bee deaths, and fish poisoning."
+  }
+]
