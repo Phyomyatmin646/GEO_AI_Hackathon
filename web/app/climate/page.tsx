@@ -1,137 +1,107 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useLanguage } from "../lib/i18n";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, Cell } from "recharts";
 import Link from "next/link";
+import DataStatusCard from "../components/DataStatusCard";
+import { useLanguage } from "../lib/i18n";
+
+type LocalizedText = { en: string; my: string };
+
+type ClimateStatus = {
+  title: LocalizedText;
+  subtitle: LocalizedText;
+  weatherEvidence: {
+    status: LocalizedText;
+    description: LocalizedText;
+    sources: LocalizedText[];
+  };
+  climateChange: {
+    status: LocalizedText;
+    description: LocalizedText;
+    withheld: LocalizedText[];
+  };
+  disasterHistory: {
+    status: LocalizedText;
+    description: LocalizedText;
+  };
+};
 
 export default function ClimatePage() {
-  const { t, lang, setLang } = useLanguage();
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { lang, setLang, t } = useLanguage();
+  const [data, setData] = useState<ClimateStatus | null>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     fetch("/api/v1/climate")
-      .then(res => res.json())
-      .then(res => {
-        setData(res.climate);
-        setLoading(false);
-      });
+      .then((response) => {
+        if (!response.ok) throw new Error("Climate status request failed");
+        return response.json() as Promise<ClimateStatus>;
+      })
+      .then(setData)
+      .catch(() => setError(true));
   }, []);
 
-  if (loading || !data) {
+  const copy = (text: LocalizedText) => text[lang];
+
+  if (!data) {
     return (
-      <div className="min-h-screen bg-[#f7f6f2] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-700"></div>
+      <div className="min-h-screen bg-[#f7f6f2] flex items-center justify-center p-8 text-center text-slate-600">
+        {error
+          ? (lang === "en" ? "Climate evidence status could not be loaded." : "ရာသီဥတု အထောက်အထား အခြေအနေကို မတင်နိုင်ပါ။")
+          : (lang === "en" ? "Loading climate evidence status…" : "ရာသီဥတု အထောက်အထား အခြေအနေကို တင်နေသည်…")}
       </div>
     );
   }
 
-  // Calculate disasters list
-  const allDisasters = data.flatMap((d: any) => d.disasters || []).sort((a: any, b: any) => b.year - a.year);
-
   return (
-    <div className="min-h-screen bg-[#f7f6f2] text-slate-800 p-8 font-sans">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
+    <main className="min-h-screen bg-[#f7f6f2] p-8 font-sans text-slate-800">
+      <div className="mx-auto max-w-5xl">
+        <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-emerald-900 tracking-tight">Climate & Disaster Risk</h1>
-            <p className="text-slate-500 mt-2">National Weather Trends and Vulnerability to Natural Disasters</p>
+            <h1 className="text-4xl font-bold tracking-tight text-emerald-900">{copy(data.title)}</h1>
+            <p className="mt-2 max-w-3xl text-slate-600">{copy(data.subtitle)}</p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setLang(lang === "en" ? "my" : "en")}
-              className="bg-emerald-800 text-white px-4 py-2 rounded shadow hover:bg-emerald-700 transition"
+              className="rounded bg-emerald-800 px-4 py-2 text-white shadow transition hover:bg-emerald-700"
+              aria-label={lang === "en" ? t.dashboard.languageSwitchToMyanmar : t.dashboard.languageSwitchToEnglish}
             >
               {lang === "en" ? "မြန်မာ" : "English"}
             </button>
-            <Link href="/" className="text-emerald-700 font-medium hover:underline">
-              &larr; Back to Map
+            <Link href="/macro" className="rounded bg-emerald-50 px-4 py-2 font-medium text-emerald-800 hover:underline">
+              {lang === "en" ? "Macro & trade" : "စီးပွားရေးနှင့် ကုန်သွယ်မှု"}
+            </Link>
+            <Link href="/" className="font-medium text-emerald-700 hover:underline">
+              {lang === "en" ? "← Back to map" : "← မြေပုံသို့ ပြန်သွားမည်"}
             </Link>
           </div>
+        </header>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <DataStatusCard
+            title={lang === "en" ? "Regional weather evidence" : "ဒေသအလိုက် ရာသီဥတု အထောက်အထား"}
+            status={copy(data.weatherEvidence.status)}
+            description={copy(data.weatherEvidence.description)}
+            items={data.weatherEvidence.sources.map(copy)}
+            tone="available"
+          />
+          <DataStatusCard
+            title={lang === "en" ? "Climate-change analysis" : "ရာသီဥတုပြောင်းလဲမှု ခွဲခြမ်းစိတ်ဖြာချက်"}
+            status={copy(data.climateChange.status)}
+            description={copy(data.climateChange.description)}
+            items={data.climateChange.withheld.map(copy)}
+          />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Temperature Anomaly Chart */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100/50">
-            <h2 className="text-xl font-semibold mb-4 text-slate-700">Temperature Anomaly (°C)</h2>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0"/>
-                  <XAxis dataKey="year" tickFormatter={(tick) => tick.toString()} />
-                  <YAxis />
-                  <Tooltip formatter={(val: number) => [`${val > 0 ? '+' : ''}${val.toFixed(2)}°C`, "Temp Anomaly"]} />
-                  <Bar dataKey="temp_anomaly_c" name="Temp Anomaly vs 2000 Baseline">
-                    {data.map((entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={entry.temp_anomaly_c > 0 ? '#ef4444' : '#3b82f6'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            <p className="text-xs text-slate-400 mt-2 italic">Myanmar has seen consistent temperature increases over the last two decades.</p>
-          </div>
-
-          {/* Precipitation Chart */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100/50">
-            <h2 className="text-xl font-semibold mb-4 text-slate-700">Annual Precipitation (mm)</h2>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0"/>
-                  <XAxis dataKey="year" tickFormatter={(tick) => tick.toString()} />
-                  <YAxis domain={['auto', 'auto']} />
-                  <Tooltip formatter={(val: number) => [`${val} mm`, "Precipitation"]} />
-                  <Legend />
-                  <Line type="monotone" dataKey="annual_precipitation_mm" stroke="#0ea5e9" strokeWidth={2} dot={{r: 3}} name="Annual Rainfall" />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-            <p className="text-xs text-slate-400 mt-2 italic">Notice the high volatility, indicating higher risks of both floods and droughts.</p>
-          </div>
+        <div className="mt-6">
+          <DataStatusCard
+            title={lang === "en" ? "Disaster history" : "သဘာဝဘေး ဖြစ်ရပ်မှတ်တမ်း"}
+            status={copy(data.disasterHistory.status)}
+            description={copy(data.disasterHistory.description)}
+          />
         </div>
-
-        {/* Disaster Logs */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100/50">
-          <h2 className="text-xl font-semibold mb-6 text-slate-700">Major Natural Disasters History</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="pb-3 font-semibold text-slate-500">Year</th>
-                  <th className="pb-3 font-semibold text-slate-500">Event</th>
-                  <th className="pb-3 font-semibold text-slate-500">Type</th>
-                  <th className="pb-3 font-semibold text-slate-500">Severity</th>
-                  <th className="pb-3 font-semibold text-slate-500">Agri Damage (USD)</th>
-                  <th className="pb-3 font-semibold text-slate-500">Affected Regions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allDisasters.map((disaster: any, idx: number) => (
-                  <tr key={idx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition">
-                    <td className="py-3 font-medium text-slate-700">{disaster.year}</td>
-                    <td className="py-3 text-slate-800">{disaster.event}</td>
-                    <td className="py-3">
-                      {disaster.type === 'Cyclone' && <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">Cyclone</span>}
-                      {disaster.type === 'Flood' && <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">Flood</span>}
-                      {disaster.type === 'Drought' && <span className="inline-block px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold">Drought</span>}
-                    </td>
-                    <td className="py-3">
-                      {disaster.severity === 'Extreme' && <span className="text-red-600 font-semibold">Extreme</span>}
-                      {disaster.severity === 'High' && <span className="text-orange-500 font-semibold">High</span>}
-                      {disaster.severity === 'Medium' && <span className="text-yellow-600 font-semibold">Medium</span>}
-                    </td>
-                    <td className="py-3 text-slate-600">${(disaster.agri_damage_usd / 1_000_000).toFixed(0)}M</td>
-                    <td className="py-3 text-slate-500 text-xs">{disaster.affected_regions.join(", ")}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
       </div>
-    </div>
+    </main>
   );
 }

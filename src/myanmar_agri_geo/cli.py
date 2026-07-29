@@ -16,6 +16,9 @@ from .resources import write_collabhub_resource_audit, write_external_feature_ma
 from .soilgrids import write_vrt_source_manifest
 
 
+MAX_EXPORT_TASKS_PER_SUBMISSION = 24
+
+
 def _next_month_string(value: str) -> str:
     year, month = (int(part) for part in value.split("-"))
     if month == 12:
@@ -34,6 +37,7 @@ def _gee_config(config: dict[str, Any]) -> Any:
     from .gee_backend import DatasetIds, GEEConfig
 
     sources = config["sources"]
+    climate_context = config.get("climate_context", {})
     defaults = DatasetIds()
     datasets = DatasetIds(
         gaul_level0=sources.get("fao_gaul_level0", defaults.gaul_level0),
@@ -61,6 +65,13 @@ def _gee_config(config: dict[str, Any]) -> Any:
             config["earth_engine"].get("sampling_geometry", "centroid")
         ),
         include_admin1=bool(config["earth_engine"].get("include_admin1", False)),
+        include_climate_context=bool(climate_context.get("enabled", False)),
+        climate_baseline_start_year=int(
+            climate_context.get("baseline_start_year", 1991)
+        ),
+        climate_baseline_end_year=int(
+            climate_context.get("baseline_end_year", 2020)
+        ),
     )
 
 
@@ -187,7 +198,55 @@ def command_gee_export(args: argparse.Namespace) -> int:
     config, _ = _load_resolved(args.config)
     start = args.start or config["project"]["start_month"]
     end_exclusive = args.end or _next_month_string(config["project"]["end_month"])
-    months = months_inclusive(start, _previous_month_string(end_exclusive))
+    configured_start = config["project"]["start_month"]
+    configured_end = config["project"]["end_month"]
+    if end_exclusive <= start:
+        raise SystemExit(
+            "Earth Engine export end month is exclusive and must be later "
+            "than the start month."
+        )
+    selected_end = _previous_month_string(end_exclusive)
+    if start < configured_start or selected_end > configured_end:
+        raise SystemExit(
+            "Refusing to export months outside this release contract. "
+            f"Configured period is {configured_start} through {configured_end}; "
+            f"requested period is {start} through {selected_end}. Create a new "
+            "versioned config for a wider period."
+        )
+    configured_admin1 = config["earth_engine"].get("admin1_scope")
+    admin1_scope = args.admin1 or configured_admin1
+    release_scope = config["project"].get("scope_admin1")
+    if release_scope and args.admin1 and args.admin1 != configured_admin1:
+        raise SystemExit(
+            "Refusing an ADM1 override that disagrees with this regional "
+            f"release contract. Configured export scope is "
+            f"{configured_admin1!r}; requested scope is {args.admin1!r}."
+        )
+    if release_scope and args.prefix:
+        normalized_scope = "".join(
+            character.casefold()
+            for character in str(release_scope)
+            if character.isalnum()
+        )
+        normalized_prefix = "".join(
+            character.casefold()
+            for character in args.prefix
+            if character.isalnum()
+        )
+        if normalized_scope not in normalized_prefix:
+            raise SystemExit(
+                "Refusing an export prefix that omits this regional release "
+                f"scope {release_scope!r}. Task filenames are part of the "
+                "raw-input provenance guard."
+            )
+    if release_scope and not admin1_scope:
+        raise SystemExit(
+            "Refusing to submit a nationwide export from a regional release "
+            "config. Set earth_engine.admin1_scope to an exact FAO GAUL "
+            "ADM1_NAME, pass --admin1, or use separate part configs for a "
+            "composite region such as Bago."
+        )
+    months = months_inclusive(start, selected_end)
     tile_ids = args.tile_ids or None
     feature_set = args.feature_set or config["earth_engine"].get("feature_set", "split")
     if feature_set not in {"split", "all", "dynamic", "static"}:
@@ -199,12 +258,15 @@ def command_gee_export(args: argparse.Namespace) -> int:
         else 0
     )
     static_task_count = spatial_shards if feature_set in {"split", "static"} else 0
+    climate_enabled = bool(
+        config.get("climate_context", {}).get("enabled", False)
+    )
     preflight = {
         "start_month": start,
         "end_month_exclusive": end_exclusive,
         "months": len(months),
         "tile_ids": tile_ids,
-        "admin1_scope": args.admin1,
+        "admin1_scope": admin1_scope,
         "feature_set": feature_set,
         "sampling_geometry": config["earth_engine"].get(
             "sampling_geometry", "centroid"
@@ -212,9 +274,24 @@ def command_gee_export(args: argparse.Namespace) -> int:
         "monthly_task_count": monthly_task_count,
         "static_task_count": static_task_count,
         "task_count": monthly_task_count + static_task_count,
+        "submission_task_limit": MAX_EXPORT_TASKS_PER_SUBMISSION,
         "destination": args.destination,
         "drive_folder": args.folder or config["earth_engine"]["drive_folder"],
         "use_gee_community_soilgrids": bool(config["soilgrids"].get("use_gee_community_assets", True)),
+        "climate_context": {
+            "enabled": climate_enabled,
+            "baseline_period": (
+                f"{config.get('climate_context', {}).get('baseline_start_year', 1991)}-"
+                f"{config.get('climate_context', {}).get('baseline_end_year', 2020)}"
+                if climate_enabled
+                else None
+            ),
+            "interpretation": (
+                "historical_context_not_attribution_forecast_or_projection"
+                if climate_enabled
+                else "not_requested"
+            ),
+        },
         "will_start_tasks": bool(args.start_tasks),
     }
     if args.dry_run:
@@ -222,6 +299,15 @@ def command_gee_export(args: argparse.Namespace) -> int:
         return 0
     if not args.start_tasks:
         raise SystemExit("Refusing a non-persistent task creation. Re-run with --start-tasks after --dry-run.")
+    if preflight["task_count"] > MAX_EXPORT_TASKS_PER_SUBMISSION:
+        raise SystemExit(
+            "Refusing an oversized Earth Engine submission containing "
+            f"{preflight['task_count']} tasks. Submit at most "
+            f"{MAX_EXPORT_TASKS_PER_SUBMISSION} tasks at a time by using a "
+            "versioned regional config plus bounded --start/--end periods. "
+            "Export static features once, then submit dynamic months in "
+            "separate batches."
+        )
     if args.destination == "gcs" and not args.bucket:
         raise SystemExit("--bucket is required for --destination gcs")
 
@@ -237,9 +323,9 @@ def command_gee_export(args: argparse.Namespace) -> int:
     gee_config = _gee_config(config)
     region = (
         get_myanmar_admin1_region(
-            args.admin1, ee_module=ee, datasets=gee_config.datasets
+            admin1_scope, ee_module=ee, datasets=gee_config.datasets
         )
-        if args.admin1
+        if admin1_scope
         else None
     )
     grid = create_5km_grid(region, config=gee_config, ee_module=ee)
@@ -333,6 +419,9 @@ def command_validate(args: argparse.Namespace) -> int:
         min_usable_row_fraction=float(
             config["quality"].get("min_usable_row_fraction", 1.0)
         ),
+        require_climate_context=bool(
+            config.get("climate_context", {}).get("enabled", False)
+        ),
         start_year_month=config["project"]["start_month"],
         end_year_month=config["project"]["end_month"],
     )
@@ -367,6 +456,8 @@ def command_validate_observed_labels(args: argparse.Namespace) -> int:
         max_latitude=float(config["quality"]["max_latitude"]),
         min_longitude=float(config["quality"]["min_longitude"]),
         max_longitude=float(config["quality"]["max_longitude"]),
+        grid_size_m=int(config["project"]["grid_size_m"]),
+        grid_crs=str(config["project"]["grid_crs"]),
     )
     print(json.dumps(report, indent=2, ensure_ascii=False))
     return 0 if report["valid"] else 1

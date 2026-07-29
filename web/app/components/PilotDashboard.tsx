@@ -1,13 +1,25 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GridCell } from "../lib/pilot-data";
 import { useLanguage } from "../lib/i18n";
+import {
+  localizeBilingualLabel,
+  localizeBilingualNarrative,
+  localizeFactor,
+  localizeUnit,
+  localizeRegion,
+} from "../lib/localization";
+
+function MapLoading() {
+  const { t } = useLanguage();
+  return <div className="map-loading">{t.dashboard.mapLoading}</div>;
+}
 
 const GeoMap = dynamic(() => import("./GeoMap"), {
   ssr: false,
-  loading: () => <div className="map-loading">Loading map...</div>,
+  loading: () => <MapLoading />,
 });
 import { CROP_COLORS } from "../lib/colors";
 import Link from "next/link";
@@ -35,6 +47,7 @@ type ApiPayload = {
     scoredCellCount: number;
     abstainedCellCount: number;
     usableCellCount: number;
+    configuredCrops: string[];
     grid: {
       crs: string;
       sizeM: number;
@@ -58,18 +71,31 @@ type ApiPayload = {
 
 type ReviewVerdict = "agree" | "uncertain" | "disagree";
 
-const numberFormatter = new Intl.NumberFormat("en-US");
+const CLIMATE_FEATURE_IDS = new Set([
+  "rainfall_normal_1991_2020_mm",
+  "rainfall_anomaly_1991_2020_mm",
+  "rainfall_anomaly_1991_2020_pct",
+  "temperature_normal_1991_2020_c",
+  "temperature_anomaly_1991_2020_c",
+]);
+const WEATHER_FEATURE_IDS = new Set([
+  "monthly_rainfall_mm",
+  "mean_temperature_c",
+  "solar_radiation_mj_m2_day",
+  "era5_soil_moisture_m3_m3",
+]);
 
-function shortHash(value?: string) {
-  if (!value) return "not published";
+function shortHash(value: string | undefined, notPublished: string) {
+  if (!value) return notPublished;
   return `${value.slice(0, 12)}…${value.slice(-8)}`;
 }
 
 function formatFeatureValue(
   value: string | number | boolean | null,
   unit: string,
+  missing: string,
 ) {
-  if (value === null) return "မရှိ / missing";
+  if (value === null) return missing;
   if (typeof value !== "number") return `${String(value)}${unit ? ` ${unit}` : ""}`;
   const absolute = Math.abs(value);
   const decimals = absolute >= 100 ? 1 : absolute >= 10 ? 2 : 3;
@@ -84,15 +110,29 @@ export function PilotDashboard() {
   const [verdict, setVerdict] = useState<ReviewVerdict>("uncertain");
   const [reviewNote, setReviewNote] = useState("");
   const [reviewSaved, setReviewSaved] = useState(false);
-  const [loadError, setLoadError] = useState("");
+  const [loadError, setLoadError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const requestSequence = useRef(0);
   const { lang, setLang, t } = useLanguage();
+  const numberFormatter = useMemo(
+    () => new Intl.NumberFormat(lang === "my" ? "my-MM" : "en-US"),
+    [lang],
+  );
+  const cropName = (crop: { nameMm: string; nameEn: string }) =>
+    lang === "my" ? crop.nameMm : crop.nameEn;
 
-  const loadPilot = useCallback(async (selectedRegion: string) => {
+  const loadPilot = useCallback(async (
+    selectedRegion: string,
+    signal?: AbortSignal,
+  ) => {
+    const requestId = ++requestSequence.current;
     setLoading(true);
-    setLoadError("");
+    setLoadError(false);
     try {
-      const response = await fetch(`/api/v1/cells?limit=2000&region=${selectedRegion}`);
+      const response = await fetch(
+        `/api/v1/cells?limit=5000&region=${selectedRegion}`,
+        { signal },
+      );
       if (!response.ok) {
         throw new Error(`Pilot API returned ${response.status}`);
       }
@@ -100,6 +140,13 @@ export function PilotDashboard() {
       if (!Array.isArray(value.cells) || !value.meta?.releaseId) {
         throw new Error("Pilot API response did not match the expected contract");
       }
+      if (
+        value.meta.region.trim().toLocaleLowerCase("en") !==
+        selectedRegion.trim().toLocaleLowerCase("en")
+      ) {
+        throw new Error("Pilot API returned a different regional release");
+      }
+      if (signal?.aborted || requestId !== requestSequence.current) return;
       setPayload(value);
       setSelectedId((current) =>
         value.cells.some((cell) => cell.id === current)
@@ -109,14 +156,30 @@ export function PilotDashboard() {
             ""),
       );
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : "Pilot data could not be loaded");
+      if (
+        signal?.aborted ||
+        (error instanceof DOMException && error.name === "AbortError") ||
+        requestId !== requestSequence.current
+      ) {
+        return;
+      }
+      setLoadError(true);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted && requestId === requestSequence.current) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
-    void loadPilot(region);
+    const controller = new AbortController();
+    const loadTimer = window.setTimeout(() => {
+      void loadPilot(region, controller.signal);
+    }, 0);
+    return () => {
+      window.clearTimeout(loadTimer);
+      controller.abort();
+    };
   }, [loadPilot, region]);
 
   const selectedCell = useMemo(
@@ -176,7 +239,7 @@ export function PilotDashboard() {
         <div className="state-card error-card" role="alert">
           <span className="state-symbol" aria-hidden="true">!</span>
           <h1>{t.error.title}</h1>
-          <p>{loadError || t.error.description}</p>
+          <p>{t.error.description}</p>
           <button type="button" onClick={() => void loadPilot(region)}>
             {t.error.retry}
           </button>
@@ -197,6 +260,25 @@ export function PilotDashboard() {
       artifact.name.includes("source_manifest"),
     )?.sha256;
   const isAbstained = selectedCell.recommendationStatus === "insufficient_evidence";
+  const uncertaintyLabel = {
+    low: t.dashboard.uncertaintyLow,
+    medium: t.dashboard.uncertaintyMedium,
+    high: t.dashboard.uncertaintyHigh,
+  }[selectedCell.uncertainty];
+  const recommendationStatusLabel = isAbstained
+    ? t.dashboard.statusInsufficient
+    : t.dashboard.statusScored;
+  const climateFeatures = selectedCell.features.filter((feature) =>
+    CLIMATE_FEATURE_IDS.has(feature.id),
+  );
+  const weatherFeatures = selectedCell.features.filter((feature) =>
+    WEATHER_FEATURE_IDS.has(feature.id),
+  );
+  const otherFeatures = selectedCell.features.filter(
+    (feature) =>
+      !CLIMATE_FEATURE_IDS.has(feature.id) &&
+      !WEATHER_FEATURE_IDS.has(feature.id),
+  );
 
   return (
     <main className="app-shell">
@@ -212,11 +294,12 @@ export function PilotDashboard() {
           <button 
             onClick={() => setLang(lang === "en" ? "my" : "en")}
             className="text-sm border px-2 py-1 rounded"
+            aria-label={lang === "en" ? t.dashboard.languageSwitchToMyanmar : t.dashboard.languageSwitchToEnglish}
           >
             {lang === "en" ? "မြန်မာ" : "English"}
           </button>
           <span className="status-dot" aria-hidden="true" />
-          <span>Real pilot API · QA {payload.meta.qa.valid ? "passed" : "failed"}</span>
+          <span>{t.dashboard.pilotApiStatus} {payload.meta.qa.valid ? t.dashboard.qaPassed : t.dashboard.qaFailed}</span>
         </div>
       </header>
 
@@ -224,26 +307,30 @@ export function PilotDashboard() {
         <section className="hero">
           <div>
             <p className="eyebrow flex items-center gap-2">
-              Explainable GeoAI · 
+              {t.dashboard.geoAiPilot} ·
               <select 
                 value={region} 
                 onChange={(e) => setRegion(e.target.value)}
                 className="bg-gray-100 border rounded px-2 py-1 text-sm font-semibold text-slate-800"
+                aria-label={t.dashboard.regionFilterAria}
               >
-                <option value="ayeyawaddy">Ayeyawaddy</option>
-                <option value="sagaing">Sagaing</option>
-                <option value="mandalay">Mandalay</option>
-                <option value="bago">Bago</option>
-                <option value="magway">Magway</option>
+                <option value="ayeyawaddy">{t.dashboard.regionAyeyawaddy}</option>
+                <option value="sagaing">{t.dashboard.regionSagaing}</option>
+                <option value="mandalay">{t.dashboard.regionMandalay}</option>
+                <option value="bago">{t.dashboard.regionBago}</option>
+                <option value="magway">{t.dashboard.regionMagway}</option>
               </select>
-              real pilot
+              {t.dashboard.realPilot}
             </p>
             <div className="flex gap-4 items-center mb-6">
               <Link href="/macro" className="flex items-center gap-2 bg-emerald-50 text-emerald-800 px-4 py-2 rounded-lg font-medium shadow-sm hover:bg-emerald-100 transition border border-emerald-200">
-                📊 {t.cell.macro.title}
+                📊 {t.dashboard.macroLink}
               </Link>
               <Link href="/climate" className="flex items-center gap-2 bg-amber-50 text-amber-800 px-4 py-2 rounded-lg font-medium shadow-sm hover:bg-amber-100 transition border border-amber-200">
-                🌩 {lang === "en" ? "Climate & Disasters" : "ရာသီဥတုနှင့် သဘာဝဘေး"}
+                🌩 {t.dashboard.climateLink}
+              </Link>
+              <Link href="/faq" className="flex items-center gap-2 bg-blue-50 text-blue-800 px-4 py-2 rounded-lg font-medium shadow-sm hover:bg-blue-100 transition border border-blue-200">
+                ? {t.dashboard.faqLink}
               </Link>
             </div>
             <h1>
@@ -259,7 +346,7 @@ export function PilotDashboard() {
           </aside>
         </section>
 
-        <section className="metric-strip" aria-label="Real pilot summary">
+        <section className="metric-strip" aria-label={t.dashboard.summaryAria}>
           <div className="metric">
             <span className="metric-value">{numberFormatter.format(payload.meta.rowCount)}</span>
             <span className="metric-label">{t.dashboard.metricCells}</span>
@@ -278,19 +365,22 @@ export function PilotDashboard() {
           </div>
         </section>
 
-        <section className="workspace" aria-label="Interactive crop screening workspace">
+        <section className="workspace" aria-label={t.dashboard.workspaceAria}>
           <div className="map-panel">
             <div className="map-toolbar">
-              <strong>{payload.meta.region} · {selectedCell.month}</strong>
+              <strong>{localizeRegion(payload.meta.region, lang)} · {selectedCell.month}</strong>
               <span>
                 {payload.meta.grid.sizeM / 1000} {t.dashboard.mapToolbar}
               </span>
             </div>
-            <div className="map-legend" aria-label="Map legend" style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+            <div className="map-legend" aria-label={t.dashboard.mapLegendAria} style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
               {Array.from(new Set(payload.cells.map(c => c.recommendations[0]?.id).filter(Boolean))).map(cropId => (
                 <span key={cropId} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.85rem", color: "#4b5563" }}>
                   <i style={{ width: "12px", height: "12px", display: "inline-block", backgroundColor: CROP_COLORS[cropId as string] || "#8b918c", borderRadius: "2px" }} />
-                  {payload.cells.find(c => c.recommendations[0]?.id === cropId)?.recommendations[0]?.nameEn}
+                  {(() => {
+                    const crop = payload.cells.find((cell) => cell.recommendations[0]?.id === cropId)?.recommendations[0];
+                    return crop ? cropName(crop) : cropId;
+                  })()}
                 </span>
               ))}
               <span style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.85rem", color: "#4b5563" }}>
@@ -310,14 +400,14 @@ export function PilotDashboard() {
               <span className="cell-id">{selectedCell.id}</span>
               <span className="badge-stack">
                 <span className="badge">
-                  {Math.round((1 - selectedCell.dataCoverage) * 100)}% missing
+                  {Math.round((1 - selectedCell.dataCoverage) * 100)}% {t.dashboard.missingPercent}
                 </span>
                 <span className={`badge ${selectedCell.uncertainty !== "low" ? "warning" : ""}`}>
-                  {selectedCell.uncertainty} uncertainty
+                  {uncertaintyLabel}
                 </span>
               </span>
             </div>
-            <h2>{selectedCell.region} pilot cell</h2>
+            <h2>{localizeRegion(selectedCell.region, lang)} {t.dashboard.pilotCell}</h2>
             <p className="coordinates">
               {selectedCell.latitude.toFixed(4)}, {selectedCell.longitude.toFixed(4)} ·{" "}
               {selectedCell.month} · {payload.meta.grid.cellAreaKm2} km²
@@ -345,7 +435,7 @@ export function PilotDashboard() {
                     >
                       <span className="crop-card-top">
                         <span className="crop-name">
-                          {crop.nameMm} · {crop.nameEn}
+                          {cropName(crop)}
                         </span>
                         <span className="crop-score">{crop.score.toFixed(1)}</span>
                       </span>
@@ -353,7 +443,7 @@ export function PilotDashboard() {
                         <span className="score-fill" style={{ width: `${crop.score}%` }} />
                       </span>
                       <span className="confidence-line">
-                        Rule confidence {Math.round(crop.confidence * 100)}% · not model accuracy
+                        {t.dashboard.ruleConfidence} {Math.round(crop.confidence * 100)}% · {t.dashboard.notModelAccuracy}
                       </span>
                     </button>
                   ))}
@@ -361,14 +451,14 @@ export function PilotDashboard() {
 
                 {activeCrop && (
                   <div className="why-box">
-                    <h3>Why this crop?</h3>
-                    <p>{activeCrop.why}</p>
+                    <h3>{t.dashboard.whyThisCrop}</h3>
+                    <p>{localizeBilingualNarrative(activeCrop.why, lang)}</p>
                     <div className="factor-list">
                       {activeCrop.positiveFactors.map((factor) => (
-                        <span className="factor" key={`positive-${factor}`}>✓ {factor}</span>
+                        <span className="factor" key={`positive-${factor}`}>✓ {localizeFactor(factor, lang)}</span>
                       ))}
                       {activeCrop.limitingFactors.map((factor) => (
-                        <span className="factor limiting" key={`limiting-${factor}`}>△ {factor}</span>
+                        <span className="factor limiting" key={`limiting-${factor}`}>△ {localizeFactor(factor, lang)}</span>
                       ))}
                     </div>
                   </div>
@@ -377,11 +467,11 @@ export function PilotDashboard() {
             )}
 
             <div className="uncertainty-box">
-              <h3>Evidence status · {selectedCell.recommendationStatus}</h3>
+              <h3>{t.dashboard.evidenceStatus} · {recommendationStatusLabel}</h3>
               <p>
-                Label source: {selectedCell.labelSource}။ Observed label:
-                {" "}{selectedCell.observedLabelCount}။ Training eligibility:
-                {" "}{selectedCell.usableForTraining ? "QA-usable feature row" : "excluded by QA"}။
+                {t.dashboard.labelSource}: {t.dashboard.labelSourceRuleBased}။ {t.dashboard.observedLabels}:
+                {" "}{selectedCell.observedLabelCount}။ {t.dashboard.trainingEligibility}:
+                {" "}{selectedCell.usableForTraining ? t.dashboard.qaUsableFeatureRow : t.dashboard.excludedByQa}။
               </p>
             </div>
 
@@ -390,56 +480,74 @@ export function PilotDashboard() {
                 <h3>{t.cell.features.title}</h3>
                 <a
                   className="download-link"
-                  href={`/api/v1/cells/${encodeURIComponent(selectedCell.id)}/report.csv`}
+                  href={`/api/v1/cells/${encodeURIComponent(selectedCell.id)}/report.csv?region=${encodeURIComponent(region)}`}
                   download={`${selectedCell.id}_${selectedCell.month}.csv`}
                 >
-                  CSV ↓
+                  {t.dashboard.downloadCsv}
                 </a>
               </div>
               
               <div className="feature-group mt-4">
                 <h4 className="text-sm font-semibold mb-2">{t.cell.features.weatherEvidencetitle}</h4>
                 <div className="feature-table">
-                  {selectedCell.features.filter(f => f.id.includes('temperature') || f.id.includes('rain') || f.id.includes('precipitation') || f.id.includes('solar') || f.id.includes('moisture')).map((feature) => (
+                  {weatherFeatures.map((feature) => (
                     <div className="feature-row" key={feature.id}>
                       <span>
-                        {feature.label}
+                        {localizeBilingualLabel(feature.label, lang)}
                         <small>{feature.sourceId}</small>
                       </span>
                       <strong className={feature.value === null ? "missing-value" : ""}>
-                        {formatFeatureValue(feature.value, feature.unit)}
+                        {formatFeatureValue(feature.value, localizeUnit(feature.unit, lang), t.cell.missing)}
                       </strong>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="feature-group mt-4 opacity-50 border-dashed border-2 p-2 bg-gray-50">
+              <div className={`feature-group mt-4 border-2 p-2 ${
+                climateFeatures.length === 0
+                  ? "opacity-50 border-dashed bg-gray-50"
+                  : "border-emerald-100 bg-emerald-50/40"
+              }`}>
                 <h4 className="text-sm font-semibold mb-2">{t.cell.features.climateTrendTitle}</h4>
                 <div className="feature-table">
-                  <div className="feature-row">
-                    <span>
-                      30-Year Normal & Anomaly
-                      <small>ERA5 / CHIRPS Baseline</small>
-                    </span>
-                    <strong className="missing-value text-xs italic">
-                      {t.cell.features.pendingClimateData}
-                    </strong>
-                  </div>
+                  {climateFeatures.length > 0 ? (
+                    climateFeatures.map((feature) => (
+                      <div className="feature-row" key={feature.id}>
+                        <span>
+                          {localizeBilingualLabel(feature.label, lang)}
+                          <small>{feature.sourceId} · {t.dashboard.climateBaseline}</small>
+                        </span>
+                        <strong className={feature.value === null ? "missing-value" : ""}>
+                          {formatFeatureValue(feature.value, localizeUnit(feature.unit, lang), t.cell.missing)}
+                        </strong>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="feature-row">
+                      <span>
+                        {t.cell.features.climateTrendTitle}
+                        <small>{t.dashboard.climateBaseline}</small>
+                      </span>
+                      <strong className="missing-value text-xs italic">
+                        {t.cell.features.pendingClimateData}
+                      </strong>
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div className="feature-group mt-4">
                 <h4 className="text-sm font-semibold mb-2">{t.cell.features.terrainAndSoilTitle}</h4>
                 <div className="feature-table">
-                  {selectedCell.features.filter(f => !f.id.includes('temperature') && !f.id.includes('rain') && !f.id.includes('precipitation') && !f.id.includes('solar') && !f.id.includes('moisture')).map((feature) => (
+                  {otherFeatures.map((feature) => (
                     <div className="feature-row" key={feature.id}>
                       <span>
-                        {feature.label}
+                        {localizeBilingualLabel(feature.label, lang)}
                         <small>{feature.sourceId}</small>
                       </span>
                       <strong className={feature.value === null ? "missing-value" : ""}>
-                        {formatFeatureValue(feature.value, feature.unit)}
+                        {formatFeatureValue(feature.value, localizeUnit(feature.unit, lang), t.cell.missing)}
                       </strong>
                     </div>
                   ))}
@@ -451,57 +559,60 @@ export function PilotDashboard() {
 
         <section className="evidence-grid">
           <article className="evidence-card">
-            <p className="card-eyebrow">Release evidence</p>
-            <h3>Data QA</h3>
+            <p className="card-eyebrow">{t.dashboard.releaseEvidence}</p>
+            <h3>{t.dashboard.dataQa}</h3>
             <div className="qa-row">
-              <span>Regional CSV rows</span>
+              <span>{t.dashboard.regionalRows}</span>
               <span>{numberFormatter.format(payload.meta.rowCount)}</span>
             </div>
             <div className="qa-row">
-              <span>QA gate</span>
+              <span>{t.dashboard.qaGate}</span>
               <span className={payload.meta.qa.valid ? "qa-pass" : "qa-fail"}>
-                {payload.meta.qa.valid ? "PASS" : "FAIL"}
+                {payload.meta.qa.valid ? t.dashboard.pass : t.dashboard.fail}
               </span>
             </div>
             <div className="qa-row">
-              <span>Warnings / errors</span>
+              <span>{t.dashboard.warningsErrors}</span>
               <span>{payload.meta.qa.warningCount} / {payload.meta.qa.errorCount}</span>
             </div>
             <div className="qa-row">
-              <span>QA-usable rows</span>
+              <span>{t.dashboard.qaUsableRows}</span>
               <span>{numberFormatter.format(payload.meta.usableCellCount)}</span>
             </div>
             <div className="hash-box">
-              <span>Source CSV SHA-256</span>
-              <code title={sourceHash}>{shortHash(sourceHash)}</code>
-              <span>QA report SHA-256</span>
-              <code title={qaHash}>{shortHash(qaHash)}</code>
-              <span>Source manifest SHA-256</span>
-              <code title={manifestHash}>{shortHash(manifestHash)}</code>
+              <span>{t.dashboard.sourceCsvHash}</span>
+              <code title={sourceHash}>{shortHash(sourceHash, t.cell.notPublished)}</code>
+              <span>{t.dashboard.qaReportHash}</span>
+              <code title={qaHash}>{shortHash(qaHash, t.cell.notPublished)}</code>
+              <span>{t.dashboard.sourceManifestHash}</span>
+              <code title={manifestHash}>{shortHash(manifestHash, t.cell.notPublished)}</code>
             </div>
           </article>
 
           <article className="evidence-card source-card">
-            <p className="card-eyebrow">Traceable inputs</p>
-            <h3>Source provenance</h3>
+            <p className="card-eyebrow">{t.dashboard.traceableInputs}</p>
+            <h3>{t.dashboard.sourceProvenance}</h3>
             <ul className="source-list">
               {payload.meta.sources.map((source) => (
                 <li key={source.id}>
                   <a href={source.sourceUrl} target="_blank" rel="noreferrer">
                     {source.name}
                   </a>
-                  <span>{source.role} · {source.resolution}</span>
+                  <span>
+                    {t.dashboard.sourceRoles[source.id] ?? source.role} ·{" "}
+                    {source.resolution}
+                  </span>
                 </li>
               ))}
             </ul>
             <p>
-              Period: {payload.meta.periodStart} → {payload.meta.periodEnd}. Release:
+              {t.dashboard.period}: {payload.meta.periodStart} → {payload.meta.periodEnd}. {t.dashboard.release}:
               {" "}<code>{payload.meta.releaseId}</code>.
             </p>
           </article>
 
           <article className="evidence-card">
-            <p className="card-eyebrow">Human-in-the-loop</p>
+            <p className="card-eyebrow">{t.dashboard.reviewTitle}</p>
             <h3>{t.dashboard.reviewTitle}</h3>
             {activeCrop ? (
               <>
@@ -516,7 +627,7 @@ export function PilotDashboard() {
                       className={verdict === value ? "selected" : ""}
                       onClick={() => setVerdict(value)}
                     >
-                      {value}
+                      {t.dashboard[value]}
                     </button>
                   ))}
                 </div>
@@ -543,12 +654,14 @@ export function PilotDashboard() {
 
         <section className="limitations">
           <div>
-            <p className="card-eyebrow">Responsible-use boundary</p>
+            <p className="card-eyebrow">{t.dashboard.responsibleUseBoundary}</p>
             <h2>{t.dashboard.limitationsTitle}</h2>
           </div>
           <ul>
-            {payload.meta.limitations.map((limitation) => (
-              <li key={limitation}>{limitation}</li>
+            {payload.meta.limitations.map((limitation, index) => (
+              <li key={limitation}>
+                {t.dashboard.limitations[index] ?? limitation}
+              </li>
             ))}
           </ul>
         </section>
@@ -558,7 +671,7 @@ export function PilotDashboard() {
             {t.dashboard.footerDisclaimer}
           </span>
           <span>
-            {payload.meta.splitPolicy} · Synthetic rows excluded · Contract {payload.meta.dataContract}
+            {t.dashboard.splitPolicy} · {t.dashboard.syntheticRowsExcluded} · {t.dashboard.contract} {payload.meta.dataContract}
           </span>
         </footer>
       </div>

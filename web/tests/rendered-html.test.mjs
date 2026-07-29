@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { csvValue } from "../app/lib/csv-value.ts";
+import {
+  isPendingEnglishTranslation,
+  localizeBilingualLabel,
+  localizeBilingualNarrative,
+  localizeFactor,
+  localizeRegion,
+  normalizeLanguage,
+} from "../app/lib/localization.ts";
 
 let workerPromise;
 
@@ -39,7 +47,7 @@ test("server-renders the Myanmar GeoAI product shell", async () => {
   assert.match(html, /Myanmar Crop Intelligence/);
   assert.match(html, /Explainable crop screening/);
   assert.match(html, /Real pilot data/);
-  assert.match(html, /QA-approved Ayeyawaddy 5 km cells/);
+  assert.match(html, /QA စစ်ပြီးသော ဒေသအလိုက် ၅ ကီလိုမီတာ cell/);
   assert.doesNotMatch(html, /codex-preview/);
   assert.doesNotMatch(html, /react-loading-skeleton/);
 });
@@ -66,6 +74,8 @@ test("v1 API exposes the runtime-validated real pilot contract", async () => {
   );
   assert.equal(payload.meta.qa.valid, true);
   assert.equal(payload.meta.qa.errorCount, 0);
+  assert.equal(payload.meta.configuredCrops.length, 11);
+  assert.equal(new Set(payload.meta.configuredCrops).size, 11);
   assert.match(payload.meta.sourceManifestSha256, /^[a-f0-9]{64}$/);
   assert.ok(
     payload.meta.sources.every((source) => {
@@ -82,7 +92,7 @@ test("v1 API exposes the runtime-validated real pilot contract", async () => {
   assert.equal(payload.pagination.returned, 3);
   assert.equal(
     payload.links.selectedCellCsvTemplate,
-    "/api/v1/cells/{cell_id}/report.csv",
+    "/api/v1/cells/{cell_id}/report.csv?region={region}",
   );
   assert.ok(
     payload.cells.every(
@@ -105,15 +115,45 @@ test("v1 API can return every Ayeyawaddy pilot cell for the map", async () => {
   assert.equal(payload.pagination.offset, 0);
 });
 
-test("v1 API filters by cell, region, month, status, and training usability", async () => {
-  const seedResponse = await request("/api/v1/cells?limit=1");
+test("v1 API selects each named regional bundle", async () => {
+  const expectedRows = {
+    ayeyawaddy: 1344,
+    sagaing: 3766,
+    mandalay: 1531,
+    bago: 1549,
+    magway: 1781,
+  };
+  for (const [region, rowCount] of Object.entries(expectedRows)) {
+    const response = await request(`/api/v1/cells?region=${region}&limit=1`);
+    const payload = await response.json();
+
+    assert.equal(response.status, 200, region);
+    assert.equal(payload.cells.length, 1, region);
+    assert.equal(payload.meta.rowCount, rowCount, region);
+    assert.equal(payload.pagination.total, rowCount, region);
+    assert.equal(payload.pagination.returned, 1, region);
+  }
+});
+
+test("v1 API can return every Sagaing cell without map truncation", async () => {
+  const response = await request("/api/v1/cells?region=sagaing&limit=5000");
+  const payload = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(payload.meta.rowCount, 3766);
+  assert.equal(payload.pagination.returned, 3766);
+  assert.equal(payload.cells.length, 3766);
+});
+
+test("v1 API filters by cell, month, status, and training usability", async () => {
+  const seedResponse = await request("/api/v1/cells?region=ayeyawaddy&limit=1");
   const seed = await seedResponse.json();
   const cell = seed.cells[0];
   assert.ok(cell);
 
   const query = new URLSearchParams({
     cell_id: cell.id,
-    region: cell.region.toUpperCase(),
+    region: "AYEYAWADDY",
     month: cell.month,
     recommendation_status: cell.recommendationStatus,
     usable_for_training: String(cell.usableForTraining),
@@ -150,6 +190,12 @@ test("v1 API returns stable JSON errors for invalid and missing filters", async 
   const missingPayload = await missing.json();
   assert.equal(missing.status, 404);
   assert.equal(missingPayload.error.code, "CELL_NOT_FOUND");
+
+  const unknownRegion = await request("/api/v1/cells?region=unknown");
+  const unknownRegionPayload = await unknownRegion.json();
+  assert.equal(unknownRegion.status, 400);
+  assert.equal(unknownRegionPayload.error.code, "UNKNOWN_REGION");
+  assert.equal(unknownRegionPayload.error.parameter, "region");
 });
 
 test("selected-cell download returns UTF-8 CSV with release provenance", async () => {
@@ -202,8 +248,30 @@ test("selected-cell download returns UTF-8 CSV with release provenance", async (
   assert.equal(missingPayload.error.code, "CELL_NOT_FOUND");
 });
 
+test("selected-cell download honors its regional bundle query", async () => {
+  const seedResponse = await request("/api/v1/cells?region=sagaing&limit=1");
+  const seed = await seedResponse.json();
+  const cell = seed.cells[0];
+  assert.ok(cell);
+
+  const response = await request(
+    `/api/v1/cells/${encodeURIComponent(cell.id)}/report.csv?region=sagaing`,
+  );
+  const csv = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(csv, new RegExp(cell.id));
+  assert.ok(csv.includes(seed.meta.releaseId));
+
+  const compatibilityResponse = await request(
+    `/api/v1/cells/${encodeURIComponent(cell.id)}/download?region=sagaing`,
+  );
+  assert.equal(compatibilityResponse.status, 200);
+  assert.match(await compatibilityResponse.text(), new RegExp(cell.id));
+});
+
 test("legacy cells endpoint remains compatible and truthfully deprecated", async () => {
-  const response = await request("/api/cells");
+  const response = await request("/api/cells?region=magway");
   const payload = await response.json();
 
   assert.equal(response.status, 200);
@@ -230,6 +298,54 @@ test("legacy cells endpoint remains compatible and truthfully deprecated", async
   );
 });
 
+test("climate API publishes weather evidence but withholds unpublished climate analysis", async () => {
+  const response = await request("/api/v1/climate");
+  const payload = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(
+    response.headers.get("x-data-contract"),
+    "climate_evidence_status_only",
+  );
+  assert.equal(
+    payload.weatherEvidence.status.en,
+    "Available in the regional release",
+  );
+  assert.equal(payload.climateChange.status.en, "Not yet published");
+  assert.equal(payload.disasterHistory.status.en, "Source verification pending");
+  assert.equal(payload.climateChange.withheld.length, 3);
+  assert.equal(payload.series, undefined);
+  assert.equal(payload.forecast, undefined);
+});
+
+test("macro API withholds unverified numeric series and forecasts", async () => {
+  const response = await request("/api/v1/macro");
+  const payload = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(
+    response.headers.get("x-data-contract"),
+    "macro_trade_source_verification_pending",
+  );
+  assert.equal(payload.macroTrade.status.en, "Source verification pending");
+  assert.equal(payload.macroTrade.withheld.length, 3);
+  assert.equal(payload.data, undefined);
+  assert.equal(payload.series, undefined);
+});
+
+test("FAQ API exposes Myanmar seed content without inventing English translations", async () => {
+  const response = await request(
+    `/api/v1/faq?search=${encodeURIComponent("သစ်ပင်")}`,
+  );
+  const payload = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(payload.meta.totalCount, 1053);
+  assert.ok(payload.meta.returnedCount > 0);
+  assert.ok(payload.data[0].question_mm.length > 0);
+  assert.equal(payload.data[0].question_en, "Pending English Translation");
+});
+
 test("CSV encoder neutralizes formulas hidden behind control whitespace", () => {
   for (const attack of [
     "=1+1",
@@ -248,4 +364,33 @@ test("CSV encoder neutralizes formulas hidden behind control whitespace", () => 
   assert.equal(csvValue(-12.5), "\"-12.5\"");
   assert.equal(csvValue("-12.5"), "\"'-12.5\"");
   assert.equal(csvValue('say "hello"'), '"say ""hello"""');
+});
+
+test("locale helpers select one language without changing numeric evidence", () => {
+  assert.equal(normalizeLanguage("en"), "en");
+  assert.equal(normalizeLanguage("unsupported"), "my");
+  assert.equal(localizeRegion("Sagaing", "my"), "စစ်ကိုင်းတိုင်း");
+  assert.equal(
+    localizeBilingualLabel("Monthly rainfall · လစဉ်မိုးရေချိန်", "en"),
+    "Monthly rainfall",
+  );
+  assert.equal(
+    localizeBilingualLabel("Monthly rainfall · လစဉ်မိုးရေချိန်", "my"),
+    "လစဉ်မိုးရေချိန်",
+  );
+  assert.equal(
+    localizeFactor(
+      "mean temperature · ပျမ်းမျှအပူချိန်: 25.3578 °C (100.0/100)",
+      "my",
+    ),
+    "ပျမ်းမျှအပူချိန်: 25.3578 °C (100.0/100)",
+  );
+  assert.equal(
+    localizeBilingualNarrative(
+      "Provisional rule score. စည်းမျဉ်းအခြေခံ အမှတ်ဖြစ်သည်။",
+      "en",
+    ),
+    "Provisional rule score.",
+  );
+  assert.equal(isPendingEnglishTranslation("Pending English Translation"), true);
 });

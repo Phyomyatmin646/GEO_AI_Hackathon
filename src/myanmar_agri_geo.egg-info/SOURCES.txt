@@ -27,6 +27,7 @@ src/myanmar_agri_geo.egg-info/requires.txt
 src/myanmar_agri_geo.egg-info/top_level.txt
 tests/test_chirps_v3.py
 tests/test_cli_and_gee_contract.py
+tests/test_climate_contract.py
 tests/test_drive_exports.py
 tests/test_labeling.py
 tests/test_observed_labels.py

@@ -16,7 +16,13 @@ from .chirps_v3 import attach_chirps_v3_from_cache, expected_cache_paths
 from .labeling import add_rule_based_labels, calibrate_with_observed_labels
 from .manifest import build_manifest, source_versions_json, write_json
 from .resources import write_collabhub_resource_audit, write_external_feature_manifest
-from .schema import MONTHLY_FEATURE_COLUMNS, STATIC_FEATURE_COLUMNS, required_columns, raw_gee_required_columns
+from .schema import (
+    MONTHLY_FEATURE_COLUMNS,
+    OPTIONAL_CLIMATE_CONTEXT_COLUMNS,
+    STATIC_FEATURE_COLUMNS,
+    required_columns,
+    raw_gee_required_columns,
+)
 from .soilgrids import attach_soilgrids_from_cache
 from .splits import add_split_manifest_columns, split_manifest
 
@@ -62,6 +68,21 @@ RAW_COLUMN_ALIASES: dict[str, tuple[str, ...]] = {
         "era5_soil_moisture_m3_m3",
         "era5_volumetric_soil_water_layer_1",
         "volumetric_soil_water_layer_1",
+    ),
+    "rainfall_normal_1991_2020_mm": (
+        "rainfall_normal_1991_2020_mm",
+    ),
+    "rainfall_anomaly_1991_2020_mm": (
+        "rainfall_anomaly_1991_2020_mm",
+    ),
+    "rainfall_anomaly_1991_2020_pct": (
+        "rainfall_anomaly_1991_2020_pct",
+    ),
+    "temperature_normal_1991_2020_c": (
+        "temperature_normal_1991_2020_c",
+    ),
+    "temperature_anomaly_1991_2020_c": (
+        "temperature_anomaly_1991_2020_c",
     ),
     "admin0_name": ("admin0_name", "ADM0_NAME", "country_name"),
     "admin1_name": ("admin1_name", "ADM1_NAME"),
@@ -160,6 +181,61 @@ def read_gee_exports(raw_dir: str | Path) -> tuple[pd.DataFrame, list[Path]]:
     return merged, files
 
 
+def _scope_token(value: object) -> str:
+    return "".join(character.casefold() for character in str(value) if character.isalnum())
+
+
+def validate_regional_raw_scope(
+    frame: pd.DataFrame,
+    raw_files: list[Path],
+    config: dict[str, Any],
+) -> None:
+    """Fail closed when regional raw inputs do not identify the release scope.
+
+    New regional exports should include ``admin1_name``. Frozen pilot exports
+    predate that field, so their immutable task filenames remain a secondary
+    provenance guard. This does not replace a future point-in-polygon check,
+    but it prevents a differently named regional export from being silently
+    assembled and relabelled under another release contract.
+    """
+
+    release_scope = str(config["project"].get("scope_admin1") or "").strip()
+    if not release_scope:
+        return
+    expected_token = _scope_token(release_scope)
+    mismatched_files = [
+        path.name
+        for path in raw_files
+        if expected_token not in _scope_token(path.stem)
+    ]
+    if mismatched_files:
+        raise ValueError(
+            "Regional raw input filename does not identify the configured "
+            f"project.scope_admin1 {release_scope!r}: {mismatched_files[:5]}"
+        )
+
+    if "admin1_name" not in frame:
+        return
+    observed = (
+        frame["admin1_name"]
+        .astype("string")
+        .dropna()
+        .str.strip()
+    )
+    observed = observed.loc[observed.ne("")]
+    if observed.empty:
+        return
+    allowed = {release_scope}
+    if release_scope == "Bago":
+        allowed.update({"Bago (E)", "Bago (W)"})
+    unexpected = sorted(set(observed.astype(str)).difference(allowed))
+    if unexpected:
+        raise ValueError(
+            "GEE export contains admin1_name values outside the configured "
+            f"regional release scope {release_scope!r}: {unexpected[:5]}"
+        )
+
+
 def _calculate_trailing_rainfall(frame: pd.DataFrame) -> pd.Series:
     """Calculate an honest 12-observation trailing sum where GEE did not export it."""
 
@@ -214,6 +290,24 @@ def enrich_physical_features(frame: pd.DataFrame, config: dict[str, Any]) -> pd.
     else:
         annual = pd.to_numeric(output["annual_rainfall_mm"], errors="coerce")
         output["annual_rainfall_mm"] = annual.where(annual.notna(), _calculate_trailing_rainfall(output))
+    # The final target-month rainfall may have been replaced from the
+    # authoritative local CHIRPS v3 monthly cache after the GEE export. Rebuild
+    # rainfall anomalies from that final value so the released columns remain
+    # algebraically consistent with one another.
+    if (
+        "rainfall_normal_1991_2020_mm" in output
+        and "monthly_rainfall_mm" in output
+    ):
+        rainfall = pd.to_numeric(output["monthly_rainfall_mm"], errors="coerce")
+        rainfall_normal = pd.to_numeric(
+            output["rainfall_normal_1991_2020_mm"], errors="coerce"
+        )
+        rainfall_anomaly = rainfall - rainfall_normal
+        output["rainfall_anomaly_1991_2020_mm"] = rainfall_anomaly
+        output["rainfall_anomaly_1991_2020_pct"] = (
+            rainfall_anomaly.divide(rainfall_normal.where(rainfall_normal != 0))
+            * 100.0
+        )
     # Support a raw J/m²/day value only when a source exporter explicitly uses
     # that unambiguous column name; avoid unit guesses for unknown fields.
     if "solar_radiation_mj_m2_day" not in output and "solar_radiation_j_m2_day" in output:
@@ -340,6 +434,32 @@ def add_quality_fields(frame: pd.DataFrame, config: dict[str, Any]) -> pd.DataFr
     output["s1_data_status"] = np.where(s1_available, "available", "missing_or_not_requested")
     if "soil_data_status" not in output:
         output["soil_data_status"] = "not_available"
+    climate_fields_present = [
+        column
+        for column in OPTIONAL_CLIMATE_CONTEXT_COLUMNS
+        if column in output.columns
+    ]
+    if len(climate_fields_present) == len(OPTIONAL_CLIMATE_CONTEXT_COLUMNS):
+        climate_complete = output[OPTIONAL_CLIMATE_CONTEXT_COLUMNS].notna().all(
+            axis=1
+        )
+        output["climate_context_status"] = np.where(
+            climate_complete,
+            "historical_same_month_normal_and_anomaly",
+            "incomplete_historical_context",
+        )
+        output["climate_baseline_period"] = "1991-2020"
+        output["climate_context_interpretation"] = (
+            "historical_context_not_attribution_forecast_or_projection"
+        )
+    elif climate_fields_present:
+        output["climate_context_status"] = "incomplete_historical_context"
+        output["climate_baseline_period"] = "1991-2020"
+        output["climate_context_interpretation"] = (
+            "historical_context_not_attribution_forecast_or_projection"
+        )
+    else:
+        output["climate_context_status"] = "not_in_release"
     tracked = STATIC_FEATURE_COLUMNS + MONTHLY_FEATURE_COLUMNS
     output["feature_missing_fraction"] = output[tracked].isna().mean(axis=1).round(4)
     max_missing = float(config["quality"]["max_missing_feature_fraction"])
@@ -381,6 +501,7 @@ def assemble_dataset(
     destination = Path(output_dir or config["project"]["output_dir"])
     destination.mkdir(parents=True, exist_ok=True)
     frame, raw_files = read_gee_exports(raw_location)
+    validate_regional_raw_scope(frame, raw_files, config)
     frame = attach_project_context(frame, config)
     if bool(config["chirps_v3"].get("enabled", True)):
         frame = attach_chirps_v3_from_cache(
@@ -440,6 +561,9 @@ def assemble_dataset(
         max_feature_missing_fraction=float(config["quality"]["max_missing_feature_fraction"]),
         min_usable_row_fraction=float(
             config["quality"].get("min_usable_row_fraction", 1.0)
+        ),
+        require_climate_context=bool(
+            config.get("climate_context", {}).get("enabled", False)
         ),
         start_year_month=config["project"]["start_month"],
         end_year_month=config["project"]["end_month"],

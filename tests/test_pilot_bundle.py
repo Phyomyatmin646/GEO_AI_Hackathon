@@ -117,12 +117,21 @@ def _release_files(
                         "sha256": _sha256(qa_path),
                     },
                 ],
+                "label_policy": {
+                    "configured_crops": list(CROP_IDS),
+                },
                 "selected_sources": {
                     "chirps": {
                         "dataset_id": "CHIRPS v3",
                         "role": "rainfall",
                         "resolution": "0.05 degree",
                         "source_url": "https://example.test/chirps",
+                    },
+                    "chirps_gee_staging": {
+                        "dataset_id": "UCSB-CHC/CHIRPS/V3/DAILY_RNL",
+                        "role": "historical rainfall normal and anomaly context",
+                        "resolution": "0.05 degree",
+                        "source_url": "https://example.test/chirps-v3-rnl",
                     },
                     "era5_land": {
                         "dataset_id": "ERA5-Land",
@@ -224,6 +233,92 @@ def test_bundle_output_is_byte_reproducible_and_sampling_is_deterministic(
 
     assert first.read_bytes() == second.read_bytes()
     assert json.loads(first.read_text())["meta"]["rowCount"] == 1
+
+
+def test_bundle_scores_only_crops_declared_by_release_manifest(
+    tmp_path: Path,
+) -> None:
+    row = _row(1819, 404)
+    configured_crops = ("monsoon_rice", "maize")
+    for crop_id in set(CROP_IDS).difference(configured_crops):
+        for prefix in (
+            "suitability_score",
+            "label_source",
+            "label_confidence",
+        ):
+            row.pop(f"{prefix}__{crop_id}")
+    csv_path, qa_path, manifest_path = _release_files(tmp_path, rows=[row])
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["label_policy"]["configured_crops"] = list(configured_crops)
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    bundle = build_web_pilot_bundle(
+        csv_path,
+        qa_report_path=qa_path,
+        source_manifest_path=manifest_path,
+        output_path=tmp_path / "pilot.json",
+        top_crops=2,
+    )
+
+    assert bundle["meta"]["configuredCrops"] == list(configured_crops)
+    assert {
+        recommendation["id"]
+        for recommendation in bundle["cells"][0]["recommendations"]
+    } == set(configured_crops)
+
+
+def test_bundle_passes_through_complete_optional_climate_context(
+    tmp_path: Path,
+) -> None:
+    row = _row(1819, 404)
+    row.update(
+        {
+            "rainfall_normal_1991_2020_mm": 74.5,
+            "rainfall_anomaly_1991_2020_mm": 13.5,
+            "rainfall_anomaly_1991_2020_pct": 18.12,
+            "temperature_normal_1991_2020_c": 26.2,
+            "temperature_anomaly_1991_2020_c": 0.8,
+        }
+    )
+    csv_path, qa_path, manifest_path = _release_files(tmp_path, rows=[row])
+
+    bundle = build_web_pilot_bundle(
+        csv_path,
+        qa_report_path=qa_path,
+        source_manifest_path=manifest_path,
+        output_path=tmp_path / "pilot.json",
+    )
+
+    climate_features = {
+        feature["id"]: feature
+        for feature in bundle["cells"][0]["features"]
+        if "1991_2020" in feature["id"]
+    }
+    assert set(climate_features) == {
+        "rainfall_normal_1991_2020_mm",
+        "rainfall_anomaly_1991_2020_mm",
+        "rainfall_anomaly_1991_2020_pct",
+        "temperature_normal_1991_2020_c",
+        "temperature_anomaly_1991_2020_c",
+    }
+    assert climate_features["temperature_anomaly_1991_2020_c"]["value"] == 0.8
+    assert climate_features["rainfall_normal_1991_2020_mm"]["sourceId"] == (
+        "chirps_gee_staging"
+    )
+
+
+def test_bundle_rejects_partial_optional_climate_context(tmp_path: Path) -> None:
+    row = _row(1819, 404)
+    row["rainfall_normal_1991_2020_mm"] = 74.5
+    csv_path, qa_path, manifest_path = _release_files(tmp_path, rows=[row])
+
+    with pytest.raises(ValueError, match="complete optional column set"):
+        build_web_pilot_bundle(
+            csv_path,
+            qa_report_path=qa_path,
+            source_manifest_path=manifest_path,
+            output_path=tmp_path / "pilot.json",
+        )
 
 
 def test_bundle_refuses_failed_qa(tmp_path: Path) -> None:

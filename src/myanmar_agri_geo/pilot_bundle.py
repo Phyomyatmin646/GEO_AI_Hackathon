@@ -12,7 +12,7 @@ from typing import Any, Mapping
 
 import pandas as pd
 
-from .crop_profiles import CROP_IDS, CROP_PROFILES, SuitabilityResult, score_all_crops
+from .crop_profiles import CROP_PROFILES, SuitabilityResult, score_crop
 
 
 SCHEMA_VERSION = "1.0.0"
@@ -142,6 +142,47 @@ _FEATURES: tuple[dict[str, str], ...] = (
     },
 )
 
+# These fields are published only when the source release contains the
+# complete optional climate-context contract. Existing frozen releases remain
+# valid and continue to show an explicit pending-re-export state in the UI.
+_OPTIONAL_CLIMATE_FEATURES: tuple[dict[str, str], ...] = (
+    {
+        "id": "rainfall_normal_1991_2020_mm",
+        "column": "rainfall_normal_1991_2020_mm",
+        "label": "1991–2020 rainfall normal · ၁၉၉၁–၂၀၂၀ မိုးရေချိန်ပုံမှန်တန်ဖိုး",
+        "unit": "mm",
+        "source": "chirps_gee_staging",
+    },
+    {
+        "id": "rainfall_anomaly_1991_2020_mm",
+        "column": "rainfall_anomaly_1991_2020_mm",
+        "label": "Rainfall anomaly · မိုးရေချိန်ကွာဟချက်",
+        "unit": "mm",
+        "source": "chirps_gee_staging",
+    },
+    {
+        "id": "rainfall_anomaly_1991_2020_pct",
+        "column": "rainfall_anomaly_1991_2020_pct",
+        "label": "Rainfall anomaly percentage · မိုးရေချိန်ကွာဟချက်ရာခိုင်နှုန်း",
+        "unit": "%",
+        "source": "chirps_gee_staging",
+    },
+    {
+        "id": "temperature_normal_1991_2020_c",
+        "column": "temperature_normal_1991_2020_c",
+        "label": "1991–2020 temperature normal · ၁၉၉၁–၂၀၂၀ အပူချိန်ပုံမှန်တန်ဖိုး",
+        "unit": "°C",
+        "source": "era5_land",
+    },
+    {
+        "id": "temperature_anomaly_1991_2020_c",
+        "column": "temperature_anomaly_1991_2020_c",
+        "label": "Temperature anomaly · အပူချိန်ကွာဟချက်",
+        "unit": "°C",
+        "source": "era5_land",
+    },
+)
+
 _SCORING_FACTORS: Mapping[str, dict[str, str]] = {
     "mean_temperature_c": {
         "column": "mean_temperature_c",
@@ -247,11 +288,42 @@ def _validate_release_inputs(
     csv_path: Path,
     qa_path: Path,
     manifest_path: Path,
-) -> tuple[pd.DataFrame, dict[str, Any], dict[str, Any], str, str, str]:
+) -> tuple[
+    pd.DataFrame,
+    dict[str, Any],
+    dict[str, Any],
+    tuple[str, ...],
+    str,
+    str,
+    str,
+]:
     if not csv_path.is_file():
         raise FileNotFoundError(f"Source CSV does not exist: {csv_path}")
     qa = _read_json(qa_path, "QA report")
     manifest = _read_json(manifest_path, "Source manifest")
+    label_policy = manifest.get("label_policy")
+    if not isinstance(label_policy, dict):
+        raise ValueError("Source manifest label_policy must be an object")
+    raw_configured_crops = label_policy.get("configured_crops")
+    if not isinstance(raw_configured_crops, list) or not raw_configured_crops:
+        raise ValueError(
+            "Source manifest label_policy.configured_crops must be a non-empty array"
+        )
+    configured_crops = tuple(str(crop).strip() for crop in raw_configured_crops)
+    if any(not crop for crop in configured_crops):
+        raise ValueError(
+            "Source manifest label_policy.configured_crops contains an empty crop id"
+        )
+    if len(configured_crops) != len(set(configured_crops)):
+        raise ValueError(
+            "Source manifest label_policy.configured_crops contains duplicates"
+        )
+    unsupported_crops = sorted(set(configured_crops).difference(CROP_PROFILES))
+    if unsupported_crops:
+        raise ValueError(
+            "Source manifest contains unsupported configured crops: "
+            + ", ".join(unsupported_crops)
+        )
     if qa.get("valid") is not True:
         raise ValueError("Refusing to build a web bundle from a release that did not pass QA")
 
@@ -299,7 +371,7 @@ def _validate_release_inputs(
         *[str(feature["column"]) for feature in _FEATURES],
         *[str(factor["column"]) for factor in _SCORING_FACTORS.values()],
     }
-    for crop_id in CROP_IDS:
+    for crop_id in configured_crops:
         required.update(
             {
                 f"suitability_score__{crop_id}",
@@ -314,7 +386,15 @@ def _validate_release_inputs(
         raise ValueError("Source CSV contains no rows")
     if frame["grid_id"].duplicated().any():
         raise ValueError("Pilot source must contain one row per grid_id")
-    return frame, qa, manifest, csv_sha256, qa_sha256, manifest_sha256
+    return (
+        frame,
+        qa,
+        manifest,
+        configured_crops,
+        csv_sha256,
+        qa_sha256,
+        manifest_sha256,
+    )
 
 
 def _parse_year_month(value: Any, *, description: str) -> date:
@@ -575,9 +655,14 @@ def _cell_record(
     row: Mapping[str, Any],
     *,
     region: str,
+    configured_crops: tuple[str, ...],
+    published_features: tuple[dict[str, str], ...],
     top_crops: int,
 ) -> dict[str, Any]:
-    results = score_all_crops(row)
+    results = {
+        crop_id: score_crop(crop_id, row)
+        for crop_id in configured_crops
+    }
     ranked: list[tuple[str, SuitabilityResult, float, float]] = []
     for crop_id, result in results.items():
         score_column = f"suitability_score__{crop_id}"
@@ -616,7 +701,9 @@ def _cell_record(
             )
         ranked.append((crop_id, result, csv_score, csv_confidence))
 
-    crop_order = {crop_id: position for position, crop_id in enumerate(CROP_IDS)}
+    crop_order = {
+        crop_id: position for position, crop_id in enumerate(configured_crops)
+    }
     ranked.sort(key=lambda item: (-item[2], crop_order[item[0]]))
     recommendations = [
         _recommendation(
@@ -640,7 +727,7 @@ def _cell_record(
         else "medium"
     )
     features: list[dict[str, Any]] = []
-    for feature in _FEATURES:
+    for feature in published_features:
         value = _finite_number(row[feature["column"]])
         features.append(
             {
@@ -769,8 +856,8 @@ def build_web_pilot_bundle(
 ) -> dict[str, Any]:
     """Write deterministic web JSON from a QA-approved real regional CSV."""
 
-    if top_crops <= 0 or top_crops > len(CROP_IDS):
-        raise ValueError(f"top_crops must be between 1 and {len(CROP_IDS)}")
+    if top_crops <= 0:
+        raise ValueError("top_crops must be positive")
     source = Path(csv_path)
     qa_path = Path(qa_report_path)
     manifest_path = Path(source_manifest_path)
@@ -778,10 +865,39 @@ def build_web_pilot_bundle(
         frame,
         qa,
         manifest,
+        configured_crops,
         csv_sha256,
         qa_sha256,
         manifest_sha256,
     ) = _validate_release_inputs(source, qa_path, manifest_path)
+    if top_crops > len(configured_crops):
+        raise ValueError(
+            f"top_crops must be between 1 and {len(configured_crops)} "
+            "for this release"
+        )
+    available_climate_columns = {
+        str(feature["column"])
+        for feature in _OPTIONAL_CLIMATE_FEATURES
+        if str(feature["column"]) in frame.columns
+    }
+    expected_climate_columns = {
+        str(feature["column"]) for feature in _OPTIONAL_CLIMATE_FEATURES
+    }
+    if available_climate_columns and (
+        available_climate_columns != expected_climate_columns
+    ):
+        missing_climate_columns = sorted(
+            expected_climate_columns.difference(available_climate_columns)
+        )
+        raise ValueError(
+            "Climate-context publication requires the complete optional "
+            f"column set; missing: {missing_climate_columns}"
+        )
+    published_features = (
+        _FEATURES + _OPTIONAL_CLIMATE_FEATURES
+        if available_climate_columns
+        else _FEATURES
+    )
     selected = _select_rows(frame, max_cells)
     project = manifest.get("project", {})
     if not isinstance(project, dict):
@@ -796,7 +912,13 @@ def build_web_pilot_bundle(
     _validate_manifest_row_contract(frame, project)
 
     cells = [
-        _cell_record(row, region=region, top_crops=top_crops)
+        _cell_record(
+            row,
+            region=region,
+            configured_crops=configured_crops,
+            published_features=published_features,
+            top_crops=top_crops,
+        )
         for row in selected.to_dict(orient="records")
     ]
     scored_count = sum(
@@ -831,6 +953,7 @@ def build_web_pilot_bundle(
                 "sizeM": grid_size,
                 "cellAreaKm2": round(grid_size * grid_size / 1_000_000, 4),
             },
+            "configuredCrops": list(configured_crops),
             "qa": {
                 "valid": True,
                 "warningCount": int(summary.get("warning_count", 0)),

@@ -99,6 +99,21 @@ FEATURE_UNITS: Mapping[str, str] = {
     "max_temperature_c": "degrees Celsius; monthly maximum daily maximum temperature",
     "solar_radiation_mj_m2_day": "MJ m^-2 day^-1; monthly mean daily radiation",
     "era5_soil_moisture_m3_m3": "m^3 m^-3; monthly mean",
+    "rainfall_normal_1991_2020_mm": (
+        "millimetres; 1991-2020 mean for the same calendar month"
+    ),
+    "rainfall_anomaly_1991_2020_mm": (
+        "millimetres; target month minus the 1991-2020 same-month normal"
+    ),
+    "rainfall_anomaly_1991_2020_pct": (
+        "percent; target month relative to the 1991-2020 same-month normal"
+    ),
+    "temperature_normal_1991_2020_c": (
+        "degrees Celsius; 1991-2020 mean for the same calendar month"
+    ),
+    "temperature_anomaly_1991_2020_c": (
+        "degrees Celsius; target month minus the 1991-2020 same-month normal"
+    ),
     "elevation_m": "metres above sea level",
     "slope_degrees": "degrees",
     "surface_water_occurrence_pct": "percent (historical occurrence)",
@@ -173,6 +188,9 @@ class GEEConfig:
     water_distance_scale_m: int = 1_000
     sampling_geometry: str = "centroid"
     include_admin1: bool = False
+    include_climate_context: bool = False
+    climate_baseline_start_year: int = 1991
+    climate_baseline_end_year: int = 2020
 
 
 def require_ee(ee_module: Any | None = None) -> Any:
@@ -291,6 +309,19 @@ def _validate_config(config: GEEConfig) -> None:
         )
     if config.sampling_geometry not in {"centroid", "cell"}:
         raise ValueError("sampling_geometry must be 'centroid' or 'cell'")
+    if config.climate_baseline_start_year > config.climate_baseline_end_year:
+        raise ValueError(
+            "climate_baseline_start_year must not exceed "
+            "climate_baseline_end_year"
+        )
+    if config.include_climate_context and (
+        config.climate_baseline_start_year,
+        config.climate_baseline_end_year,
+    ) != (1991, 2020):
+        raise ValueError(
+            "the published climate-context contract requires the fixed "
+            "1991-2020 normal period"
+        )
 
 
 def _resolve_earth_engine_crs(crs: str) -> str:
@@ -658,6 +689,97 @@ def _monthly_era5_land_features(start: Any, end: Any, region: Any, config: GEECo
     )
 
 
+def _monthly_climate_context_features(
+    month_start: date,
+    current_rainfall: Any,
+    current_temperature: Any,
+    region: Any,
+    config: GEEConfig,
+    ee: Any,
+) -> Any:
+    """Return same-calendar-month normals and anomalies.
+
+    This is historical climate context, not a forecast, climate-attribution
+    result, or future scenario.  Each normal is calculated from complete
+    calendar months across the configured baseline.  Rainfall uses the same
+    CHIRPS collection as the target-month staging field and temperature uses
+    the same ERA5-Land collection as the target-month temperature field, so
+    an anomaly never mixes two source families.
+    """
+
+    years = ee.List.sequence(
+        config.climate_baseline_start_year,
+        config.climate_baseline_end_year,
+    )
+    calendar_month = month_start.month
+
+    def baseline_image(year: Any) -> Any:
+        year = ee.Number(year).toInt()
+        start = ee.Date.fromYMD(year, calendar_month, 1)
+        end = start.advance(1, "month")
+        rainfall = (
+            ee.ImageCollection(config.datasets.chirps_daily)
+            .filterBounds(region)
+            .filterDate(start, end)
+            .select("precipitation")
+            .sum()
+            .rename("baseline_rainfall_mm")
+        )
+        temperature = (
+            ee.ImageCollection(config.datasets.era5_land_daily_aggregated)
+            .filterBounds(region)
+            .filterDate(start, end)
+            .select("temperature_2m")
+            .mean()
+            .subtract(273.15)
+            .rename("baseline_temperature_c")
+        )
+        return rainfall.toFloat().addBands(temperature.toFloat()).set(
+            "baseline_year", year
+        )
+
+    baseline = ee.ImageCollection.fromImages(years.map(baseline_image))
+    rainfall_normal = (
+        baseline.select("baseline_rainfall_mm")
+        .mean()
+        .rename("rainfall_normal_1991_2020_mm")
+        .toFloat()
+    )
+    rainfall_anomaly = (
+        ee.Image(current_rainfall)
+        .select("chirps_precipitation_mm")
+        .subtract(rainfall_normal)
+        .rename("rainfall_anomaly_1991_2020_mm")
+        .toFloat()
+    )
+    rainfall_anomaly_pct = (
+        rainfall_anomaly.divide(rainfall_normal)
+        .multiply(100)
+        .updateMask(rainfall_normal.neq(0))
+        .rename("rainfall_anomaly_1991_2020_pct")
+        .toFloat()
+    )
+    temperature_normal = (
+        baseline.select("baseline_temperature_c")
+        .mean()
+        .rename("temperature_normal_1991_2020_c")
+        .toFloat()
+    )
+    temperature_anomaly = (
+        ee.Image(current_temperature)
+        .select("mean_temperature_c")
+        .subtract(temperature_normal)
+        .rename("temperature_anomaly_1991_2020_c")
+        .toFloat()
+    )
+    return (
+        rainfall_normal.addBands(rainfall_anomaly)
+        .addBands(rainfall_anomaly_pct)
+        .addBands(temperature_normal)
+        .addBands(temperature_anomaly)
+    )
+
+
 def _static_terrain_features(region: Any, config: GEEConfig, ee: Any) -> Any:
     """Return SRTM elevation, slope, and aspect in degrees."""
 
@@ -858,6 +980,16 @@ def build_monthly_feature_image(
         .addBands(chirps)
         .addBands(era5)
     )
+    if config.include_climate_context:
+        climate_context = _monthly_climate_context_features(
+            month_start,
+            chirps,
+            era5,
+            region_geometry,
+            config,
+            ee,
+        )
+        combined = combined.addBands(climate_context)
     soil: Any | None = None
     source_label = "separate_static_export"
     if feature_set == "all":
@@ -884,7 +1016,11 @@ def build_monthly_feature_image(
             "year_month": month_start.strftime("%Y-%m"),
             "period_start": month_start.isoformat(),
             "period_end": _next_month(month_start).isoformat(),
-            "feature_schema_version": "myanmar_agri_geo_v1",
+            "feature_schema_version": (
+                "myanmar_agri_geo_v1_climate_context"
+                if config.include_climate_context
+                else "myanmar_agri_geo_v1"
+            ),
             "grid_crs": config.grid_crs,
             "grid_resolution_m": config.grid_size_m,
             "source_sentinel2": config.datasets.sentinel2_sr_harmonized,
@@ -894,6 +1030,22 @@ def build_monthly_feature_image(
             "source_srtm": config.datasets.srtm_elevation,
             "source_jrc_water": config.datasets.jrc_global_surface_water,
             "source_soil": source_label,
+            "climate_context_status": (
+                "historical_same_month_normal_and_anomaly"
+                if config.include_climate_context
+                else "not_requested"
+            ),
+            "climate_baseline_period": (
+                f"{config.climate_baseline_start_year}-"
+                f"{config.climate_baseline_end_year}"
+                if config.include_climate_context
+                else None
+            ),
+            "climate_context_interpretation": (
+                "historical_context_not_attribution_forecast_or_projection"
+                if config.include_climate_context
+                else None
+            ),
             "soil_features_in_export": int(feature_set == "all" and soil is not None),
             "soil_uncertainty_available": int(soil_uncertainty_available),
             "s2_native_resolution_m": 10,
@@ -985,6 +1137,11 @@ def _sample_metadata(feature_image: Any, config: GEEConfig) -> dict[str, Any]:
         "source_srtm": feature_image.get("source_srtm"),
         "source_jrc_water": feature_image.get("source_jrc_water"),
         "source_soil": feature_image.get("source_soil"),
+        "climate_context_status": feature_image.get("climate_context_status"),
+        "climate_baseline_period": feature_image.get("climate_baseline_period"),
+        "climate_context_interpretation": feature_image.get(
+            "climate_context_interpretation"
+        ),
         "soil_features_in_export": feature_image.get("soil_features_in_export"),
         "soil_uncertainty_available": feature_image.get("soil_uncertainty_available"),
         "s2_native_resolution_m": feature_image.get("s2_native_resolution_m"),

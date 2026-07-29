@@ -7,6 +7,8 @@ Code agent အခြားတစ်ခုကို တူညီသည့် pipe
 The project is mapped explicitly to the ASEAN GeoAI Solution Canvas in
 [MYANMAR_GEOAI_SOLUTION_CANVAS.md](MYANMAR_GEOAI_SOLUTION_CANVAS.md), including
 what is implemented today and what needs real-data/label validation next.
+The checked end-to-end data, QA, API, and application path is documented in
+[docs/SYSTEM_FLOW.md](docs/SYSTEM_FLOW.md).
 
 > ဒီ dataset ၏ rule-based suitability labels များသည် **provisional research labels** သာဖြစ်သည်။ မြေစစ်ဆေးမှု၊ ဒေသခံ agronomist review, irrigation/flood/drainage, land tenure, pests, market conditions မပါဘဲ production crop recommendation အဖြစ် မသုံးပါနှင့်။
 
@@ -42,15 +44,36 @@ The default export architecture is optimized for pilot work:
   main static-task bottleneck.
 - `--admin1` can restrict a smoke test to one GAUL state/region before any
   country-wide task is submitted.
+- A regional release config must declare an exact
+  `earth_engine.admin1_scope`; the CLI fails closed instead of silently
+  submitting a nationwide task. Bago uses the separate exact `Bago (E)` and
+  `Bago (W)` export configs before combined assembly.
 
 ## Real Myanmar data status
 
-The current workspace has completed the first real regional release:
-Ayeyawaddy, January 2018, with 1,344 distinct 5 km cells. Its primary CSV,
-CSV.gz and Parquet pass strict QA; 1,330 rows are feature-usable. The web
-release contains all 1,344 cells, gives provisional rule rankings to 1,288,
-and abstains on 56 cells with insufficient evidence. It contains **zero
-observed crop labels** and therefore does not claim trained-model accuracy.
+The current workspace contains QA-approved January 2018 releases for
+Ayeyawaddy, Bago (East and West combined), Magway, Mandalay, and Sagaing:
+**9,971 distinct 5 km cells in total**. Each region has a primary CSV, CSV.gz,
+Parquet, QA report, source manifest, and full deterministic web bundle. The
+environmental feature rows are real source-derived evidence; their crop
+rankings remain provisional rules.
+
+All five releases contain **zero observed crop labels** and therefore do not
+claim trained-model accuracy. Monthly weather fields are present. Optional
+1991–2020 same-calendar-month rainfall and temperature normals/anomalies are
+implemented and unit-tested in the export pipeline, but a live climate-context
+export and the regional re-exports are still required before those columns can
+be published for every cell.
+
+The observed-label validator is ready for real reviewed records and verifies
+that each submitted longitude/latitude belongs to its declared 5 km
+EPSG:6933 `grid_id`. The current web bundle remains a rule-only `v1` contract;
+publishing observed-calibrated or trained-model predictions requires a new
+versioned bundle/API contract after spatial validation and the 2025 holdout.
+
+Random synthetic training CSVs, mock forecast models, unsourced macro
+generators, and manifest-editing one-off scripts are deliberately excluded
+from this product flow.
 
 Myanmar-wide 2018–2025 export and observed-label acquisition remain pending.
 The supplied generic flood/COVID CSVs remain excluded because they are not
@@ -95,23 +118,23 @@ myanmar-agri-geo prepare-chirps --config config/default.yaml --download
 # the remaining years and the manifest will still describe the full period.
 myanmar-agri-geo prepare-chirps --config config/default.yaml --start-month 2018-01 --end-month 2018-12 --download
 
-# Submit GEE table exports. Use --dry-run first to inspect the task plan.
+# Inspect the full country plan only. It is deliberately too large for one
+# submission; use bounded, versioned regional/month batches as shown below.
 myanmar-agri-geo gee-export --config config/default.yaml --dry-run
-myanmar-agri-geo gee-export --config config/default.yaml --start-tasks
 
-# Recommended first pilot: one month and one state/region. The split plan
-# creates one static task plus one monthly-dynamic task.
-myanmar-agri-geo gee-export --config config/default.yaml \
-  --admin1 Ayeyawaddy --start 2018-01 --end 2018-02 \
+# Recommended first pilot: use one versioned regional contract end to end.
+# The split plan creates one static task plus one monthly-dynamic task.
+myanmar-agri-geo gee-export \
+  --config config/pilot_ayeyawaddy_2018_01.yaml \
   --feature-set split --dry-run
-myanmar-agri-geo gee-export --config config/default.yaml \
-  --admin1 Ayeyawaddy --start 2018-01 --end 2018-02 \
+myanmar-agri-geo gee-export \
+  --config config/pilot_ayeyawaddy_2018_01.yaml \
   --feature-set split --start-tasks
 
 # After both regional tasks succeed, sync only their CSVs from the task's
 # Destination URI folder into the raw GEE staging directory.
 myanmar-agri-geo download-drive-exports \
-  --config config/default.yaml \
+  --config config/pilot_ayeyawaddy_2018_01.yaml \
   --folder-id DRIVE_FOLDER_ID \
   --prefix myanmar_agri_suitability_ayeyawaddy
 
@@ -119,11 +142,14 @@ myanmar-agri-geo download-drive-exports \
 # local/WebDAV fallback manifest. Download or clip VRT/GeoTIFF layers to the
 # configured soil cache before assembly if this fallback is needed. Set
 # soilgrids.use_gee_community_assets=false before running the GEE export.
-myanmar-agri-geo prepare-soil --config config/default.yaml
+myanmar-agri-geo prepare-soil \
+  --config config/pilot_ayeyawaddy_2018_01.yaml
 
-# After all Drive export CSVs are downloaded into data/raw/gee/:
-myanmar-agri-geo assemble --config config/default.yaml
-myanmar-agri-geo validate --config config/default.yaml --strict
+# After both Drive export CSVs are downloaded into the regional raw directory:
+myanmar-agri-geo assemble \
+  --config config/pilot_ayeyawaddy_2018_01.yaml
+myanmar-agri-geo validate \
+  --config config/pilot_ayeyawaddy_2018_01.yaml --strict
 
 # Publish a web bundle only from the QA-approved CSV and its matching
 # provenance files. The default includes every cell in the regional release.
@@ -131,7 +157,7 @@ myanmar-agri-geo build-web-pilot \
   --input data/output/pilot_ayeyawaddy_2018_01/myanmar_agri_suitability_ayeyawaddy_2018_01.csv \
   --qa-report data/output/pilot_ayeyawaddy_2018_01/qa_report.json \
   --source-manifest data/output/pilot_ayeyawaddy_2018_01/source_manifest.json \
-  --output web/data/pilot_ayeyawaddy_2018_01.json
+  --output web/data/output/pilot_ayeyawaddy_2018_01/pilot_ayeyawaddy_2018_01.json
 
 # Create the field/official-record contract. The template contains headers only;
 # it never creates or suggests fake observations.
@@ -240,12 +266,12 @@ never model inputs, and missing observed labels never trigger synthetic values.
 
 ## Interactive application
 
-The `web/` application serves the QA-approved Ayeyawaddy January 2018 release
-through `/api/v1/cells`. Selecting a true 5 km EPSG:6933-derived cell shows
-real measured features, provisional crop scores, positive/limiting factors,
-missingness, uncertainty, source links, release/QA hashes, and a downloadable
-UTF-8 CSV report. Cells below the evidence threshold display an abstention
-instead of a fabricated recommendation.
+The `web/` application serves the five QA-approved January 2018 regional
+releases through `/api/v1/cells?region=<region>`. Selecting a true 5 km
+EPSG:6933-derived cell shows real measured features, provisional crop scores,
+positive/limiting factors, missingness, uncertainty, source links, release/QA
+hashes, and a downloadable UTF-8 CSV report. Cells below the evidence threshold
+display an abstention instead of a fabricated recommendation.
 
 The UI states that environmental features are real while recommendations are
 rule-based and not observed/trained-AI results. Device-local feedback is never

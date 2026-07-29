@@ -1,4 +1,9 @@
-# Myanmar Agricultural GeoAI Pipeline - Audit Report
+# Myanmar Agricultural GeoAI Pipeline - Phase 0 Audit Report
+
+> Historical snapshot from 2026-07-28. The current five-region, bilingual
+> data/API/application flow and its remaining gates are recorded in
+> [SYSTEM_FLOW.md](SYSTEM_FLOW.md).
+
 **Date:** 2026-07-28
 **Scope:** Step 1 Project Audit
 

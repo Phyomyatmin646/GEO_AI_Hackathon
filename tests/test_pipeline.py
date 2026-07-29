@@ -2,14 +2,19 @@ from __future__ import annotations
 
 from copy import deepcopy
 import json
+from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from myanmar_agri_geo.config import load_config, resolved_config
 from myanmar_agri_geo.pipeline import (
+    add_quality_fields,
     assemble_dataset,
     attach_project_context,
+    enrich_physical_features,
     read_gee_exports,
+    validate_regional_raw_scope,
 )
 
 
@@ -68,6 +73,7 @@ def test_assemble_outputs_all_required_artifacts(tmp_path) -> None:
     # This test fixture validates assembly mechanics without downloading real
     # rasters; production defaults require the CHIRPS v3 cache.
     config["chirps_v3"]["enabled"] = False
+    config["climate_context"]["enabled"] = False
 
     artifacts = assemble_dataset(config, write_plain_csv=True)
 
@@ -90,6 +96,108 @@ def test_assemble_outputs_all_required_artifacts(tmp_path) -> None:
     assert manifest["contextual_resource_audit"]["catalog_url"] == "https://geoai-collabhub.com/resources"
     qa = json.loads(artifacts["qa_report"].read_text(encoding="utf-8"))
     assert qa["valid"] is True
+
+
+def test_regional_raw_scope_rejects_wrong_task_filename() -> None:
+    config, _ = load_config("config/pilot_ayeyawaddy_2018_01.yaml")
+
+    with pytest.raises(ValueError, match="does not identify"):
+        validate_regional_raw_scope(
+            pd.DataFrame({"admin1_name": [pd.NA]}),
+            [Path("myanmar_agri_suitability_sagaing_dynamic_2018_01.csv")],
+            config,
+        )
+
+
+def test_regional_raw_scope_rejects_conflicting_exported_admin1() -> None:
+    config, _ = load_config("config/pilot_ayeyawaddy_2018_01.yaml")
+
+    with pytest.raises(ValueError, match="outside the configured"):
+        validate_regional_raw_scope(
+            pd.DataFrame({"admin1_name": ["Sagaing"]}),
+            [Path("myanmar_agri_suitability_ayeyawaddy_dynamic_2018_01.csv")],
+            config,
+        )
+
+
+def test_assemble_fails_closed_when_configured_climate_columns_are_absent(
+    tmp_path,
+) -> None:
+    config, root = load_config("config/default.yaml")
+    config = resolved_config(config, root)
+    config = deepcopy(config)
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    _raw_export_frame().to_csv(raw_dir / "gee_export.csv", index=False)
+    output_dir = tmp_path / "out"
+    config["project"]["raw_gee_dir"] = str(raw_dir)
+    config["project"]["chirps_v3_cache_dir"] = str(tmp_path / "chirps_v3")
+    config["project"]["soil_cache_dir"] = str(tmp_path / "soil")
+    config["project"]["output_dir"] = str(output_dir)
+    config["chirps_v3"]["enabled"] = False
+    config["climate_context"]["enabled"] = True
+
+    with pytest.raises(ValueError, match="Assembly QA failed"):
+        assemble_dataset(config)
+
+    qa = json.loads((output_dir / "qa_report.json").read_text(encoding="utf-8"))
+    climate_gate = next(
+        check
+        for check in qa["checks"]
+        if check["name"] == "climate_context_complete_column_set"
+    )
+    assert climate_gate["status"] == "fail"
+    assert set(climate_gate["details"]["missing_columns"]) == {
+        "rainfall_normal_1991_2020_mm",
+        "rainfall_anomaly_1991_2020_mm",
+        "rainfall_anomaly_1991_2020_pct",
+        "temperature_normal_1991_2020_c",
+        "temperature_anomaly_1991_2020_c",
+    }
+    assert not (output_dir / f"{config['project']['name']}.csv.gz").exists()
+    assert not (output_dir / f"{config['project']['name']}.parquet").exists()
+
+
+def test_assemble_fails_closed_when_configured_climate_values_are_all_null(
+    tmp_path,
+) -> None:
+    config, root = load_config("config/default.yaml")
+    config = resolved_config(config, root)
+    config = deepcopy(config)
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    raw = _raw_export_frame()
+    for column in (
+        "rainfall_normal_1991_2020_mm",
+        "rainfall_anomaly_1991_2020_mm",
+        "rainfall_anomaly_1991_2020_pct",
+        "temperature_normal_1991_2020_c",
+        "temperature_anomaly_1991_2020_c",
+    ):
+        raw[column] = pd.NA
+    raw.to_csv(raw_dir / "gee_export.csv", index=False)
+    output_dir = tmp_path / "out"
+    config["project"]["raw_gee_dir"] = str(raw_dir)
+    config["project"]["chirps_v3_cache_dir"] = str(tmp_path / "chirps_v3")
+    config["project"]["soil_cache_dir"] = str(tmp_path / "soil")
+    config["project"]["output_dir"] = str(output_dir)
+    config["chirps_v3"]["enabled"] = False
+    config["climate_context"]["enabled"] = True
+
+    with pytest.raises(ValueError, match="Assembly QA failed"):
+        assemble_dataset(config)
+
+    qa = json.loads((output_dir / "qa_report.json").read_text(encoding="utf-8"))
+    completeness = next(
+        check
+        for check in qa["checks"]
+        if check["name"] == "climate_context_complete_row_fraction"
+    )
+    assert completeness["status"] == "fail"
+    assert completeness["details"]["complete_rows"] == 0
+    assert completeness["details"]["minimum_complete_fraction"] == 0.95
+    assert not (output_dir / f"{config['project']['name']}.csv.gz").exists()
+    assert not (output_dir / f"{config['project']['name']}.parquet").exists()
 
 
 def test_split_static_and_monthly_exports_join_by_grid_id(tmp_path) -> None:
@@ -162,3 +270,54 @@ def test_project_context_rejects_conflicting_admin0() -> None:
         assert "conflict" in str(exc)
     else:  # pragma: no cover - defensive assertion
         raise AssertionError("Expected conflicting admin0_name to be rejected")
+
+
+def test_climate_context_status_distinguishes_complete_and_absent_rows() -> None:
+    config, _ = load_config("config/default.yaml")
+    complete = _raw_export_frame().iloc[[0]].copy()
+    complete["rainfall_normal_1991_2020_mm"] = 42.0
+    complete["rainfall_anomaly_1991_2020_mm"] = 118.0
+    complete["rainfall_anomaly_1991_2020_pct"] = 280.95
+    complete["temperature_normal_1991_2020_c"] = 25.5
+    complete["temperature_anomaly_1991_2020_c"] = 1.5
+
+    with_context = add_quality_fields(complete, config)
+    without_context = add_quality_fields(
+        _raw_export_frame().iloc[[0]].copy(),
+        config,
+    )
+
+    assert (
+        with_context.loc[with_context.index[0], "climate_context_status"]
+        == "historical_same_month_normal_and_anomaly"
+    )
+    assert with_context.loc[
+        with_context.index[0], "climate_baseline_period"
+    ] == "1991-2020"
+    assert (
+        without_context.loc[
+            without_context.index[0], "climate_context_status"
+        ]
+        == "not_in_release"
+    )
+
+
+def test_final_chirps_rainfall_rebuilds_climate_anomalies() -> None:
+    config, _ = load_config("config/default.yaml")
+    frame = pd.DataFrame(
+        {
+            "grid_id": ["mm_1_2"],
+            "year_month": ["2018-01"],
+            "monthly_rainfall_mm": [90.0],
+            "rainfall_normal_1991_2020_mm": [60.0],
+            # These simulate stale GEE values from before the local CHIRPS v3
+            # current-month replacement.
+            "rainfall_anomaly_1991_2020_mm": [5.0],
+            "rainfall_anomaly_1991_2020_pct": [8.33],
+        }
+    )
+
+    output = enrich_physical_features(frame, config)
+
+    assert output.loc[0, "rainfall_anomaly_1991_2020_mm"] == 30.0
+    assert output.loc[0, "rainfall_anomaly_1991_2020_pct"] == 50.0

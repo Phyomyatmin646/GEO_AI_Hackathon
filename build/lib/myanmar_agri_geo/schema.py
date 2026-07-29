@@ -53,6 +53,18 @@ MONTHLY_FEATURE_COLUMNS = [
     "water_availability_score",
 ]
 
+# Optional, versioned historical-climate context.  These fields are excluded
+# from the v1 required-column and missingness contracts so the already-frozen
+# Ayeyawaddy release remains reproducible.  New releases may opt in through
+# the Earth Engine climate-context configuration.
+OPTIONAL_CLIMATE_CONTEXT_COLUMNS = [
+    "rainfall_normal_1991_2020_mm",
+    "rainfall_anomaly_1991_2020_mm",
+    "rainfall_anomaly_1991_2020_pct",
+    "temperature_normal_1991_2020_c",
+    "temperature_anomaly_1991_2020_c",
+]
+
 QUALITY_COLUMNS = [
     "s2_data_status",
     "s1_data_status",

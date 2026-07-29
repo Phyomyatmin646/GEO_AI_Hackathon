@@ -113,6 +113,154 @@ def test_small_unusable_subset_is_retained_when_dataset_coverage_passes() -> Non
     assert gate["details"]["usable_rows"] == 99
 
 
+def test_climate_context_contract_checks_ranges_metadata_and_invariants() -> None:
+    frame = _valid_frame()
+    frame["mean_temperature_c"] = [27.0, 20.0]
+    frame["rainfall_normal_1991_2020_mm"] = [50.0, 100.0]
+    frame["rainfall_anomaly_1991_2020_mm"] = [-10.0, 20.0]
+    frame["rainfall_anomaly_1991_2020_pct"] = [-20.0, 20.0]
+    frame["temperature_normal_1991_2020_c"] = [26.0, 21.0]
+    frame["temperature_anomaly_1991_2020_c"] = [1.0, -1.0]
+    frame["climate_context_status"] = (
+        "historical_same_month_normal_and_anomaly"
+    )
+    frame["climate_baseline_period"] = "1991-2020"
+    frame["climate_context_interpretation"] = (
+        "historical_context_not_attribution_forecast_or_projection"
+    )
+
+    report = validate_dataset(
+        frame,
+        expected_crops=("monsoon_rice",),
+        strict_schema=False,
+    )
+
+    assert report["valid"] is True
+    assert _check(report, "climate_rainfall_anomaly_invariant")["status"] == (
+        "pass"
+    )
+    assert _check(report, "climate_temperature_anomaly_invariant")["status"] == (
+        "pass"
+    )
+    assert _check(report, "climate_context_status_consistent")["status"] == (
+        "pass"
+    )
+
+    frame.loc[0, "rainfall_anomaly_1991_2020_mm"] = 25.0
+    inconsistent = validate_dataset(
+        frame,
+        expected_crops=("monsoon_rice",),
+        strict_schema=False,
+    )
+    assert inconsistent["valid"] is False
+    assert _check(
+        inconsistent,
+        "climate_rainfall_anomaly_invariant",
+    )["status"] == "fail"
+
+
+def test_partial_climate_context_column_set_fails_validation() -> None:
+    frame = _valid_frame()
+    frame["rainfall_normal_1991_2020_mm"] = [50.0, 100.0]
+
+    report = validate_dataset(
+        frame,
+        expected_crops=("monsoon_rice",),
+        strict_schema=False,
+    )
+
+    assert report["valid"] is False
+    assert _check(report, "climate_context_complete_column_set")["status"] == (
+        "fail"
+    )
+
+
+def test_required_climate_context_rejects_an_entirely_absent_column_set() -> None:
+    report = validate_dataset(
+        _valid_frame(),
+        expected_crops=("monsoon_rice",),
+        strict_schema=False,
+        require_climate_context=True,
+    )
+
+    assert report["valid"] is False
+    gate = _check(report, "climate_context_complete_column_set")
+    assert gate["status"] == "fail"
+    assert gate["invalid_count"] == 5
+    assert len(gate["details"]["missing_columns"]) == 5
+    assert report["configuration"]["require_climate_context"] is True
+
+
+def test_required_climate_context_rejects_present_but_all_null_values() -> None:
+    frame = _valid_frame()
+    frame["mean_temperature_c"] = [27.0, 20.0]
+    climate_columns = (
+        "rainfall_normal_1991_2020_mm",
+        "rainfall_anomaly_1991_2020_mm",
+        "rainfall_anomaly_1991_2020_pct",
+        "temperature_normal_1991_2020_c",
+        "temperature_anomaly_1991_2020_c",
+    )
+    for column in climate_columns:
+        frame[column] = pd.NA
+    frame["climate_context_status"] = "incomplete_historical_context"
+    frame["climate_baseline_period"] = "1991-2020"
+    frame["climate_context_interpretation"] = (
+        "historical_context_not_attribution_forecast_or_projection"
+    )
+
+    required = validate_dataset(
+        frame,
+        expected_crops=("monsoon_rice",),
+        strict_schema=False,
+        min_usable_row_fraction=0.50,
+        require_climate_context=True,
+    )
+
+    assert required["valid"] is False
+    assert _check(required, "climate_context_complete_column_set")[
+        "status"
+    ] == "pass"
+    completeness = _check(
+        required,
+        "climate_context_complete_row_fraction",
+    )
+    assert completeness["status"] == "fail"
+    assert completeness["details"] == {
+        "complete_rows": 0,
+        "total_rows": 2,
+        "complete_fraction": 0.0,
+        "minimum_complete_fraction": 0.95,
+    }
+    assert _check(required, "climate_rainfall_anomaly_invariant")[
+        "details"
+    ]["comparable_rows"] == 0
+    assert _check(required, "climate_rainfall_anomaly_invariant")[
+        "status"
+    ] == "fail"
+    assert _check(required, "climate_rainfall_anomaly_percentage_invariant")[
+        "status"
+    ] == "fail"
+    assert _check(required, "climate_temperature_anomaly_invariant")[
+        "status"
+    ] == "fail"
+    assert required["configuration"][
+        "climate_context_min_complete_fraction"
+    ] == 0.95
+
+    legacy_optional = validate_dataset(
+        frame,
+        expected_crops=("monsoon_rice",),
+        strict_schema=False,
+        require_climate_context=False,
+    )
+    assert legacy_optional["valid"] is True
+    assert not any(
+        check["name"] == "climate_context_complete_row_fraction"
+        for check in legacy_optional["checks"]
+    )
+
+
 def test_write_qa_report_emits_strict_json(tmp_path) -> None:
     report = validate_dataset(
         _valid_frame(), expected_crops=("monsoon_rice",), strict_schema=False

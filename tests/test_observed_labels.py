@@ -69,6 +69,24 @@ def test_2025_is_locked_to_temporal_holdout() -> None:
     assert pd.isna(accepted.loc[0, "spatial_cv_fold"])
 
 
+def test_grid_id_must_match_observation_coordinates() -> None:
+    accepted, rejected, report = validate_observed_labels_frame(
+        pd.DataFrame([_valid_row(grid_id="mm_1840_396")])
+    )
+
+    assert accepted.empty
+    assert len(rejected) == 1
+    assert (
+        rejected.loc[0, "rejection_reasons"]
+        == "grid_id_coordinate_mismatch"
+    )
+    assert report["grid_contract"] == {
+        "crs": "EPSG:6933",
+        "grid_size_m": 5000,
+        "grid_id_verified_from_coordinates": True,
+    }
+
+
 def test_synthetic_or_unreviewed_rows_are_rejected() -> None:
     _, rejected, report = validate_observed_labels_frame(
         pd.DataFrame(

@@ -6,7 +6,7 @@ project:
   country_name: Myanmar
   iso3: MMR
   start_month: "2018-01"
-  end_month: "2025-12"
+  end_month: "2026-12"
   grid_size_m: 5000
   grid_crs: "EPSG:6933"
   output_dir: "data/output"
@@ -40,9 +40,10 @@ earth_engine:
 sources:
   sentinel2: "COPERNICUS/S2_SR_HARMONIZED"
   sentinel1: "COPERNICUS/S1_GRD"
-  # Used only as a GEE staging feature. Final rainfall values are sampled from
-  # the official CHIRPS v3 monthly cache during assembly.
-  chirps: "UCSB-CHG/CHIRPS/DAILY"
+  # Official CHIRPS v3 daily reanalysis in Earth Engine. Final current-month
+  # rainfall is still replaced by the reproducible CHIRPS v3 monthly cache
+  # during assembly; the GEE collection also provides the 1991-2020 normal.
+  chirps: "UCSB-CHC/CHIRPS/V3/DAILY_RNL"
   chirps_v3_monthly_base_url: "https://data.chc.ucsb.edu/products/CHIRPS/v3.0/monthly/global/tifs"
   era5_land: "ECMWF/ERA5_LAND/DAILY_AGGR"
   srtm: "USGS/SRTMGL1_003"
@@ -68,8 +69,16 @@ chirps_v3:
   # Default to the final, official CHIRPS v3 product rather than silently
   # retaining the GEE CHIRPS v2 staging field. Run `prepare-chirps --download`
   # before `assemble`.
-  require_complete_cache: true
+  require_complete_cache: false
   download_timeout_seconds: 120
+
+# Historical climate context is separate from target-month weather. These
+# normals/anomalies are not forecasts, future scenarios, or causal
+# climate-change attribution.
+climate_context:
+  enabled: false
+  baseline_start_year: 1991
+  baseline_end_year: 2020
 
 # CollabHub is a mixed resource catalog, not an additional observation source.
 # `resource-audit` writes metadata-only CSVs; any external layer remains
