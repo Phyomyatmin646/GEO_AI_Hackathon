@@ -6,7 +6,13 @@ from pathlib import Path
 from typing import Iterable
 
 from .crop_profiles import CROP_PROFILES
-from .schema import IDENTITY_COLUMNS, MONTHLY_FEATURE_COLUMNS, QUALITY_COLUMNS, STATIC_FEATURE_COLUMNS
+from .schema import (
+    IDENTITY_COLUMNS,
+    MONTHLY_FEATURE_COLUMNS,
+    OPTIONAL_CLIMATE_CONTEXT_COLUMNS,
+    QUALITY_COLUMNS,
+    STATIC_FEATURE_COLUMNS,
+)
 
 
 _DESCRIPTIONS = {
@@ -48,6 +54,11 @@ _DESCRIPTIONS = {
     "max_temperature_c": "ERA5-Land monthly maximum 2 m air temperature, °C.",
     "solar_radiation_mj_m2_day": "ERA5-Land mean daily downward surface solar radiation, MJ m⁻² day⁻¹.",
     "era5_soil_moisture_m3_m3": "ERA5-Land layer-1 volumetric soil-water content, m³/m³.",
+    "rainfall_normal_1991_2020_mm": "CHIRPS v3 mean rainfall for the same calendar month over the fixed 1991–2020 normal period, mm.",
+    "rainfall_anomaly_1991_2020_mm": "Target-month CHIRPS v3 rainfall minus the 1991–2020 same-month normal, mm.",
+    "rainfall_anomaly_1991_2020_pct": "Target-month CHIRPS v3 rainfall anomaly as a percentage of the 1991–2020 same-month normal.",
+    "temperature_normal_1991_2020_c": "ERA5-Land mean 2 m air temperature for the same calendar month over 1991–2020, °C.",
+    "temperature_anomaly_1991_2020_c": "Target-month ERA5-Land mean temperature minus the 1991–2020 same-month normal, °C.",
     "water_availability_score": "0–100 transparent proxy derived from physical soil water, annual rain, water occurrence and water distance; not a direct irrigation measurement.",
     "s2_data_status": "Availability/quality flag; never infer data from a missing optical month.",
     "s1_data_status": "Availability flag for optional Sentinel-1 support features.",
@@ -77,6 +88,21 @@ def write_data_dictionary(path: str | Path, crops: Iterable[str]) -> Path:
     ]
     for column in IDENTITY_COLUMNS + STATIC_FEATURE_COLUMNS + MONTHLY_FEATURE_COLUMNS + QUALITY_COLUMNS:
         lines.append(f"| `{column}` | {_DESCRIPTIONS.get(column, 'See source manifest.')} |")
+    lines.extend(
+        [
+            "",
+            "## Optional historical climate-context columns",
+            "",
+            "These columns are present only in releases that explicitly enable the 1991–2020 climate-context contract. They describe historical normals and anomalies; they are not forecasts, future climate scenarios, or causal climate-change attribution.",
+            "",
+            "| Column | Meaning |",
+            "| --- | --- |",
+        ]
+    )
+    for column in OPTIONAL_CLIMATE_CONTEXT_COLUMNS:
+        lines.append(
+            f"| `{column}` | {_DESCRIPTIONS.get(column, 'See source manifest.')} |"
+        )
     lines.extend(["", "## Suitability label columns", "", "| Pattern | Meaning |", "| --- | --- |"])
     lines.extend(
         [

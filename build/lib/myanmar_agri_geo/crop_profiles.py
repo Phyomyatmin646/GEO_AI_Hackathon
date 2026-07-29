@@ -284,6 +284,30 @@ CROP_PROFILES: Mapping[str, CropProfile] = {
         ph=(5.0, 6.0, 7.0, 7.8), slope=(0, 0, 5, 15), solar=(10, 16, 25, 32), water=(35, 60, 85, 100),
         notes="Cooler, drier production periods are generally preferred; protected cultivation and variety are not modelled.",
     ),
+    "rubber": _profile(
+        "rubber", "Rubber (ရာဘာ)", "industrial_crop",
+        temperature=(20, 25, 30, 35), monthly_rain=(50, 150, 300, 500), annual_rain=(1_500, 2_000, 3_500, 4_500),
+        ph=(4.5, 5.0, 6.5, 7.5), slope=(0, 2, 15, 25), solar=(9, 14, 22, 28), water=(40, 70, 100, 100),
+        notes="Needs a dry spell for latex collection, but steady rainfall for growth. Wind damage is a risk.",
+    ),
+    "teak": _profile(
+        "teak", "Teak (ကျွန်း)", "timber",
+        temperature=(15, 22, 32, 40), monthly_rain=(10, 50, 250, 500), annual_rain=(800, 1_300, 2_500, 3_500),
+        ph=(6.0, 6.5, 7.5, 8.5), slope=(0, 2, 15, 30), solar=(10, 15, 25, 30), water=(30, 60, 90, 100),
+        notes="Requires a pronounced dry season of 3-5 months for quality timber development. Intolerant of waterlogging.",
+    ),
+    "oil_palm": _profile(
+        "oil_palm", "Oil Palm (ဆီအုန်း)", "industrial_crop",
+        temperature=(22, 25, 32, 35), monthly_rain=(100, 150, 350, 550), annual_rain=(1_800, 2_200, 3_500, 4_500),
+        ph=(4.0, 5.0, 6.5, 7.5), slope=(0, 0, 8, 15), solar=(12, 16, 25, 30), water=(60, 80, 100, 100),
+        notes="Highly sensitive to dry spells > 2 months. Requires evenly distributed rainfall throughout the year.",
+    ),
+    "cashew": _profile(
+        "cashew", "Cashew (သီဟိုဠ်သရက်)", "tropical_fruit",
+        temperature=(15, 22, 32, 38), monthly_rain=(0, 20, 200, 400), annual_rain=(500, 1_000, 2_500, 3_500),
+        ph=(4.5, 5.5, 6.5, 7.5), slope=(0, 2, 15, 25), solar=(10, 16, 26, 32), water=(20, 40, 80, 100),
+        notes="Drought-hardy. Dry weather is essential during flowering and nut development. Sensitive to frost.",
+    ),
 }
 
 CROP_IDS = tuple(CROP_PROFILES)

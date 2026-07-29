@@ -8,6 +8,11 @@ from typing import Any
 
 import yaml
 
+from .crop_profiles import CROP_PROFILES
+
+
+OFFICIAL_CHIRPS_V3_DAILY_RNL = "UCSB-CHC/CHIRPS/V3/DAILY_RNL"
+
 
 class ConfigError(ValueError):
     """Raised when a required project setting is absent or invalid."""
@@ -34,8 +39,30 @@ def load_config(path: str | Path) -> tuple[dict[str, Any], Path]:
             raise ConfigError(f"Missing mapping section: {section}")
     if "resource_audit" in config and not isinstance(config["resource_audit"], dict):
         raise ConfigError("resource_audit must be a mapping when supplied")
+    if "climate_context" in config and not isinstance(
+        config["climate_context"], dict
+    ):
+        raise ConfigError("climate_context must be a mapping when supplied")
+    admin1_scope = config["earth_engine"].get("admin1_scope")
+    if admin1_scope is not None and (
+        not isinstance(admin1_scope, str) or not admin1_scope.strip()
+    ):
+        raise ConfigError(
+            "earth_engine.admin1_scope must be a non-empty exact FAO GAUL "
+            "ADM1_NAME when supplied"
+        )
 
     project = config["project"]
+    release_scope = project.get("scope_admin1")
+    if (
+        release_scope
+        and admin1_scope
+        and str(release_scope).strip() != str(admin1_scope).strip()
+    ):
+        raise ConfigError(
+            "project.scope_admin1 and earth_engine.admin1_scope must match "
+            "exactly for a directly exportable regional release"
+        )
     for key in ("iso3", "start_month", "end_month", "grid_size_m"):
         if key not in project:
             raise ConfigError(f"Missing project.{key}")
@@ -79,6 +106,45 @@ def load_config(path: str | Path) -> tuple[dict[str, Any], Path]:
         raise ConfigError("labels.default_rule_confidence must be a number in (0, 0.50]") from exc
     if not 0.0 < rule_confidence <= 0.50:
         raise ConfigError("labels.default_rule_confidence must be a number in (0, 0.50]")
+
+    crops = config["labels"].get("crops")
+    if not isinstance(crops, list) or not crops:
+        raise ConfigError("labels.crops must be a non-empty list")
+    if any(not isinstance(crop, str) or not crop.strip() for crop in crops):
+        raise ConfigError("labels.crops entries must be non-empty strings")
+    if len(crops) != len(set(crops)):
+        raise ConfigError("labels.crops must not contain duplicates")
+    unknown_crops = sorted(set(crops).difference(CROP_PROFILES))
+    if unknown_crops:
+        raise ConfigError(
+            "labels.crops contains unsupported crop profiles: "
+            + ", ".join(unknown_crops)
+        )
+
+    climate_context = config.get("climate_context", {})
+    if bool(climate_context.get("enabled", False)):
+        configured_chirps = str(config["sources"].get("chirps", "")).strip()
+        if configured_chirps != OFFICIAL_CHIRPS_V3_DAILY_RNL:
+            raise ConfigError(
+                "climate_context.enabled requires sources.chirps to be "
+                f"{OFFICIAL_CHIRPS_V3_DAILY_RNL!r}; received "
+                f"{configured_chirps!r}"
+            )
+        try:
+            baseline_start = int(
+                climate_context.get("baseline_start_year", 1991)
+            )
+            baseline_end = int(
+                climate_context.get("baseline_end_year", 2020)
+            )
+        except (TypeError, ValueError) as exc:
+            raise ConfigError(
+                "climate_context baseline years must be integers"
+            ) from exc
+        if (baseline_start, baseline_end) != (1991, 2020):
+            raise ConfigError(
+                "climate_context must use the fixed 1991-2020 normal period"
+            )
 
     root = config_path.parent.parent if config_path.parent.name == "config" else config_path.parent
     return config, root

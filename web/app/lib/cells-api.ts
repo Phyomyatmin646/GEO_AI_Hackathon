@@ -5,7 +5,10 @@ import type {
 } from "./pilot-data";
 import { csvValue } from "./csv-value";
 
-const MAX_PAGE_SIZE = 2000;
+// The largest current regional release contains 3,766 cells. Keeping one
+// region below this ceiling allows the interactive map to render the complete
+// QA-approved regional grid without silently truncating it.
+const MAX_PAGE_SIZE = 5000;
 const DEFAULT_PAGE_SIZE = 250;
 const CELL_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
 const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -147,6 +150,29 @@ export function parseCellFilters(url: URL): CellFilters {
       Number.MAX_SAFE_INTEGER,
     ),
   };
+}
+
+/** Parse the only optional query parameter supported by a cell CSV download. */
+export function parseDownloadRegion(url: URL): string | undefined {
+  for (const key of url.searchParams.keys()) {
+    if (key !== "region") {
+      throw new ApiRequestError(
+        400,
+        "UNSUPPORTED_QUERY_PARAMETER",
+        `Unsupported query parameter: ${key}`,
+        key,
+      );
+    }
+    if (url.searchParams.getAll(key).length > 1) {
+      throw new ApiRequestError(
+        400,
+        "DUPLICATE_QUERY_PARAMETER",
+        `Query parameter may only be supplied once: ${key}`,
+        key,
+      );
+    }
+  }
+  return optionalTrimmed(url.searchParams.get("region"));
 }
 
 function optionalTrimmed(value: string | null): string | undefined {

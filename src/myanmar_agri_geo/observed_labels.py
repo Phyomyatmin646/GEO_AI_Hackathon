@@ -13,6 +13,7 @@ from typing import Any, Iterable
 
 import numpy as np
 import pandas as pd
+from pyproj import Transformer
 
 from .crop_profiles import CROP_IDS
 from .manifest import write_json
@@ -148,6 +149,8 @@ def validate_observed_labels_frame(
     min_longitude: float = 92.0,
     max_longitude: float = 102.0,
     max_location_precision_m: float = 5_000.0,
+    grid_size_m: int = 5_000,
+    grid_crs: str = "EPSG:6933",
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, Any]]:
     """Return accepted rows, rejected rows, and an audit-safe QA report.
 
@@ -214,6 +217,36 @@ def validate_observed_labels_frame(
         & ~work["latitude"].between(min_latitude, max_latitude),
         "outside_myanmar_latitude_bounds",
     )
+    coordinate_valid = (
+        work["longitude"].between(min_longitude, max_longitude)
+        & work["latitude"].between(min_latitude, max_latitude)
+    ).fillna(False)
+    if bool(coordinate_valid.any()):
+        transformer = Transformer.from_crs(
+            "EPSG:4326",
+            grid_crs,
+            always_xy=True,
+        )
+        valid_index = work.index[coordinate_valid]
+        projected_x, projected_y = transformer.transform(
+            work.loc[valid_index, "longitude"].to_numpy(),
+            work.loc[valid_index, "latitude"].to_numpy(),
+        )
+        expected_grid_ids = pd.Series(
+            [
+                f"mm_{int(np.floor(x / grid_size_m))}_"
+                f"{int(np.floor(y / grid_size_m))}"
+                for x, y in zip(projected_x, projected_y, strict=True)
+            ],
+            index=valid_index,
+            dtype="string",
+        )
+        grid_mismatch = pd.Series(False, index=work.index)
+        grid_mismatch.loc[valid_index] = (
+            work.loc[valid_index, "grid_id"].astype("string")
+            != expected_grid_ids
+        )
+        reject(grid_mismatch, "grid_id_coordinate_mismatch")
 
     present, invalid_present = _parse_boolean(work["observed_crop_present"])
     work["observed_crop_present"] = present
@@ -350,6 +383,11 @@ def validate_observed_labels_frame(
         "privacy": {
             "direct_personal_identifier_columns_present": False,
             "maximum_location_precision_m": float(max_location_precision_m),
+        },
+        "grid_contract": {
+            "crs": grid_crs,
+            "grid_size_m": int(grid_size_m),
+            "grid_id_verified_from_coordinates": True,
         },
         "accepted_by_crop": _counts(accepted["crop_id"]) if not accepted.empty else {},
         "accepted_by_source_type": (

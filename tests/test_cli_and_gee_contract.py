@@ -4,14 +4,17 @@ import json
 from pathlib import Path
 from typing import Any
 
+from myanmar_agri_geo.config import ConfigError, load_config
 from myanmar_agri_geo.cli import main
 from myanmar_agri_geo.gee_backend import (
     GEEConfig,
     _resolve_earth_engine_crs,
+    _validate_config,
     create_5km_grid,
     iter_month_starts,
     sample_feature_image_to_grid,
 )
+import pytest
 
 
 def test_month_iterator_is_exclusive_at_end() -> None:
@@ -34,6 +37,19 @@ def test_cli_plan_and_gee_preflight_are_side_effect_free(capsys) -> None:
     assert preflight["static_task_count"] == 1
     assert preflight["task_count"] == 97
     assert preflight["end_month_exclusive"] == "2026-01"
+    assert preflight["submission_task_limit"] == 24
+
+
+def test_large_countrywide_task_submission_is_refused_before_earth_engine() -> None:
+    with pytest.raises(SystemExit, match="oversized Earth Engine submission"):
+        main(
+            [
+                "gee-export",
+                "--config",
+                "config/default.yaml",
+                "--start-tasks",
+            ]
+        )
 
 
 def test_regional_one_month_split_preflight_creates_two_tasks(capsys) -> None:
@@ -61,6 +77,113 @@ def test_regional_one_month_split_preflight_creates_two_tasks(capsys) -> None:
     assert preflight["monthly_task_count"] == 1
     assert preflight["static_task_count"] == 1
     assert preflight["task_count"] == 2
+
+
+def test_regional_config_cannot_silently_expand_to_nationwide(capsys) -> None:
+    assert (
+        main(
+            [
+                "gee-export",
+                "--config",
+                "config/pilot_sagaing_2018_01.yaml",
+                "--dry-run",
+            ]
+        )
+        == 0
+    )
+    preflight = json.loads(capsys.readouterr().out)
+    assert preflight["admin1_scope"] == "Sagaing"
+    assert preflight["task_count"] == 2
+
+
+def test_regional_config_rejects_mismatched_admin1_override() -> None:
+    with pytest.raises(SystemExit, match="disagrees with this regional"):
+        main(
+            [
+                "gee-export",
+                "--config",
+                "config/pilot_ayeyawaddy_2018_01.yaml",
+                "--admin1",
+                "Sagaing",
+                "--dry-run",
+            ]
+        )
+
+
+def test_regional_config_rejects_prefix_without_scope() -> None:
+    with pytest.raises(SystemExit, match="prefix that omits"):
+        main(
+            [
+                "gee-export",
+                "--config",
+                "config/pilot_ayeyawaddy_2018_01.yaml",
+                "--prefix",
+                "generic_export",
+                "--dry-run",
+            ]
+        )
+
+
+def test_regional_config_rejects_mismatched_configured_admin1(tmp_path) -> None:
+    source = Path("config/pilot_ayeyawaddy_2018_01.yaml").read_text(
+        encoding="utf-8"
+    )
+    config_path = tmp_path / "mismatched_region.yaml"
+    config_path.write_text(
+        source.replace(
+            'admin1_scope: "Ayeyawaddy"',
+            'admin1_scope: "Sagaing"',
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigError, match="must match exactly"):
+        load_config(config_path)
+
+
+def test_export_rejects_months_outside_release_contract() -> None:
+    with pytest.raises(SystemExit, match="outside this release contract"):
+        main(
+            [
+                "gee-export",
+                "--config",
+                "config/pilot_ayeyawaddy_2018_01.yaml",
+                "--start",
+                "2018-01",
+                "--end",
+                "2018-03",
+                "--dry-run",
+            ]
+        )
+
+
+def test_export_rejects_nonpositive_exclusive_period() -> None:
+    with pytest.raises(SystemExit, match="must be later"):
+        main(
+            [
+                "gee-export",
+                "--config",
+                "config/default.yaml",
+                "--start",
+                "2018-02",
+                "--end",
+                "2018-02",
+                "--dry-run",
+            ]
+        )
+
+
+def test_composite_regional_config_requires_explicit_export_parts() -> None:
+    with pytest.raises(SystemExit, match="Refusing to submit a nationwide export"):
+        main(
+            [
+                "gee-export",
+                "--config",
+                "config/pilot_bago_2018_01.yaml",
+                "--dry-run",
+            ]
+        )
 
 
 def test_resource_audit_command_writes_metadata_only(tmp_path, capsys) -> None:
@@ -174,3 +297,22 @@ def test_grid_sampling_passes_resolved_wkt_but_keeps_canonical_metadata() -> Non
         'PROJCS["WGS 84 / NSIDC EASE-Grid 2.0 Global"'
     )
     assert config.grid_crs == "EPSG:6933"
+
+
+def test_climate_context_uses_fixed_1991_2020_normal_contract() -> None:
+    _validate_config(
+        GEEConfig(
+            include_climate_context=True,
+            climate_baseline_start_year=1991,
+            climate_baseline_end_year=2020,
+        )
+    )
+
+    with pytest.raises(ValueError, match="1991-2020"):
+        _validate_config(
+            GEEConfig(
+                include_climate_context=True,
+                climate_baseline_start_year=2001,
+                climate_baseline_end_year=2020,
+            )
+        )

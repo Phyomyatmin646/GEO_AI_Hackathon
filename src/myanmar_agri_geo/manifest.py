@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from copy import deepcopy
 import hashlib
 import json
 from pathlib import Path
@@ -10,6 +11,7 @@ from typing import Any, Iterable
 
 import pandas as pd
 
+from .config import OFFICIAL_CHIRPS_V3_DAILY_RNL
 from .resources import collabhub_audit_summary
 
 
@@ -126,6 +128,70 @@ def source_versions_json(config: dict[str, Any]) -> str:
     return json.dumps(selected, sort_keys=True, separators=(",", ":"))
 
 
+def source_catalog_for_config(config: dict[str, Any]) -> dict[str, dict[str, str]]:
+    """Return provenance records aligned with configured collection IDs."""
+
+    catalog = deepcopy(SOURCE_CATALOG)
+    configured_chirps = str(
+        config["sources"].get("chirps", "UCSB-CHG/CHIRPS/DAILY")
+    )
+    staging = catalog["chirps_gee_staging"]
+    staging["dataset_id"] = configured_chirps
+    if configured_chirps == OFFICIAL_CHIRPS_V3_DAILY_RNL:
+        staging["role"] = (
+            "GEE current-month staging and 1991-2020 same-month rainfall "
+            "normal/anomaly context"
+        )
+        staging["source_url"] = (
+            "https://developers.google.com/earth-engine/datasets/catalog/"
+            "UCSB-CHC_CHIRPS_V3_DAILY_RNL"
+        )
+        staging["temporal_coverage"] = "1981-near present (CHIRPS v3 reanalysis)"
+    return catalog
+
+
+def _climate_context_manifest_record(config: dict[str, Any]) -> dict[str, Any]:
+    """Describe the configured climate-context contract and its source lineage."""
+
+    climate_config = config.get("climate_context", {})
+    enabled = bool(climate_config.get("enabled", False))
+    baseline_start = (
+        int(climate_config.get("baseline_start_year", 1991))
+        if enabled
+        else None
+    )
+    baseline_end = (
+        int(climate_config.get("baseline_end_year", 2020))
+        if enabled
+        else None
+    )
+    return {
+        "enabled": enabled,
+        "baseline_start_year": baseline_start,
+        "baseline_end_year": baseline_end,
+        "baseline_period": (
+            f"{baseline_start}-{baseline_end}" if enabled else None
+        ),
+        "provenance": {
+            "status": "configured" if enabled else "not_requested",
+            "rainfall_dataset_id": (
+                str(config["sources"].get("chirps", "")) if enabled else None
+            ),
+            "temperature_dataset_id": (
+                str(config["sources"].get("era5_land", "")) if enabled else None
+            ),
+            "normal_method": (
+                "same_calendar_month_mean" if enabled else None
+            ),
+            "interpretation": (
+                "historical_context_not_attribution_forecast_or_projection"
+                if enabled
+                else None
+            ),
+        },
+    }
+
+
 def build_manifest(
     *,
     config: dict[str, Any],
@@ -148,7 +214,8 @@ def build_manifest(
         "processing_timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "project": config["project"],
         "earth_engine": config["earth_engine"],
-        "selected_sources": SOURCE_CATALOG,
+        "selected_sources": source_catalog_for_config(config),
+        "climate_context": _climate_context_manifest_record(config),
         "contextual_resource_audit": collabhub_audit_summary(config),
         "raw_inputs": [file_record(path) for path in raw_files],
         "consumed_source_files": [file_record(path) for path in source_files],
@@ -157,6 +224,7 @@ def build_manifest(
             "strategy": "provisional agronomic rules blended only with provided observed labels",
             "observed_labels_are_features": False,
             "rule_score_is_ground_truth": False,
+            "configured_crops": list(config["labels"]["crops"]),
         },
     }
     if frame is not None and not frame.empty:

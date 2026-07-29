@@ -254,6 +254,7 @@ def validate_dataset(
     end_year_month: str = DEFAULT_END_YEAR_MONTH,
     myanmar_bounds: Mapping[str, float] = MYANMAR_BOUNDS,
     range_rules: Mapping[str, Mapping[str, Any]] = RANGE_RULES,
+    require_climate_context: bool = False,
     sample_limit: int = 5,
 ) -> dict[str, Any]:
     """Validate a crop-suitability table and return a JSON-serialisable QA report.
@@ -328,6 +329,25 @@ def validate_dataset(
         sample_limit=sample_limit,
     )
     _validate_ranges(frame, checks, range_rules, sample_limit)
+    climate_complete_fraction = (
+        max(
+            0.95,
+            (
+                min_usable_row_fraction
+                if min_usable_row_fraction is not None
+                else 0.95
+            ),
+        )
+        if require_climate_context
+        else None
+    )
+    _validate_climate_context(
+        frame,
+        checks,
+        sample_limit,
+        required=bool(require_climate_context),
+        min_complete_fraction=climate_complete_fraction,
+    )
     _validate_scene_count_consistency(frame, checks, sample_limit)
     _validate_processing_date(frame, checks, strict_schema, sample_limit)
     _validate_source_versions(frame, checks, strict_schema, sample_limit)
@@ -360,6 +380,10 @@ def validate_dataset(
             "suitability_threshold": threshold,
             "max_feature_missing_fraction": max_feature_missing_fraction,
             "min_usable_row_fraction": min_usable_row_fraction,
+            "require_climate_context": bool(require_climate_context),
+            "climate_context_min_complete_fraction": (
+                climate_complete_fraction
+            ),
             "year_month_range": [start_year_month, end_year_month],
             "myanmar_bounds": dict(myanmar_bounds),
         },
@@ -996,6 +1020,370 @@ def _validate_ranges(
                     "out_of_range_count": int(out_of_range.sum()),
                 },
             )
+
+
+def _validate_climate_context(
+    frame: Any,
+    checks: list[dict[str, Any]],
+    sample_limit: int,
+    *,
+    required: bool = False,
+    min_complete_fraction: float | None = None,
+) -> None:
+    """Validate the optional 1991–2020 climate-context release contract."""
+
+    columns = set(map(str, frame.columns))
+    climate_columns = (
+        "rainfall_normal_1991_2020_mm",
+        "rainfall_anomaly_1991_2020_mm",
+        "rainfall_anomaly_1991_2020_pct",
+        "temperature_normal_1991_2020_c",
+        "temperature_anomaly_1991_2020_c",
+    )
+    present = [column for column in climate_columns if column in columns]
+    if not present and not required:
+        return
+
+    missing = [column for column in climate_columns if column not in columns]
+    _add_check(
+        checks,
+        name="climate_context_complete_column_set",
+        status="pass" if not missing else "fail",
+        message=(
+            "The complete optional 1991–2020 climate-context column set is present."
+            if not missing
+            else (
+                "Configured climate context requires all five 1991–2020 "
+                "normal/anomaly columns."
+                if required
+                else "A partial climate-context column set cannot be published."
+            )
+        ),
+        invalid_count=len(missing),
+        details={"missing_columns": missing},
+    )
+    if missing:
+        return
+
+    range_contract = {
+        "rainfall_normal_1991_2020_mm": (0.0, 5_000.0, "mm"),
+        "rainfall_anomaly_1991_2020_mm": (-5_000.0, 5_000.0, "mm"),
+        # A very small positive normal can yield a large positive percentage;
+        # the physically meaningful lower bound remains -100%.
+        "rainfall_anomaly_1991_2020_pct": (-100.0, 1_000_000.0, "%"),
+        "temperature_normal_1991_2020_c": (-90.0, 70.0, "°C"),
+        "temperature_anomaly_1991_2020_c": (-100.0, 100.0, "°C"),
+    }
+    numeric: dict[str, Any] = {}
+    for column, (lower, upper, unit) in range_contract.items():
+        raw = frame[column]
+        values = pd.to_numeric(raw, errors="coerce")
+        numeric[column] = values
+        nonempty = ~_blank_or_null_mask(raw)
+        invalid = nonempty & (
+            values.isna() | (values < lower) | (values > upper)
+        )
+        _add_check(
+            checks,
+            name=f"climate_context_range__{column}",
+            status="pass" if not bool(invalid.any()) else "fail",
+            message=(
+                f"'{column}' is numeric and within the climate-context "
+                f"contract range [{lower}, {upper}] {unit}."
+                if not bool(invalid.any())
+                else f"'{column}' contains invalid climate-context values."
+            ),
+            invalid_count=int(invalid.sum()),
+            examples=_sample_records(
+                frame,
+                invalid,
+                ["grid_id", "year_month", column],
+                sample_limit,
+            ),
+        )
+
+    if required:
+        threshold = max(
+            0.95,
+            float(
+                min_complete_fraction
+                if min_complete_fraction is not None
+                else 0.95
+            ),
+        )
+        complete_rows = pd.DataFrame(numeric, index=frame.index).notna().all(
+            axis=1
+        )
+        complete_count = int(complete_rows.sum())
+        complete_fraction = (
+            complete_count / len(frame) if len(frame) else 0.0
+        )
+        complete_gate_passes = (
+            complete_count > 0 and complete_fraction >= threshold
+        )
+        _add_check(
+            checks,
+            name="climate_context_complete_row_fraction",
+            status="pass" if complete_gate_passes else "fail",
+            message=(
+                "Numeric climate context meets the configured release "
+                "completeness threshold."
+                if complete_gate_passes
+                else "Configured climate context has too few complete numeric rows."
+            ),
+            invalid_count=(
+                int((~complete_rows).sum()) if len(frame) else 1
+            ),
+            examples=_sample_records(
+                frame,
+                ~complete_rows,
+                ["grid_id", "year_month", *climate_columns],
+                sample_limit,
+            ),
+            details={
+                "complete_rows": complete_count,
+                "total_rows": int(len(frame)),
+                "complete_fraction": round(complete_fraction, 6),
+                "minimum_complete_fraction": threshold,
+            },
+        )
+
+    rainfall_column = _first_present_column(
+        frame,
+        ("monthly_rainfall_mm", "chirps_precipitation_mm"),
+    )
+    if rainfall_column is None:
+        _add_check(
+            checks,
+            name="climate_rainfall_anomaly_invariant",
+            status="fail",
+            message="Climate rainfall context requires final target-month rainfall.",
+            invalid_count=1,
+        )
+    else:
+        current = pd.to_numeric(frame[rainfall_column], errors="coerce")
+        normal = numeric["rainfall_normal_1991_2020_mm"]
+        anomaly = numeric["rainfall_anomaly_1991_2020_mm"]
+        comparable = current.notna() & normal.notna() & anomaly.notna()
+        expected = current - normal
+        invalid = comparable & ((anomaly - expected).abs() > 0.02)
+        comparable_count = int(comparable.sum())
+        missing_required_comparison = required and comparable_count == 0
+        rainfall_check_passes = (
+            not bool(invalid.any()) and not missing_required_comparison
+        )
+        _add_check(
+            checks,
+            name="climate_rainfall_anomaly_invariant",
+            status="pass" if rainfall_check_passes else "fail",
+            message=(
+                "Rainfall anomaly equals final target-month rainfall minus "
+                "the 1991–2020 same-month normal."
+                if rainfall_check_passes
+                else (
+                    "Configured climate context has no comparable rainfall "
+                    "rows for the anomaly invariant."
+                    if missing_required_comparison
+                    else "Rainfall anomaly is inconsistent with final rainfall and normal."
+                )
+            ),
+            invalid_count=int(invalid.sum()) + int(missing_required_comparison),
+            examples=_sample_records(
+                frame,
+                invalid,
+                [
+                    "grid_id",
+                    "year_month",
+                    rainfall_column,
+                    "rainfall_normal_1991_2020_mm",
+                    "rainfall_anomaly_1991_2020_mm",
+                ],
+                sample_limit,
+            ),
+            details={"comparable_rows": comparable_count},
+        )
+
+        anomaly_pct = numeric["rainfall_anomaly_1991_2020_pct"]
+        comparable_pct = (
+            comparable & normal.ne(0) & anomaly_pct.notna()
+        )
+        expected_pct = anomaly.divide(normal.where(normal.ne(0))) * 100.0
+        invalid_pct = comparable_pct & (
+            (anomaly_pct - expected_pct).abs() > 0.05
+        )
+        comparable_pct_count = int(comparable_pct.sum())
+        missing_required_pct_comparison = (
+            required and comparable_pct_count == 0
+        )
+        rainfall_pct_check_passes = (
+            not bool(invalid_pct.any())
+            and not missing_required_pct_comparison
+        )
+        _add_check(
+            checks,
+            name="climate_rainfall_anomaly_percentage_invariant",
+            status="pass" if rainfall_pct_check_passes else "fail",
+            message=(
+                "Rainfall anomaly percentage agrees with the absolute anomaly and normal."
+                if rainfall_pct_check_passes
+                else (
+                    "Configured climate context has no comparable rainfall "
+                    "rows for the percentage invariant."
+                    if missing_required_pct_comparison
+                    else "Rainfall anomaly percentage is inconsistent with the absolute anomaly and normal."
+                )
+            ),
+            invalid_count=(
+                int(invalid_pct.sum())
+                + int(missing_required_pct_comparison)
+            ),
+            examples=_sample_records(
+                frame,
+                invalid_pct,
+                [
+                    "grid_id",
+                    "year_month",
+                    "rainfall_normal_1991_2020_mm",
+                    "rainfall_anomaly_1991_2020_mm",
+                    "rainfall_anomaly_1991_2020_pct",
+                ],
+                sample_limit,
+            ),
+            details={"comparable_rows": comparable_pct_count},
+        )
+
+    temperature_column = _first_present_column(
+        frame,
+        ("mean_temperature_c", "era5_temperature_2m_c", "temperature_2m_c"),
+    )
+    if temperature_column is None:
+        _add_check(
+            checks,
+            name="climate_temperature_anomaly_invariant",
+            status="fail",
+            message="Climate temperature context requires target-month mean temperature.",
+            invalid_count=1,
+        )
+    else:
+        current_temperature = pd.to_numeric(
+            frame[temperature_column], errors="coerce"
+        )
+        temperature_normal = numeric["temperature_normal_1991_2020_c"]
+        temperature_anomaly = numeric["temperature_anomaly_1991_2020_c"]
+        comparable_temperature = (
+            current_temperature.notna()
+            & temperature_normal.notna()
+            & temperature_anomaly.notna()
+        )
+        expected_temperature_anomaly = (
+            current_temperature - temperature_normal
+        )
+        invalid_temperature = comparable_temperature & (
+            (temperature_anomaly - expected_temperature_anomaly).abs() > 0.02
+        )
+        comparable_temperature_count = int(comparable_temperature.sum())
+        missing_required_temperature_comparison = (
+            required and comparable_temperature_count == 0
+        )
+        temperature_check_passes = (
+            not bool(invalid_temperature.any())
+            and not missing_required_temperature_comparison
+        )
+        _add_check(
+            checks,
+            name="climate_temperature_anomaly_invariant",
+            status="pass" if temperature_check_passes else "fail",
+            message=(
+                "Temperature anomaly equals target-month mean temperature minus the 1991–2020 same-month normal."
+                if temperature_check_passes
+                else (
+                    "Configured climate context has no comparable temperature "
+                    "rows for the anomaly invariant."
+                    if missing_required_temperature_comparison
+                    else "Temperature anomaly is inconsistent with target temperature and normal."
+                )
+            ),
+            invalid_count=(
+                int(invalid_temperature.sum())
+                + int(missing_required_temperature_comparison)
+            ),
+            examples=_sample_records(
+                frame,
+                invalid_temperature,
+                [
+                    "grid_id",
+                    "year_month",
+                    temperature_column,
+                    "temperature_normal_1991_2020_c",
+                    "temperature_anomaly_1991_2020_c",
+                ],
+                sample_limit,
+            ),
+            details={"comparable_rows": comparable_temperature_count},
+        )
+
+    required_metadata = {
+        "climate_baseline_period": "1991-2020",
+        "climate_context_interpretation": (
+            "historical_context_not_attribution_forecast_or_projection"
+        ),
+    }
+    for column, expected_value in required_metadata.items():
+        if column not in columns:
+            invalid_metadata = pd.Series(True, index=frame.index)
+        else:
+            invalid_metadata = (
+                frame[column].astype("string").str.strip().ne(expected_value)
+                | frame[column].isna()
+            )
+        _add_check(
+            checks,
+            name=f"climate_context_metadata__{column}",
+            status="pass" if not bool(invalid_metadata.any()) else "fail",
+            message=(
+                f"'{column}' identifies the fixed historical-context contract."
+                if not bool(invalid_metadata.any())
+                else f"'{column}' is missing or does not match the climate-context contract."
+            ),
+            invalid_count=int(invalid_metadata.sum()),
+            examples=_sample_records(
+                frame,
+                invalid_metadata,
+                ["grid_id", "year_month", column],
+                sample_limit,
+            ),
+        )
+
+    if "climate_context_status" not in columns:
+        invalid_status = pd.Series(True, index=frame.index)
+    else:
+        complete_rows = frame[list(climate_columns)].notna().all(axis=1)
+        status_values = frame["climate_context_status"].astype("string").str.strip()
+        invalid_status = (
+            complete_rows
+            & status_values.ne("historical_same_month_normal_and_anomaly")
+        ) | (
+            ~complete_rows
+            & status_values.ne("incomplete_historical_context")
+        )
+        invalid_status = invalid_status | frame["climate_context_status"].isna()
+    _add_check(
+        checks,
+        name="climate_context_status_consistent",
+        status="pass" if not bool(invalid_status.any()) else "fail",
+        message=(
+            "Climate-context status agrees with row-level completeness."
+            if not bool(invalid_status.any())
+            else "Climate-context status does not agree with row-level completeness."
+        ),
+        invalid_count=int(invalid_status.sum()),
+        examples=_sample_records(
+            frame,
+            invalid_status,
+            ["grid_id", "year_month", "climate_context_status"],
+            sample_limit,
+        ),
+    )
 
 
 def _validate_scene_count_consistency(

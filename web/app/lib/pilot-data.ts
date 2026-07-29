@@ -1,7 +1,92 @@
-import fs from "fs";
-import path from "path";
 export const PILOT_BUNDLE_SCHEMA_VERSION = "1.0.0";
 export const PILOT_DATA_MODE = "real_features_rule_based_recommendations";
+
+export const PILOT_REGION_IDS = [
+  "ayeyawaddy",
+  "sagaing",
+  "mandalay",
+  "bago",
+  "magway",
+] as const;
+
+export type PilotRegionId = (typeof PILOT_REGION_IDS)[number];
+
+type PilotBundleModule = { default: unknown };
+
+type PilotRegionDefinition = {
+  name: string;
+  load: () => Promise<PilotBundleModule>;
+};
+
+/** The only QA-approved pilot regions published by this web application. */
+export const PILOT_REGION_REGISTRY = {
+  ayeyawaddy: {
+    name: "Ayeyawaddy",
+    load: () =>
+      import(
+        "../../data/output/pilot_ayeyawaddy_2018_01/pilot_ayeyawaddy_2018_01.json",
+        { with: { type: "json" } },
+      ),
+  },
+  sagaing: {
+    name: "Sagaing",
+    load: () =>
+      import(
+        "../../data/output/pilot_sagaing_2018_01/pilot_sagaing_2018_01.json",
+        { with: { type: "json" } },
+      ),
+  },
+  mandalay: {
+    name: "Mandalay",
+    load: () =>
+      import(
+        "../../data/output/pilot_mandalay_2018_01/pilot_mandalay_2018_01.json",
+        { with: { type: "json" } },
+      ),
+  },
+  bago: {
+    name: "Bago",
+    load: () =>
+      import(
+        "../../data/output/pilot_bago_2018_01/pilot_bago_2018_01.json",
+        { with: { type: "json" } },
+      ),
+  },
+  magway: {
+    name: "Magway",
+    load: () =>
+      import(
+        "../../data/output/pilot_magway_2018_01/pilot_magway_2018_01.json",
+        { with: { type: "json" } },
+      ),
+  },
+} as const satisfies Record<PilotRegionId, PilotRegionDefinition>;
+
+export const DEFAULT_PILOT_REGION: PilotRegionId = "ayeyawaddy";
+
+const PILOT_REGION_ALIASES: Readonly<Record<string, PilotRegionId>> = {
+  bago__e: "bago",
+};
+
+export class PilotRegionError extends Error {
+  constructor(readonly region: string) {
+    super(`Unknown pilot region: ${region}`);
+    this.name = "PilotRegionError";
+  }
+}
+
+export function resolvePilotRegion(region: string): PilotRegionId {
+  const normalized = region.trim().toLocaleLowerCase("en");
+  if (
+    (PILOT_REGION_IDS as readonly string[]).includes(normalized)
+  ) {
+    return normalized as PilotRegionId;
+  }
+  if (PILOT_REGION_ALIASES[normalized]) {
+    return PILOT_REGION_ALIASES[normalized];
+  }
+  throw new PilotRegionError(region);
+}
 
 export type UncertaintyLevel = "low" | "medium" | "high";
 export type RecommendationStatus = "scored" | "insufficient_evidence";
@@ -70,6 +155,7 @@ export type PilotBundleMeta = {
   scoredCellCount: number;
   abstainedCellCount: number;
   usableCellCount: number;
+  configuredCrops: string[];
   grid: {
     crs: string;
     sizeM: number;
@@ -473,6 +559,10 @@ export function parsePilotBundle(value: unknown): PilotBundle {
       "bundle.meta.usableCellCount",
       { min: 0, integer: true },
     ),
+    configuredCrops: stringArray(
+      metaRecord.configuredCrops,
+      "bundle.meta.configuredCrops",
+    ),
     grid: (() => {
       const grid = record(metaRecord.grid, "bundle.meta.grid");
       return {
@@ -548,6 +638,15 @@ export function parsePilotBundle(value: unknown): PilotBundle {
   if (!meta.qa.valid || meta.qa.errorCount !== 0) {
     fail("bundle.meta.qa", "only a QA-valid release with zero errors may be served");
   }
+  if (
+    meta.configuredCrops.length === 0 ||
+    new Set(meta.configuredCrops).size !== meta.configuredCrops.length
+  ) {
+    fail(
+      "bundle.meta.configuredCrops",
+      "must contain at least one unique crop id",
+    );
+  }
   if (meta.periodEnd <= meta.periodStart) {
     fail("bundle.meta.periodEnd", "must be later than periodStart");
   }
@@ -621,31 +720,17 @@ export function parsePilotBundle(value: unknown): PilotBundle {
   };
 }
 
-const cachedBundles: Record<string, PilotBundle> = {};
+const cachedBundles: Partial<Record<PilotRegionId, PilotBundle>> = {};
 
-export async function loadPilotBundle(region: string = "ayeyawaddy"): Promise<PilotBundle> {
-  const normalizedRegion = region.toLowerCase();
-  if (!cachedBundles[normalizedRegion]) {
-    let rawBundle;
-    try {
-      if (normalizedRegion === "ayeyawaddy") {
-        rawBundle = (await import("../../data/output/pilot_ayeyawaddy_2018_01/pilot_ayeyawaddy_2018_01.json", { with: { type: "json" } })).default;
-      } else if (normalizedRegion === "magway") {
-        rawBundle = (await import("../../data/output/pilot_magway_2018_01/pilot_magway_2018_01.json", { with: { type: "json" } })).default;
-      } else if (normalizedRegion === "mandalay") {
-        rawBundle = (await import("../../data/output/pilot_mandalay_2018_01/pilot_mandalay_2018_01.json", { with: { type: "json" } })).default;
-      } else if (normalizedRegion === "sagaing") {
-        rawBundle = (await import("../../data/output/pilot_sagaing_2018_01/pilot_sagaing_2018_01.json", { with: { type: "json" } })).default;
-      } else if (normalizedRegion === "bago" || normalizedRegion === "bago__e") {
-        rawBundle = (await import("../../data/output/pilot_bago__e_2018_01/pilot_bago__e_2018_01.json", { with: { type: "json" } })).default;
-      } else {
-        throw new Error(`Unknown region: ${region}`);
-      }
-    } catch (e: any) {
-      throw new Error(`Data for region ${region} not found. Error: ${e.message}`);
-    }
-    
-    cachedBundles[normalizedRegion] = parsePilotBundle(rawBundle as unknown);
-  }
-  return cachedBundles[normalizedRegion];
+export async function loadPilotBundle(
+  region: string = DEFAULT_PILOT_REGION,
+): Promise<PilotBundle> {
+  const regionId = resolvePilotRegion(region);
+  const cachedBundle = cachedBundles[regionId];
+  if (cachedBundle) return cachedBundle;
+
+  const rawBundle = (await PILOT_REGION_REGISTRY[regionId].load()).default;
+  const bundle = parsePilotBundle(rawBundle);
+  cachedBundles[regionId] = bundle;
+  return bundle;
 }

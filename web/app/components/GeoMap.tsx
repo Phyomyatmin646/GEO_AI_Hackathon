@@ -3,6 +3,7 @@
 import { MapContainer, Polygon, TileLayer, Tooltip } from "react-leaflet";
 import type { GridCell } from "../lib/pilot-data";
 import { CROP_COLORS } from "../lib/colors";
+import { useLanguage } from "../lib/i18n";
 
 type Props = {
   cells: GridCell[];
@@ -17,6 +18,7 @@ function cropColor(cropId: string | null, selected: boolean) {
 }
 
 export default function GeoMap({ cells, selectedId, onSelect }: Props) {
+  const { lang, t } = useLanguage();
   const bounds: [[number, number], [number, number]] = cells.length
     ? [
         [
@@ -39,7 +41,7 @@ export default function GeoMap({ cells, selectedId, onSelect }: Props) {
       preferCanvas
       scrollWheelZoom
       className="geo-map"
-      aria-label="Ayeyawaddy real 5 kilometre equal-area pilot grid map"
+      aria-label={t.dashboard.mapAria}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -66,10 +68,14 @@ export default function GeoMap({ cells, selectedId, onSelect }: Props) {
               <strong>{cell.id}</strong>
               <br />
               {topCrop === null
-                ? "Insufficient evidence — no recommendation"
-                : `Top Crop: ${cell.recommendations[0]?.nameEn} (${cell.recommendations[0]?.score.toFixed(1)}/100)`}
+                ? t.dashboard.tooltipInsufficient
+                : `${t.dashboard.tooltipTopCrop}: ${
+                    lang === "my"
+                      ? cell.recommendations[0]?.nameMm
+                      : cell.recommendations[0]?.nameEn
+                  } (${cell.recommendations[0]?.score.toFixed(1)}/100)`}
               <br />
-              Missing: {Math.round((1 - cell.dataCoverage) * 100)}%
+              {t.dashboard.tooltipMissing}: {Math.round((1 - cell.dataCoverage) * 100)}%
             </Tooltip>
           </Polygon>
         );

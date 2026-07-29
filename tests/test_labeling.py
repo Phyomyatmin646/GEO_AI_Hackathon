@@ -9,7 +9,7 @@ from myanmar_agri_geo.labeling import add_rule_based_labels, calibrate_with_obse
 def _features() -> pd.DataFrame:
     return pd.DataFrame(
         {
-            "grid_id": ["MMR_A"],
+            "grid_id": ["mm_1854_456"],
             "year_month": ["2022-06"],
             "mean_temperature_c": [27.0],
             "monthly_rainfall_mm": [150.0],
@@ -36,7 +36,7 @@ def test_observed_calibration_updates_only_the_matching_crop_and_row(tmp_path) -
     pd.DataFrame(
         {
             "observation_id": ["OBS-001"],
-            "grid_id": ["MMR_A"],
+            "grid_id": ["mm_1854_456"],
             "year_month": ["2022-06"],
             "crop_id": ["durian"],
             "longitude": [96.1],

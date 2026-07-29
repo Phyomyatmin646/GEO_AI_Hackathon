@@ -18,6 +18,7 @@ project:
 
 earth_engine:
   project: "gen-lang-client-0956667941"
+  admin1_scope: "Bago (W)"
   drive_folder: "myanmar_agri_geo_exports"
   export_scale_m: 5000
   feature_set: "split"
@@ -53,6 +54,11 @@ chirps_v3:
   enabled: true
   require_complete_cache: true
   download_timeout_seconds: 120
+
+# Frozen January 2018 release profile. Climate normals/anomalies were not part
+# of this release; create a new versioned config before a climate re-export.
+climate_context:
+  enabled: false
 
 resource_audit:
   catalog_url: "https://geoai-collabhub.com/resources"
