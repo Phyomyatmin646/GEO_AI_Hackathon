@@ -17,8 +17,13 @@ type FAQRecord = {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const search = searchParams.get("search")?.toLowerCase() || "";
+  const search = searchParams.get("search")?.trim().toLowerCase() || "";
   const category = searchParams.get("category");
+  const requestedLanguage = searchParams.get("language");
+  const language =
+    requestedLanguage === "en" || requestedLanguage === "my"
+      ? requestedLanguage
+      : null;
 
   let filtered: FAQRecord[] = faqData;
 
@@ -27,22 +32,47 @@ export async function GET(request: Request) {
   }
 
   if (search) {
-    filtered = filtered.filter(
-      (f) =>
-        (f.question_en && f.question_en.toLowerCase().includes(search)) ||
-        (f.question_mm && f.question_mm.includes(search)) ||
-        (f.answer_en && f.answer_en.toLowerCase().includes(search)) ||
-        (f.answer_mm && f.answer_mm.includes(search))
-    );
+    filtered = filtered.filter((f) => {
+      if (language === "en") {
+        return (
+          f.question_en.toLowerCase().includes(search) ||
+          f.answer_en.toLowerCase().includes(search)
+        );
+      }
+      if (language === "my") {
+        return f.question_mm.includes(search) || f.answer_mm.includes(search);
+      }
+      return (
+        f.question_en.toLowerCase().includes(search) ||
+        f.question_mm.includes(search) ||
+        f.answer_en.toLowerCase().includes(search) ||
+        f.answer_mm.includes(search)
+      );
+    });
   }
 
-  return NextResponse.json({
-    schemaVersion: "1.0.0",
-    meta: {
-      totalCount: faqData.length,
-      returnedCount: filtered.length,
-      timestamp: new Date().toISOString(),
+  return NextResponse.json(
+    {
+      schemaVersion: "1.1.0",
+      meta: {
+        totalCount: faqData.length,
+        returnedCount: filtered.length,
+        language: language ?? "all",
+        translation: {
+          method: "AI-assisted",
+          reviewStatus: "professional review pending",
+          sourceLanguage: "my",
+        },
+        timestamp: new Date().toISOString(),
+      },
+      data: filtered,
     },
-    data: filtered,
-  });
+    {
+      headers: {
+        "X-Data-Contract": "bilingual_faq_v1",
+        "X-FAQ-Languages": "my,en",
+        "X-Translation-Review": "professional-review-pending",
+      },
+    },
+  );
 }

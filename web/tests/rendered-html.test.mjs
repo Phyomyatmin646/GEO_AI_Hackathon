@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { csvValue } from "../app/lib/csv-value.ts";
+import { en } from "../app/lib/dictionaries.ts";
 import {
-  isPendingEnglishTranslation,
   localizeBilingualLabel,
   localizeBilingualNarrative,
   localizeFactor,
@@ -44,8 +44,9 @@ test("server-renders the Myanmar GeoAI product shell", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /Myanmar Crop Intelligence/);
-  assert.match(html, /Explainable crop screening/);
+  assert.match(html, /စိုက်ပျိုးမိတ်ဆွေ/);
+  assert.match(html, /Myanmar Agriculture Intelligence/);
+  assert.match(html, /official-source agriculture, climate and economic evidence/);
   assert.match(html, /Real pilot data/);
   assert.match(html, /QA စစ်ပြီးသော ဒေသအလိုက် ၅ ကီလိုမီတာ cell/);
   assert.doesNotMatch(html, /codex-preview/);
@@ -298,52 +299,117 @@ test("legacy cells endpoint remains compatible and truthfully deprecated", async
   );
 });
 
-test("climate API publishes weather evidence but withholds unpublished climate analysis", async () => {
+test("climate API publishes QA-passed source-backed climate aggregates", async () => {
   const response = await request("/api/v1/climate");
   const payload = await response.json();
 
   assert.equal(response.status, 200);
   assert.equal(
     response.headers.get("x-data-contract"),
-    "climate_evidence_status_only",
+    "qa_passed_climate_annual_snapshot",
   );
   assert.equal(
-    payload.weatherEvidence.status.en,
-    "Available in the regional release",
+    response.headers.get("x-data-verification"),
+    "qa-passed-source-backed",
   );
-  assert.equal(payload.climateChange.status.en, "Not yet published");
-  assert.equal(payload.disasterHistory.status.en, "Source verification pending");
-  assert.equal(payload.climateChange.withheld.length, 3);
-  assert.equal(payload.series, undefined);
-  assert.equal(payload.forecast, undefined);
+  assert.equal(payload.qa.valid, true);
+  assert.equal(payload.qa.errorCount, 0);
+  assert.equal(payload.values.length, 7);
+  assert.ok(
+    payload.values.every((row) =>
+      Number.isFinite(row.annual_rainfall_mm),
+    ),
+  );
+  assert.ok(
+    payload.values.every((row) =>
+      Number.isFinite(row.mean_temperature_c),
+    ),
+  );
+  assert.ok(payload.sources.every((source) => source.citationUrl.startsWith("https://")));
 });
 
-test("macro API withholds unverified numeric series and forecasts", async () => {
+test("macro API publishes official World Bank indicators without forecasts", async () => {
   const response = await request("/api/v1/macro");
   const payload = await response.json();
 
   assert.equal(response.status, 200);
   assert.equal(
     response.headers.get("x-data-contract"),
-    "macro_trade_source_verification_pending",
+    "official_world_bank_myanmar_indicators_v1",
   );
-  assert.equal(payload.macroTrade.status.en, "Source verification pending");
-  assert.equal(payload.macroTrade.withheld.length, 3);
-  assert.equal(payload.data, undefined);
-  assert.equal(payload.series, undefined);
+  assert.equal(
+    response.headers.get("x-data-verification"),
+    "official-source-snapshot",
+  );
+  assert.equal(payload.country.iso3, "MMR");
+  assert.ok(payload.indicators.gdp_current_usd.values.length > 20);
+  assert.ok(
+    payload.indicators.agriculture_value_added_pct_gdp.values.length > 20,
+  );
+  assert.ok(payload.indicators.merchandise_exports_current_usd.values.length > 20);
+  assert.ok(payload.indicators.merchandise_imports_current_usd.values.length > 20);
+  assert.ok(payload.indicators.cereal_production_tonnes.values.length > 20);
+  assert.ok(
+    Object.values(payload.indicators).every((indicator) =>
+      indicator.sourceUrl.startsWith("https://data.worldbank.org/indicator/"),
+    ),
+  );
 });
 
-test("FAQ API exposes Myanmar seed content without inventing English translations", async () => {
-  const response = await request(
-    `/api/v1/faq?search=${encodeURIComponent("သစ်ပင်")}`,
-  );
+test("FAQ API exposes complete bilingual content and language-scoped search", async () => {
+  const response = await request("/api/v1/faq?language=en");
   const payload = await response.json();
 
   assert.equal(response.status, 200);
+  assert.equal(response.headers.get("x-data-contract"), "bilingual_faq_v1");
+  assert.equal(response.headers.get("x-faq-languages"), "my,en");
+  assert.equal(
+    response.headers.get("x-translation-review"),
+    "professional-review-pending",
+  );
+  assert.equal(payload.schemaVersion, "1.1.0");
   assert.equal(payload.meta.totalCount, 1053);
-  assert.ok(payload.meta.returnedCount > 0);
-  assert.ok(payload.data[0].question_mm.length > 0);
-  assert.equal(payload.data[0].question_en, "Pending English Translation");
+  assert.equal(payload.meta.returnedCount, 1053);
+  assert.equal(payload.meta.language, "en");
+  assert.equal(payload.meta.translation.method, "AI-assisted");
+  assert.equal(
+    payload.meta.translation.reviewStatus,
+    "professional review pending",
+  );
+  assert.ok(
+    payload.data.every(
+      (record) =>
+        record.question_en.trim().length > 0 &&
+        record.answer_en.trim().length > 0 &&
+        record.question_en !== "Pending English Translation" &&
+        record.answer_en !== "Pending English Translation" &&
+        !/[\u1000-\u109f]/u.test(record.question_en) &&
+        !/[\u1000-\u109f]/u.test(record.answer_en),
+    ),
+  );
+
+  const [englishSearch, myanmarSearch] = await Promise.all([
+    request("/api/v1/faq?language=en&search=best%20time"),
+    request(`/api/v1/faq?language=my&search=${encodeURIComponent("သစ်ပင်")}`),
+  ]);
+  const [englishPayload, myanmarPayload] = await Promise.all([
+    englishSearch.json(),
+    myanmarSearch.json(),
+  ]);
+
+  assert.ok(englishPayload.meta.returnedCount > 0);
+  assert.ok(myanmarPayload.meta.returnedCount > 0);
+  assert.equal(englishPayload.meta.language, "en");
+  assert.equal(myanmarPayload.meta.language, "my");
+});
+
+test("English FAQ interface copy contains no Myanmar text", () => {
+  const englishFaqCopy = [
+    en.header.title,
+    en.header.description,
+    ...Object.values(en.faq),
+  ];
+  assert.ok(englishFaqCopy.every((value) => !/[\u1000-\u109f]/u.test(value)));
 });
 
 test("CSV encoder neutralizes formulas hidden behind control whitespace", () => {
@@ -392,5 +458,4 @@ test("locale helpers select one language without changing numeric evidence", () 
     ),
     "Provisional rule score.",
   );
-  assert.equal(isPendingEnglishTranslation("Pending English Translation"), true);
 });

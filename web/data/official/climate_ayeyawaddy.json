@@ -1,0 +1,104 @@
+{
+  "schemaVersion": "1.0",
+  "dataContract": "qa_passed_climate_annual_snapshot",
+  "generatedAt": "2026-07-29T13:43:12.736087+00:00",
+  "scope": {
+    "country": "Myanmar",
+    "region": "Ayeyawaddy",
+    "grid": "5 km equal-area cells",
+    "aggregation": "Monthly spatial mean across equal-area cells; annual rainfall is the sum of 12 monthly means; temperature and soil moisture are the mean of 12 monthly spatial means.",
+    "completeYears": [
+      2019,
+      2025
+    ]
+  },
+  "qa": {
+    "valid": true,
+    "rowCount": 133056,
+    "warningCount": 4,
+    "errorCount": 0,
+    "qaReportSha256": "acd8216f2e245d6a94ce92aa3eba82bd68f413af071091a1b8225cbe0dcbe929",
+    "sourceManifestSha256": "8287d53527acc773d79e5e1477af9d977297a22d2eda1fe1bf43b36871d8ca44",
+    "sourceCsvSha256": "7937acc08ffd1e7f30e93c3b65244192ef59d761a10947a01704e207dfd65e4e"
+  },
+  "sources": [
+    {
+      "id": "chirps-v3",
+      "organization": "UCSB Climate Hazards Center",
+      "dataset": "CHIRPS v3 monthly GeoTIFF cache",
+      "indicator": "Annual rainfall",
+      "unit": "mm/year",
+      "nativeResolution": "0.05 degree",
+      "temporalCoverage": "1981-near present; final cache sampled only at Myanmar export centroids",
+      "citationUrl": "https://www.chc.ucsb.edu/data/chirps3"
+    },
+    {
+      "id": "era5-land",
+      "organization": "Copernicus Climate Change Service / ECMWF",
+      "dataset": "ECMWF/ERA5_LAND/DAILY_AGGR",
+      "indicator": "Mean 2 m temperature and soil moisture",
+      "unit": "°C; m³/m³",
+      "nativeResolution": "approximately 11.1 km",
+      "temporalCoverage": "1950-near present",
+      "citationUrl": "https://developers.google.com/earth-engine/datasets/catalog/ECMWF_ERA5_LAND_DAILY_AGGR"
+    }
+  ],
+  "values": [
+    {
+      "year": 2019,
+      "annual_rainfall_mm": 2828.15,
+      "mean_temperature_c": 26.65,
+      "mean_soil_moisture_m3_m3": 0.3031,
+      "months": 12,
+      "grid_cell_observations": 16128
+    },
+    {
+      "year": 2020,
+      "annual_rainfall_mm": 2674.46,
+      "mean_temperature_c": 26.68,
+      "mean_soil_moisture_m3_m3": 0.3016,
+      "months": 12,
+      "grid_cell_observations": 16128
+    },
+    {
+      "year": 2021,
+      "annual_rainfall_mm": 2787.53,
+      "mean_temperature_c": 26.52,
+      "mean_soil_moisture_m3_m3": 0.3199,
+      "months": 12,
+      "grid_cell_observations": 16128
+    },
+    {
+      "year": 2022,
+      "annual_rainfall_mm": 2786.79,
+      "mean_temperature_c": 26.53,
+      "mean_soil_moisture_m3_m3": 0.3202,
+      "months": 12,
+      "grid_cell_observations": 16128
+    },
+    {
+      "year": 2023,
+      "annual_rainfall_mm": 2725.75,
+      "mean_temperature_c": 26.97,
+      "mean_soil_moisture_m3_m3": 0.3074,
+      "months": 12,
+      "grid_cell_observations": 16128
+    },
+    {
+      "year": 2024,
+      "annual_rainfall_mm": 3253.1,
+      "mean_temperature_c": 26.94,
+      "mean_soil_moisture_m3_m3": 0.3072,
+      "months": 12,
+      "grid_cell_observations": 16128
+    },
+    {
+      "year": 2025,
+      "annual_rainfall_mm": 2957.76,
+      "mean_temperature_c": 26.36,
+      "mean_soil_moisture_m3_m3": 0.3216,
+      "months": 12,
+      "grid_cell_observations": 16128
+    }
+  ]
+}

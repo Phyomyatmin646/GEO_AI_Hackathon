@@ -182,6 +182,13 @@ export function PilotDashboard() {
     };
   }, [loadPilot, region]);
 
+  useEffect(() => {
+    document.title =
+      lang === "en"
+        ? "Agriculture Companion | Myanmar Agriculture Intelligence"
+        : "စိုက်ပျိုးမိတ်ဆွေ | Myanmar Agriculture Intelligence";
+  }, [lang]);
+
   const selectedCell = useMemo(
     () => payload?.cells.find((cell) => cell.id === selectedId) ?? payload?.cells[0],
     [payload, selectedId],
@@ -284,19 +291,23 @@ export function PilotDashboard() {
     <main className="app-shell">
       <header className="topbar">
         <div className="brand">
-          <span className="brand-mark">မ</span>
+          <span className="brand-mark">{lang === "en" ? "M" : "မ"}</span>
           <span>
-            <span className="brand-name">{t.header.title.split('|')[0]}</span>
-            <span className="brand-subtitle">{t.header.title.split('|')[1]}</span>
+            <span className="brand-name">
+              {t.header.title.split("|")[0]?.trim()}
+            </span>
+            <span className="brand-subtitle">
+              {t.header.title.split("|")[1]?.trim()}
+            </span>
           </span>
         </div>
         <div className="topbar-status">
-          <button 
+          <button
             onClick={() => setLang(lang === "en" ? "my" : "en")}
             className="text-sm border px-2 py-1 rounded"
             aria-label={lang === "en" ? t.dashboard.languageSwitchToMyanmar : t.dashboard.languageSwitchToEnglish}
           >
-            {lang === "en" ? "မြန်မာ" : "English"}
+            {lang === "en" ? "Myanmar" : "English"}
           </button>
           <span className="status-dot" aria-hidden="true" />
           <span>{t.dashboard.pilotApiStatus} {payload.meta.qa.valid ? t.dashboard.qaPassed : t.dashboard.qaFailed}</span>
@@ -308,8 +319,8 @@ export function PilotDashboard() {
           <div>
             <p className="eyebrow flex items-center gap-2">
               {t.dashboard.geoAiPilot} ·
-              <select 
-                value={region} 
+              <select
+                value={region}
                 onChange={(e) => setRegion(e.target.value)}
                 className="bg-gray-100 border rounded px-2 py-1 text-sm font-semibold text-slate-800"
                 aria-label={t.dashboard.regionFilterAria}
@@ -486,7 +497,7 @@ export function PilotDashboard() {
                   {t.dashboard.downloadCsv}
                 </a>
               </div>
-              
+
               <div className="feature-group mt-4">
                 <h4 className="text-sm font-semibold mb-2">{t.cell.features.weatherEvidencetitle}</h4>
                 <div className="feature-table">
@@ -504,11 +515,10 @@ export function PilotDashboard() {
                 </div>
               </div>
 
-              <div className={`feature-group mt-4 border-2 p-2 ${
-                climateFeatures.length === 0
+              <div className={`feature-group mt-4 border-2 p-2 ${climateFeatures.length === 0
                   ? "opacity-50 border-dashed bg-gray-50"
                   : "border-emerald-100 bg-emerald-50/40"
-              }`}>
+                }`}>
                 <h4 className="text-sm font-semibold mb-2">{t.cell.features.climateTrendTitle}</h4>
                 <div className="feature-table">
                   {climateFeatures.length > 0 ? (

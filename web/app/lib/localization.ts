@@ -54,7 +54,3 @@ export function localizeUnit(unit: string, lang: Language): string {
   };
   return units[unit] ?? unit;
 }
-
-export function isPendingEnglishTranslation(value: string): boolean {
-  return value.trim().toLowerCase() === "pending english translation";
-}

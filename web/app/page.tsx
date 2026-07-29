@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { PilotDashboard } from "./components/PilotDashboard";
 
 export const metadata: Metadata = {
-  title: "မြေသိ | Myanmar Crop Intelligence",
+  title: "စိုက်ပျိုးမိတ်ဆွေ | Myanmar Agriculture Intelligence",
   description:
-    "Explainable crop screening for Myanmar using real satellite, climate, soil and terrain evidence.",
+    "မြန်မာနိုင်ငံအတွက် official-source agriculture, climate and economic evidence.",
 };
 
 export default function Home() {
