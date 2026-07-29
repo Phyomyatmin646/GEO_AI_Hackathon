@@ -1,4 +1,4 @@
-# မြေသိ — Myanmar Crop Intelligence
+# စိုက်ပျိုးမိတ်ဆွေ — Myanmar Agriculture Intelligence
 
 This vinext/Cloudflare application is the Phase 1 real-data pilot for the
 Myanmar agricultural GeoAI project. It maps all 1,344 QA-approved Ayeyawaddy

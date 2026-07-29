@@ -11,3 +11,4 @@ data/output/
 !data/templates/*.csv
 !web/app/api/v1/cells/[[]cellId]/report.csv/
 !web/app/api/v1/cells/[[]cellId]/report.csv/route.ts
+.DS_Store

@@ -129,8 +129,6 @@ export type Dictionary = {
     backToDashboard: string;
     source: string;
     reviewed: string;
-    englishPendingTitle: string;
-    englishPendingDescription: string;
     loadError: string;
     recordTimestamp: string;
   };
@@ -147,7 +145,7 @@ export const en: Dictionary = {
     retry: "Retry"
   },
   header: {
-    title: "မြေသိ | Myanmar Crop Intelligence",
+    title: "Agriculture Companion | Myanmar Agriculture Intelligence",
     description: "Explainable crop screening using real satellite, climate, and soil evidence."
   },
   cell: {
@@ -275,7 +273,7 @@ export const en: Dictionary = {
   },
   faq: {
     title: "Frequently Asked Questions",
-    subtitle: "Search imported Myanmar seed Q&A; English translation and expert review are still pending",
+    subtitle: "Search 1,053 AI-assisted English translations alongside the Myanmar source. The source content and translations still require agronomist and language review.",
     searchPlaceholder: "Search questions...",
     noResults: "No answers found.",
     categoryAll: "All Categories",
@@ -284,8 +282,6 @@ export const en: Dictionary = {
     backToDashboard: "Back to Dashboard",
     source: "Source",
     reviewed: "Reviewed",
-    englishPendingTitle: "English translation pending — Myanmar source shown / အင်္ဂလိပ်ဘာသာပြန် မပြီးသေးပါ — မြန်မာမူရင်းကို ပြသထားသည်",
-    englishPendingDescription: "This FAQ has not yet been translated into English; the original Myanmar question and answer are shown below.",
     loadError: "FAQ data could not be loaded. Please try again.",
     recordTimestamp: "Dataset timestamp (not agronomist review)"
   }
@@ -302,7 +298,7 @@ export const my: Dictionary = {
     retry: "ပြန်စမ်းမည်"
   },
   header: {
-    title: "မြေသိ | Myanmar Crop Intelligence",
+    title: "စိုက်ပျိုးမိတ်ဆွေ | Myanmar Agriculture Intelligence",
     description: "ဂြိုဟ်တု၊ ရာသီဥတု၊ မြေဆီလွှာ အထောက်အထားများဖြင့် သီးနှံဖြစ်ထွန်းနိုင်ခြေကို တွက်ချက်ပြသခြင်း"
   },
   cell: {
@@ -430,7 +426,7 @@ export const my: Dictionary = {
   },
   faq: {
     title: "အမေးများသော မေးခွန်းများ",
-    subtitle: "ထည့်သွင်းထားသော မြန်မာ စိုက်ပျိုးရေးအမေးအဖြေများကို ရှာနိုင်ပါသည် — ကျွမ်းကျင်သူစစ်ဆေးမှုနှင့် အင်္ဂလိပ်ဘာသာပြန်ဆိုမှု မပြီးသေးပါ",
+    subtitle: "AI အကူအညီဖြင့် အင်္ဂလိပ်ဘာသာပြန်ထားသော စိုက်ပျိုးရေးအမေးအဖြေ ၁,၀၅၃ ခုကို မြန်မာမူရင်းနှင့်အတူ ရှာဖွေနိုင်ပါသည်။ မူရင်းနှင့် ဘာသာပြန်ချက်များကို စိုက်ပျိုးရေးနှင့် ဘာသာစကားကျွမ်းကျင်သူများ စစ်ဆေးရန် လိုအပ်ဆဲဖြစ်သည်။",
     searchPlaceholder: "မေးခွန်းများကို ရှာဖွေပါ...",
     noResults: "ရှာဖွေမှု ရလဒ် မတွေ့ရှိပါ။",
     categoryAll: "ကဏ္ဍအားလုံး",
@@ -439,8 +435,6 @@ export const my: Dictionary = {
     backToDashboard: "Dashboard သို့ ပြန်သွားရန်",
     source: "အရင်းအမြစ်",
     reviewed: "ပြန်လည်စစ်ဆေးသည့်ရက်",
-    englishPendingTitle: "အင်္ဂလိပ်ဘာသာပြန် မပြီးသေးပါ — မြန်မာမူရင်းကို ပြသထားသည် / English translation pending — Myanmar source shown",
-    englishPendingDescription: "ဤ FAQ ကို အင်္ဂလိပ်ဘာသာသို့ မပြန်ဆိုရသေးပါ။ မူရင်း မြန်မာမေးခွန်းနှင့် အဖြေကို အောက်တွင် ဖော်ပြထားပါသည်။",
     loadError: "FAQ ဒေတာကို မတင်နိုင်ပါ။ ပြန်စမ်းပါ။",
     recordTimestamp: "ဒေတာမှတ်တမ်းအချိန် (စိုက်ပျိုးရေးပညာရှင် သုံးသပ်သည့်ရက် မဟုတ်ပါ)"
   }

@@ -19,9 +19,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const protocol = requestHeaders.get("x-forwarded-proto") ?? (host?.includes("localhost") ? "http" : "https");
   const baseUrl = new URL(`${protocol}://${host ?? "localhost:3000"}`);
-  const title = "မြေသိ | Myanmar Crop Intelligence";
+  const title = "စိုက်ပျိုးမိတ်ဆွေ | Myanmar Agriculture Intelligence";
   const description =
-    "မြန်မာနိုင်ငံအတွက် 5 km GeoAI crop-suitability screening, uncertainty and source evidence.";
+    "မြန်မာနိုင်ငံအတွက် official-source စိုက်ပျိုးရေး၊ ရာသီဥတုနှင့် စီးပွားရေး အထောက်အထား။";
 
   return {
     metadataBase: baseUrl,
@@ -31,13 +31,11 @@ export async function generateMetadata(): Promise<Metadata> {
       title,
       description,
       type: "website",
-      images: [{ url: new URL("/og.png", baseUrl).toString(), width: 1536, height: 1024 }],
     },
     twitter: {
-      card: "summary_large_image",
+      card: "summary",
       title,
       description,
-      images: [new URL("/og.png", baseUrl).toString()],
     },
   };
 }

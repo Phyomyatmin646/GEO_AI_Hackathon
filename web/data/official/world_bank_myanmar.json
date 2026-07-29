@@ -1,0 +1,1102 @@
+{
+  "schemaVersion": "1.0",
+  "country": {
+    "iso3": "MMR",
+    "name": "Myanmar"
+  },
+  "source": {
+    "organization": "World Bank",
+    "database": "World Development Indicators",
+    "apiDocumentation": "https://datahelpdesk.worldbank.org/knowledgebase/articles/889392-about-the-indicators-api-documentation",
+    "retrievedAt": "2026-07-29T13:41:38.051Z"
+  },
+  "indicators": {
+    "gdp_current_usd": {
+      "code": "NY.GDP.MKTP.CD",
+      "name": "GDP (current US$)",
+      "sourceName": "World Development Indicators",
+      "sourceUrl": "https://data.worldbank.org/indicator/NY.GDP.MKTP.CD?locations=MM",
+      "apiUrl": "https://api.worldbank.org/v2/country/MMR/indicator/NY.GDP.MKTP.CD?format=json&date=2000:2025&per_page=100&footnote=y",
+      "lastUpdated": "2026-07-13",
+      "unit": "current US$",
+      "values": [
+        {
+          "year": 2000,
+          "value": 8905066163.58643,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2001,
+          "value": 6477790688.22844,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2002,
+          "value": 6777632512.0781,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2003,
+          "value": 10467109977.6717,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2004,
+          "value": 10567354056.4049,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2005,
+          "value": 11986972418.5103,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2006,
+          "value": 14502553709.8303,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2007,
+          "value": 20182477480.5512,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2008,
+          "value": 31862554101.9378,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2009,
+          "value": 36906181380.8127,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2010,
+          "value": 49540813342.4834,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2011,
+          "value": 59977326085.9908,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2012,
+          "value": 59937796648.2158,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2013,
+          "value": 60269732854.827,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2014,
+          "value": 65531374199.6663,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2015,
+          "value": 59607290407.6191,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2016,
+          "value": 63298361996.2153,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2017,
+          "value": 66053040483.0016,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2018,
+          "value": 67860515989.517,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2019,
+          "value": 75065106227.6892,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2020,
+          "value": 79006113643.1906,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2021,
+          "value": 66345291160.1683,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2022,
+          "value": 62253049891.6449,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2023,
+          "value": 66757619000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2024,
+          "value": 74068349523.8095,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2025,
+          "value": 81665773809.5238,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        }
+      ]
+    },
+    "agriculture_value_added_pct_gdp": {
+      "code": "NV.AGR.TOTL.ZS",
+      "name": "Agriculture, forestry, and fishing, value added (% of GDP)",
+      "sourceName": "World Development Indicators",
+      "sourceUrl": "https://data.worldbank.org/indicator/NV.AGR.TOTL.ZS?locations=MM",
+      "apiUrl": "https://api.worldbank.org/v2/country/MMR/indicator/NV.AGR.TOTL.ZS?format=json&date=2000:2025&per_page=100&footnote=y",
+      "lastUpdated": "2026-07-13",
+      "unit": "% of GDP",
+      "values": [
+        {
+          "year": 2000,
+          "value": 57.2386452556231,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2001,
+          "value": 57.0691916368966,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2002,
+          "value": 54.5283327348715,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2003,
+          "value": 50.620560861897,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2004,
+          "value": 48.1650901865787,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2005,
+          "value": 46.687240402588,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2006,
+          "value": 43.918958474559,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2007,
+          "value": 43.3227660063537,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2008,
+          "value": 40.2750956375485,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2009,
+          "value": 38.1081206105058,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2010,
+          "value": 36.853075751266,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2011,
+          "value": 32.4961825024034,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2012,
+          "value": 30.5901997024538,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2013,
+          "value": 29.5337253604993,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2014,
+          "value": 27.8298025759612,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2015,
+          "value": 26.771778645598,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2016,
+          "value": 25.6286228737595,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2017,
+          "value": 23.4041280962744,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2018,
+          "value": 22.0756064041111,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2019,
+          "value": 20.8421577754282,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2020,
+          "value": 22.4186525400503,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2021,
+          "value": 22.7852901568211,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2022,
+          "value": 22.3343500768495,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2023,
+          "value": 22.7222309725462,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2024,
+          "value": 25.3,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2025,
+          "value": 25.3,
+          "unit": "",
+          "decimal": 1,
+          "observationStatus": "",
+          "footnote": ""
+        }
+      ]
+    },
+    "cereal_production_tonnes": {
+      "code": "AG.PRD.CREL.MT",
+      "name": "Cereal production (metric tons)",
+      "sourceName": "World Development Indicators",
+      "sourceUrl": "https://data.worldbank.org/indicator/AG.PRD.CREL.MT?locations=MM",
+      "apiUrl": "https://api.worldbank.org/v2/country/MMR/indicator/AG.PRD.CREL.MT?format=json&date=2000:2025&per_page=100&footnote=y",
+      "lastUpdated": "2026-07-13",
+      "unit": "metric tons",
+      "values": [
+        {
+          "year": 2000,
+          "value": 22118200,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2001,
+          "value": 22856400,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2002,
+          "value": 22844449,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2003,
+          "value": 24311061,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2004,
+          "value": 26039773,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2005,
+          "value": 29172696,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2006,
+          "value": 32502379,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2007,
+          "value": 33122008,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2008,
+          "value": 34320428,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2009,
+          "value": 34522607,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2010,
+          "value": 34557652,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2011,
+          "value": 31094385,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2012,
+          "value": 28762652.42,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2013,
+          "value": 29045647.27,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2014,
+          "value": 29218917.6,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2015,
+          "value": 29055197.68,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2016,
+          "value": 28521820.27,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2017,
+          "value": 28500083.54,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2018,
+          "value": 30463881.13,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2019,
+          "value": 29104237.31,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2020,
+          "value": 28912459.17,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2021,
+          "value": 30140000.71,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2022,
+          "value": 30705495.5,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2023,
+          "value": 28283371.35,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2024,
+          "value": 30128822.09,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        }
+      ]
+    },
+    "merchandise_exports_current_usd": {
+      "code": "TX.VAL.MRCH.CD.WT",
+      "name": "Merchandise exports (current US$)",
+      "sourceName": "World Development Indicators",
+      "sourceUrl": "https://data.worldbank.org/indicator/TX.VAL.MRCH.CD.WT?locations=MM",
+      "apiUrl": "https://api.worldbank.org/v2/country/MMR/indicator/TX.VAL.MRCH.CD.WT?format=json&date=2000:2025&per_page=100&footnote=y",
+      "lastUpdated": "2026-07-13",
+      "unit": "current US$",
+      "values": [
+        {
+          "year": 2000,
+          "value": 1620000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2001,
+          "value": 2358000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2002,
+          "value": 3015000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2003,
+          "value": 2458000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2004,
+          "value": 2355000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2005,
+          "value": 3776000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2006,
+          "value": 4539000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2007,
+          "value": 6253000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2008,
+          "value": 6882000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2009,
+          "value": 6662000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2010,
+          "value": 8661000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2011,
+          "value": 9238000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2012,
+          "value": 8877000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2013,
+          "value": 11233000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2014,
+          "value": 11453000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2015,
+          "value": 11429000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2016,
+          "value": 11831000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2017,
+          "value": 13879000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2018,
+          "value": 16614000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2019,
+          "value": 17997000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2020,
+          "value": 16692000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2021,
+          "value": 15154000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2022,
+          "value": 17085000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2023,
+          "value": 14753000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2024,
+          "value": 14924000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2025,
+          "value": 15298000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        }
+      ]
+    },
+    "merchandise_imports_current_usd": {
+      "code": "TM.VAL.MRCH.CD.WT",
+      "name": "Merchandise imports (current US$)",
+      "sourceName": "World Development Indicators",
+      "sourceUrl": "https://data.worldbank.org/indicator/TM.VAL.MRCH.CD.WT?locations=MM",
+      "apiUrl": "https://api.worldbank.org/v2/country/MMR/indicator/TM.VAL.MRCH.CD.WT?format=json&date=2000:2025&per_page=100&footnote=y",
+      "lastUpdated": "2026-07-13",
+      "unit": "current US$",
+      "values": [
+        {
+          "year": 2000,
+          "value": 2371000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2001,
+          "value": 2849000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2002,
+          "value": 2324000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2003,
+          "value": 2070000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2004,
+          "value": 2174000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2005,
+          "value": 1908000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2006,
+          "value": 2538000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2007,
+          "value": 3247000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2008,
+          "value": 4256000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2009,
+          "value": 4348000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2010,
+          "value": 4760000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2011,
+          "value": 9019000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2012,
+          "value": 9201000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2013,
+          "value": 12043000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2014,
+          "value": 16459000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2015,
+          "value": 16885000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2016,
+          "value": 15705000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2017,
+          "value": 19253000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2018,
+          "value": 19334000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2019,
+          "value": 18588000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2020,
+          "value": 17947000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2021,
+          "value": 14327000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2022,
+          "value": 17403000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2023,
+          "value": 16440000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2024,
+          "value": 12452000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        },
+        {
+          "year": 2025,
+          "value": 14331000000,
+          "unit": "",
+          "decimal": 0,
+          "observationStatus": "",
+          "footnote": ""
+        }
+      ]
+    }
+  }
+}

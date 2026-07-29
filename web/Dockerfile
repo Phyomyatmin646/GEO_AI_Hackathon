@@ -14,5 +14,6 @@ COPY . .
 # Expose port 3000
 EXPOSE 3000
 
-# Start Next.js in development mode
-CMD ["npm", "run", "dev"]
+# Docker forwards traffic to the container's network interface, so the
+# development server must not bind only to its internal loopback interface.
+CMD ["npm", "run", "dev", "--", "--hostname", "0.0.0.0"]
