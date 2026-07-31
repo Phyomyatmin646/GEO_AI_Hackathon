@@ -14,7 +14,6 @@ except Exception as e:
 def extract_landcover_features():
     base_dir = Path(__file__).resolve().parents[1]
     
-    # 1. Collect all grid points from assembled datasets
     print("Collecting unique grid points from assembled data...")
     regions = [
         "gee_2018_2026", "gee_bago_2018_2026", "gee_mandalay_2018_2026", 
@@ -23,7 +22,11 @@ def extract_landcover_features():
     
     all_points = pd.DataFrame()
     for reg in regions:
-        parquet_path = base_dir / "data" / "output" / reg / "myanmar_agri_suitability.parquet"
+        # Check for both parquet names
+        parquet_path = base_dir / "data" / "output" / reg / f"{reg.replace('gee_', '').replace('_2018_2026', '') if reg != 'gee_2018_2026' else 'ayeyawaddy'}_agri_suitability_with_infra.parquet"
+        if not parquet_path.exists():
+            parquet_path = base_dir / "data" / "output" / reg / "myanmar_agri_suitability.parquet"
+            
         if parquet_path.exists():
             df = pd.read_parquet(parquet_path, columns=['grid_id', 'longitude', 'latitude'])
             all_points = pd.concat([all_points, df])
@@ -36,11 +39,6 @@ def extract_landcover_features():
         print("No grid points found.")
         return
 
-    # Convert to Earth Engine FeatureCollection in chunks to avoid payload limits
-    # For large datasets, it's better to upload as an Asset, but let's try direct conversion if small,
-    # or export the points to a CSV, upload to GEE asset, and then process.
-    # A 5km grid for 6 regions might be around 10,000 points. Let's see!
-    
     chunk_size = 5000
     for i in range(0, len(unique_points), chunk_size):
         chunk = unique_points.iloc[i:i+chunk_size]
@@ -55,16 +53,19 @@ def extract_landcover_features():
         # Datasets
         # ESA WorldCover 2021
         worldcover = ee.ImageCollection("ESA/WorldCover/v200").first()
+        
         # WorldPop 2020
         worldpop = ee.ImageCollection("WorldPop/GP/100m/pop").filterBounds(fc.geometry()).mean()
         
-        # Calculate Fractions in a 2.5km radius (since grid is 5km, half is 2.5km)
-        # We will use reduceRegions
+        # JRC Global Surface Water
+        jrc_water = ee.Image("JRC/GSW1_4/GlobalSurfaceWater")
+        seasonality = jrc_water.select('seasonality')
+        # Permanent water is seasonality == 12
+        permanent_water = seasonality.eq(12)
         
-        def calculate_fractions(feature):
+        def calculate_features(feature):
             buffer = feature.geometry().buffer(2500) # 2.5km radius
             
-            # ESA Classes: 10: Trees, 20: Shrubland, 30: Grassland, 40: Cropland, 50: Built-up, 60: Bare/sparse, 80: Water
             # Population sum
             pop_sum = worldpop.reduceRegion(
                 reducer=ee.Reducer.sum(),
@@ -85,17 +86,24 @@ def extract_landcover_features():
                 maxPixels=1e9
             )
             
-            return feature.set('pop_sum', pop_sum, 'class_areas', areas.get('groups'))
+            # Permanent water area
+            water_area_image = ee.Image.pixelArea().updateMask(permanent_water)
+            water_area = water_area_image.reduceRegion(
+                reducer=ee.Reducer.sum(),
+                geometry=buffer,
+                scale=30,
+                maxPixels=1e9
+            ).get('area')
+            
+            return feature.set('pop_sum', pop_sum, 'class_areas', areas.get('groups'), 'permanent_water_area_m2', water_area)
 
-        # Map over features
-        processed_fc = fc.map(calculate_fractions)
+        processed_fc = fc.map(calculate_features)
         
-        # Export to Drive
-        task_name = f'Export_Infrastructure_Grid_Chunk_{i//chunk_size}'
+        task_name = f'Export_Infrastructure_v2_Grid_Chunk_{i//chunk_size}'
         task = ee.batch.Export.table.toDrive(
             collection=processed_fc,
             description=task_name,
-            folder='Myanmar_Agri_Infrastructure',
+            folder='Myanmar_Agri_Infrastructure_v2',
             fileFormat='CSV'
         )
         task.start()

@@ -25,6 +25,7 @@ def test_enabled_climate_context_requires_official_chirps_v3_collection(
 ) -> None:
     config, _ = load_config("config/default.yaml")
     config = deepcopy(config)
+    config["climate_context"]["enabled"] = True
     config["sources"]["chirps"] = "UCSB-CHG/CHIRPS/DAILY"
     _write_config(tmp_path, config)
 
@@ -51,6 +52,7 @@ def test_disabled_climate_context_preserves_legacy_release_source_contract(
 
 def test_source_manifest_records_climate_configuration_and_provenance() -> None:
     config, _ = load_config("config/default.yaml")
+    config["climate_context"]["enabled"] = True
 
     manifest = build_manifest(
         config=config,

@@ -5,8 +5,12 @@ src/myanmar_agri_geo/chirps_v3.py
 src/myanmar_agri_geo/cli.py
 src/myanmar_agri_geo/config.py
 src/myanmar_agri_geo/crop_profiles.py
+src/myanmar_agri_geo/daily_gee_monitor.py
 src/myanmar_agri_geo/documentation.py
 src/myanmar_agri_geo/drive_exports.py
+src/myanmar_agri_geo/early_warning_sms.py
+src/myanmar_agri_geo/flood_impact_join.py
+src/myanmar_agri_geo/flood_impact_labels.py
 src/myanmar_agri_geo/gee_backend.py
 src/myanmar_agri_geo/labeling.py
 src/myanmar_agri_geo/manifest.py
@@ -16,6 +20,7 @@ src/myanmar_agri_geo/pilot_bundle.py
 src/myanmar_agri_geo/pipeline.py
 src/myanmar_agri_geo/resources.py
 src/myanmar_agri_geo/schema.py
+src/myanmar_agri_geo/sms_parser.py
 src/myanmar_agri_geo/soilgrids.py
 src/myanmar_agri_geo/splits.py
 src/myanmar_agri_geo/validation.py
@@ -29,10 +34,13 @@ tests/test_chirps_v3.py
 tests/test_cli_and_gee_contract.py
 tests/test_climate_contract.py
 tests/test_drive_exports.py
+tests/test_early_warning_sms.py
+tests/test_flood_impact.py
 tests/test_labeling.py
 tests/test_observed_labels.py
 tests/test_official_stats.py
 tests/test_pilot_bundle.py
 tests/test_pipeline.py
+tests/test_sms_parser.py
 tests/test_soilgrids.py
 tests/test_validation.py

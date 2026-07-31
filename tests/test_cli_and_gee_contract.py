@@ -26,17 +26,17 @@ def test_cli_plan_and_gee_preflight_are_side_effect_free(capsys) -> None:
     assert main(["plan", "--config", "config/default.yaml"]) == 0
     plan = json.loads(capsys.readouterr().out)
     assert plan["country"] == "Myanmar"
-    assert plan["monthly_export_count_without_tiling"] == 96
-    assert plan["gee_end_month_exclusive"] == "2026-01"
+    assert plan["monthly_export_count_without_tiling"] == 108
+    assert plan["gee_end_month_exclusive"] == "2027-01"
 
     assert main(["gee-export", "--config", "config/default.yaml", "--dry-run"]) == 0
     preflight = json.loads(capsys.readouterr().out)
     assert preflight["feature_set"] == "split"
     assert preflight["sampling_geometry"] == "centroid"
-    assert preflight["monthly_task_count"] == 96
+    assert preflight["monthly_task_count"] == 108
     assert preflight["static_task_count"] == 1
-    assert preflight["task_count"] == 97
-    assert preflight["end_month_exclusive"] == "2026-01"
+    assert preflight["task_count"] == 109
+    assert preflight["end_month_exclusive"] == "2027-01"
     assert preflight["submission_task_limit"] == 24
 
 

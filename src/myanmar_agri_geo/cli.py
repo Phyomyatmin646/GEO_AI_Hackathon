@@ -564,6 +564,95 @@ def command_build_web_pilot(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_flood_impact_template(args: argparse.Namespace) -> int:
+    from .flood_impact_labels import generate_template
+
+    generate_template(args.output_dir)
+    print(f"Generated template in {args.output_dir}")
+    return 0
+
+
+def command_process_flood_impact(args: argparse.Namespace) -> int:
+    from .flood_impact_labels import process_csv
+
+    process_csv(args.input, args.output_dir)
+    print(f"Processed {args.input} into {args.output_dir}")
+    return 0
+
+
+def command_send_early_warning(args: argparse.Namespace) -> int:
+    from .early_warning_sms import (
+        load_thresholds,
+        check_forecast,
+        check_flood_forecast,
+        check_realtime_gee,
+        evaluate_and_trigger,
+        format_message,
+        deduplicate_alert,
+        broadcast_sms
+    )
+    import json
+    import os
+    
+    # Normally we'd look up coordinates by region. Hardcoding center for demo.
+    region_coords = {
+        "yangon": (16.8, 96.1),
+        "ayeyarwady": (16.0, 95.0)
+    }
+    lat, lon = region_coords.get(args.region.lower(), (16.8, 96.1))
+    
+    thresholds = load_thresholds(args.region)
+    forecast = check_forecast(lat, lon, days=args.forecast_days)
+    flood = check_flood_forecast(lat, lon)
+    gee = check_realtime_gee()
+    
+    # DMH mock input (could be from file or arg)
+    dmh_warning = False
+    
+    result = evaluate_and_trigger(args.region, forecast, flood, gee, dmh_warning, thresholds)
+    
+    output_dir = "data/output/early_warning/evaluations"
+    os.makedirs(output_dir, exist_ok=True)
+    timestamp = result["timestamp"].replace(":", "")
+    eval_file = os.path.join(output_dir, f"eval_{args.region}_{timestamp}.json")
+    with open(eval_file, "w") as f:
+        json.dump(result, f, indent=2)
+        
+    severity_rank = {"NORMAL": 0, "WATCH": 1, "WARNING": 2, "EMERGENCY": 3}
+    min_rank = severity_rank.get(args.severity_min.upper(), 1)
+    current_rank = severity_rank.get(result["severity"], 0)
+    
+    should_send = False
+    message = ""
+    
+    if current_rank >= min_rank:
+        if args.force or deduplicate_alert(result):
+            should_send = True
+            message = format_message(result)
+            
+    if should_send and message:
+        phones_to_send = args.phones
+        
+        # If no specific phones were provided (or default was removed), load from DB
+        if not phones_to_send:
+            from myanmar_agri_geo.early_warning_sms import get_subscribers_by_region
+            phones_to_send = get_subscribers_by_region(args.region)
+            
+        if not phones_to_send:
+            print(f"No subscribers found for region {args.region}. Aborting SMS broadcast.")
+            return 0
+            
+        broadcast_sms(message, phones_to_send, dry_run=not args.send)
+        print(f"Alert Triggered: {result['severity']} - {result['reason']}")
+        if not args.send:
+            print("[DRY-RUN] Use --send to actually broadcast.")
+    else:
+        print(f"No alert sent. Current status: {result['severity']}")
+        
+    return 0
+
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="myanmar-agri-geo",
@@ -730,6 +819,42 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Number of provisional crop recommendations per scored cell",
     )
     web_pilot.set_defaults(handler=command_build_web_pilot)
+
+    flood_template = subparsers.add_parser(
+        "flood-impact-template",
+        help="Write an empty flood and storm impact CSV template",
+    )
+    flood_template.add_argument(
+        "--output-dir",
+        default="data/templates/flood_impact",
+        help="Destination directory for the template",
+    )
+    flood_template.set_defaults(handler=command_flood_impact_template)
+
+    flood_process = subparsers.add_parser(
+        "process-flood-impact",
+        help="Validate and route flood/storm ground truth CSVs",
+    )
+    flood_process.add_argument("--input", required=True, help="Input CSV file")
+    flood_process.add_argument(
+        "--output-dir",
+        default="data/output/flood_impact",
+        help="Directory to output validated, rejected, and quarantine CSVs",
+    )
+    flood_process.set_defaults(handler=command_process_flood_impact)
+    
+    ew_parser = subparsers.add_parser(
+        "send-early-warning",
+        help="Evaluate weather/GEE data and broadcast early warning SMS",
+    )
+    ew_parser.add_argument("--region", required=True, help="Target region (e.g., Yangon)")
+    ew_parser.add_argument("--forecast-days", type=int, default=3, help="Days to forecast")
+    ew_parser.add_argument("--severity-min", default="WATCH", choices=["NORMAL", "WATCH", "WARNING", "EMERGENCY"], help="Minimum severity to trigger alert")
+    ew_parser.add_argument("--force", action="store_true", help="Bypass deduplication and cooldown")
+    ew_parser.add_argument("--send", action="store_true", help="Actually send the SMS (default is dry-run)")
+    ew_parser.add_argument("--phones", nargs="*", default=[], help="Optional list of phone numbers (overrides database)")
+    ew_parser.set_defaults(handler=command_send_early_warning)
+
     return parser
 
 
