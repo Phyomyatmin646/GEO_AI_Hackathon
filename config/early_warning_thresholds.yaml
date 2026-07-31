@@ -1,0 +1,29 @@
+yangon:
+  rainfall_24h_watch_mm: 60
+  rainfall_24h_warning_mm: 100
+  rainfall_3day_warning_mm: 180
+  wind_gust_watch_kmh: 60
+  wind_gust_warning_kmh: 90
+  forecast_probability_min: 70
+  discharge_watch_m3s: 15000
+  discharge_warning_m3s: 20000
+
+ayeyarwady:
+  rainfall_24h_watch_mm: 50
+  rainfall_24h_warning_mm: 90
+  rainfall_3day_warning_mm: 160
+  wind_gust_watch_kmh: 60
+  wind_gust_warning_kmh: 90
+  forecast_probability_min: 70
+  discharge_watch_m3s: 20000
+  discharge_warning_m3s: 25000
+
+default:
+  rainfall_24h_watch_mm: 50
+  rainfall_24h_warning_mm: 90
+  rainfall_3day_warning_mm: 160
+  wind_gust_watch_kmh: 60
+  wind_gust_warning_kmh: 90
+  forecast_probability_min: 70
+  discharge_watch_m3s: 10000
+  discharge_warning_m3s: 15000

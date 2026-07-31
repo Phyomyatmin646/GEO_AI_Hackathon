@@ -12,7 +12,10 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
+      - BACKEND_URL=http://backend:8000
     restart: unless-stopped
+    depends_on:
+      - backend
 
   pipeline:
     build:
@@ -24,4 +27,30 @@ services:
       - PYTHONUNBUFFERED=1
     # The Dockerfile CMD runs `tail -f /dev/null` to keep the container alive.
     # Developers can attach to it via: docker-compose exec pipeline bash
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: agri_geo_redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    container_name: agri_geo_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/models:/app/models
+    environment:
+      - NODE_ENV=development
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PORT=8000
+    depends_on:
+      - redis
     restart: unless-stopped
