@@ -318,6 +318,21 @@ Run the included tests with:
 python -m pytest
 ```
 
+## Early Warning and Impact Analysis
+
+The pipeline includes an active early warning system for predicting severe weather and flood impacts, and directly alerting farmers via SMS.
+
+- **Flood Impact Analysis**: `flood_impact_join.py` and `flood_impact_labels.py` combine grid features with flood risk data to assess potential impact on specific crops.
+- **Daily Monitoring**: `daily_gee_monitor.py` tracks near-real-time weather parameters (like CHIRPS precipitation) via Google Earth Engine to detect anomalies.
+- **SMS Broadcasting**: `early_warning_sms.py` integrates with **SMSPoh** (and optionally EasySendSMS) to send customized, localized alerts directly to registered farmers in affected regions.
+
+Trigger the SMS broadcast pipeline manually or via cron:
+
+```bash
+# Check conditions and broadcast SMS for a specific region
+myanmar-agri-geo send-early-warning --region Yangon --send --severity-min NORMAL
+```
+
 ## Scope boundary
 
 This release builds the geo-suitability dataset, validates real observed-label
