@@ -4,7 +4,6 @@ import { NextResponse } from "next/server";
 
 import { BackendApiError, GeoAIBackendClient } from "../../../lib/api-client";
 
-const MAX_REQUEST_BYTES = 16 * 1024;
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
 
 function responseHeaders(requestId: string): HeadersInit {
@@ -21,7 +20,6 @@ export async function POST(request: Request) {
     candidateRequestId && REQUEST_ID_PATTERN.test(candidateRequestId)
       ? candidateRequestId
       : randomUUID();
-  const contentLength = Number(request.headers.get("content-length") ?? "0");
 
   let body: unknown;
   try {

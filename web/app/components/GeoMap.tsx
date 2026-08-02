@@ -47,7 +47,24 @@ export default function GeoMap({ cells, selectedId, onSelect }: Props) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {cells.map((cell) => {
+      {cells.filter((cell) => {
+        const waterFeat = cell.features.find((f) => f.id === "surface_water_occurrence_pct");
+        const ndviFeat = cell.features.find((f) => f.id === "ndvi_median");
+        const vvFeat = cell.features.find((f) => f.id === "s1_vv_db_median");
+        
+        const water = waterFeat?.value ?? 0;
+        const ndvi = ndviFeat?.value ?? null;
+        const vv = vvFeat?.value ?? null;
+        
+        // Exclude cells with significant water
+        if (water > 5) return false;
+        
+        // Exclude urban/roads (non-vegetated). If NDVI is missing, use SAR VV as fallback.
+        if (ndvi !== null && ndvi < 0.3) return false;
+        if (ndvi === null && vv !== null && vv > -7.0) return false;
+        
+        return true;
+      }).map((cell) => {
         const topCrop = cell.recommendations[0]?.id ?? null;
         const selected = cell.id === selectedId;
         const abstained = cell.recommendationStatus === "insufficient_evidence";
@@ -60,7 +77,7 @@ export default function GeoMap({ cells, selectedId, onSelect }: Props) {
               weight: selected ? 3.0 : abstained ? 0.7 : 0.45,
               dashArray: abstained ? "3 3" : undefined,
               fillColor: cropColor(topCrop, selected),
-              fillOpacity: selected ? 1.0 : abstained ? 0.52 : 0.85,
+              fillOpacity: selected ? 0.8 : abstained ? 0.3 : 0.55,
             }}
             eventHandlers={{ click: () => onSelect(cell.id) }}
           >

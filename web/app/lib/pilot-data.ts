@@ -7,6 +7,7 @@ export const PILOT_REGION_IDS = [
   "mandalay",
   "bago",
   "magway",
+  "yangon",
 ] as const;
 
 export type PilotRegionId = (typeof PILOT_REGION_IDS)[number];
@@ -57,6 +58,14 @@ export const PILOT_REGION_REGISTRY = {
     load: () =>
       import(
         "../../data/output/pilot_magway_2018_01/pilot_magway_2018_01.json",
+        { with: { type: "json" } },
+      ),
+  },
+  yangon: {
+    name: "Yangon",
+    load: () =>
+      import(
+        "../../data/output/pilot_yangon_2018_01/pilot_yangon_2018_01.json",
         { with: { type: "json" } },
       ),
   },

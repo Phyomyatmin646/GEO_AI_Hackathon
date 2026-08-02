@@ -25,6 +25,7 @@ import { CROP_COLORS } from "../lib/colors";
 import Link from "next/link";
 import { LiveCropRecommendationPanel } from "./LiveCropRecommendationPanel";
 import { ModelEvidencePanel } from "./ModelEvidencePanel";
+import { ClimateLivePanel } from "./ClimateLivePanel";
 import { cropModelTarget } from "../lib/model-contract";
 
 type PilotSource = {
@@ -296,6 +297,7 @@ export function PilotDashboard() {
       !CLIMATE_FEATURE_IDS.has(feature.id) &&
       !WEATHER_FEATURE_IDS.has(feature.id),
   );
+  void climateFeatures; // now handled by ClimateLivePanel
 
   return (
     <main className="app-shell">
@@ -389,7 +391,7 @@ export function PilotDashboard() {
         <section className="workspace" aria-label={t.dashboard.workspaceAria}>
           <div className="map-panel">
             <div className="map-toolbar">
-              <strong>{localizeRegion(payload.meta.region, lang)} · {selectedCell.month}</strong>
+              <strong>{localizeRegion(payload.meta.region, lang)}</strong>
               <span>
                 {payload.meta.grid.sizeM / 1000} {t.dashboard.mapToolbar} · {t.dashboard.mapLayerSource}
               </span>
@@ -431,7 +433,7 @@ export function PilotDashboard() {
             <h2>{localizeRegion(selectedCell.region, lang)} {t.dashboard.pilotCell}</h2>
             <p className="coordinates">
               {selectedCell.latitude.toFixed(4)}, {selectedCell.longitude.toFixed(4)} ·{" "}
-              {selectedCell.month} · {payload.meta.grid.cellAreaKm2} km²
+              {payload.meta.grid.cellAreaKm2} km²
             </p>
 
             {isAbstained ? (
@@ -532,36 +534,9 @@ export function PilotDashboard() {
                 </div>
               </div>
 
-              <div className={`feature-group mt-4 border-2 p-2 ${climateFeatures.length === 0
-                  ? "opacity-50 border-dashed bg-gray-50"
-                  : "border-emerald-100 bg-emerald-50/40"
-                }`}>
+              <div className="feature-group mt-4">
                 <h4 className="text-sm font-semibold mb-2">{t.cell.features.climateTrendTitle}</h4>
-                <div className="feature-table">
-                  {climateFeatures.length > 0 ? (
-                    climateFeatures.map((feature) => (
-                      <div className="feature-row" key={feature.id}>
-                        <span>
-                          {localizeBilingualLabel(feature.label, lang)}
-                          <small>{feature.sourceId} · {t.dashboard.climateBaseline}</small>
-                        </span>
-                        <strong className={feature.value === null ? "missing-value" : ""}>
-                          {formatFeatureValue(feature.value, localizeUnit(feature.unit, lang), t.cell.missing)}
-                        </strong>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="feature-row">
-                      <span>
-                        {t.cell.features.climateTrendTitle}
-                        <small>{t.dashboard.climateBaseline}</small>
-                      </span>
-                      <strong className="missing-value text-xs italic">
-                        {t.cell.features.pendingClimateData}
-                      </strong>
-                    </div>
-                  )}
-                </div>
+                <ClimateLivePanel cell={selectedCell} />
               </div>
 
               <div className="feature-group mt-4">
