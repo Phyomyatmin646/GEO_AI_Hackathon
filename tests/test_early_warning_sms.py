@@ -121,9 +121,17 @@ def test_11_no_recipients_log_do_not_crash():
 
 def test_12_sms_mock_fails_retry_log(tmp_path):
     # Mock builtins.open to fail the first time, but succeed the second time for the failure log
-    with patch("builtins.open", side_effect=[IOError("Mock FS Error"), mock_open()()]):
+    with (
+        patch.dict(
+            os.environ,
+            {"SMSPOH_API_KEY": "", "SMSPOH_API_SECRET": ""},
+        ),
+        patch("myanmar_agri_geo.early_warning_sms.requests.post") as post,
+        patch("builtins.open", side_effect=[IOError("Mock FS Error"), mock_open()()]),
+    ):
         res = broadcast_sms("Test", ["09123456789"], dry_run=False)
         assert not res
+        post.assert_not_called()
 
 def test_13_dry_run_generate_message_but_send_nothing():
     res = broadcast_sms("Test msg", ["091"], dry_run=True)

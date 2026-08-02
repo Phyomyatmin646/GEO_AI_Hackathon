@@ -31,8 +31,16 @@ Node.js `>=22.13.0` is required.
 
 ```bash
 npm install
+cp .env.example .env.local
 npm run dev
 ```
+
+`BACKEND_URL` and `BACKEND_API_KEY` are server-only. Browser requests use
+`POST /api/v1/predictions`; that same-origin BFF attaches the secret and calls
+the separate Node gateway. The map's model panel is fail-closed and labels the
+returned primary-artifact outputs as experimental, rule-engineered surrogate,
+and not field-validated. It does not relabel the existing rule-based shortlist
+as trained-model output.
 
 ## Verification
 
@@ -51,6 +59,8 @@ provenance headers, and UTF-8 selected-cell CSV downloads.
 - `GET /api/v1/cells?cell_id=mm_...` — one cell by ID
 - `GET /api/v1/cells/{cell_id}/report.csv` — selected-cell evidence and crop
   shortlist as UTF-8 CSV
+- `POST /api/v1/predictions` — server-side proxy to the authenticated Node
+  gateway; never exposes the gateway key to browser JavaScript
 - `GET /api/cells` — deprecated compatibility endpoint
 
 The API always identifies the release, data contract, real-feature/rule-based

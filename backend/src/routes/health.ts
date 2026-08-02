@@ -1,31 +1,37 @@
-import { FastifyInstance } from 'fastify';
-import { registry } from '../services/registry.js';
+import type { FastifyInstance } from 'fastify';
+import type { ModelServerGateway } from '../services/model-server-client.js';
 
-export default async function (fastify: FastifyInstance) {
+export default async function healthRoutes(
+  fastify: FastifyInstance,
+  options: { modelServer: ModelServerGateway },
+) {
   fastify.get('/live', async (request, reply) => {
-    return { status: 'OK', timestamp: new Date().toISOString() };
+    return reply.status(200).send({
+      status: 'live',
+      request_id: request.id,
+      timestamp: new Date().toISOString(),
+    });
   });
 
   fastify.get('/ready', async (request, reply) => {
-    const models = registry.getAllModels();
-    
-    // Check if any REQUIRED model is unavailable or degraded
-    // For this implementation, we assume if we have 0 models loaded, it's not ready
-    if (models.length === 0) {
-      return reply.status(503).send({ status: 'UNAVAILABLE', reason: 'No models loaded' });
+    try {
+      await options.modelServer.getReadiness(request.id);
+      return reply.status(200).send({
+        status: 'ready',
+        request_id: request.id,
+        model_server: 'ready',
+        circuit_breaker: options.modelServer.getCircuitState(),
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      request.log.warn({ err: error, request_id: request.id }, 'Readiness check failed');
+      return reply.status(503).send({
+        status: 'not_ready',
+        request_id: request.id,
+        model_server: 'not_ready',
+        circuit_breaker: options.modelServer.getCircuitState(),
+        timestamp: new Date().toISOString(),
+      });
     }
-
-    const unreadyModels = models.filter(m => m.status === 'unavailable' || m.status === 'degraded');
-    if (unreadyModels.length > 0) {
-      // Depending on strictness, we might still return 200 OK but list them, or 503
-      // We'll return 200 but warn.
-      return { 
-        status: 'READY_WITH_WARNINGS', 
-        warnings: unreadyModels.map(m => `Model ${m.modelId} is ${m.status}`),
-        timestamp: new Date().toISOString() 
-      };
-    }
-
-    return { status: 'READY', timestamp: new Date().toISOString() };
   });
 }

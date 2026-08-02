@@ -1,56 +1,73 @@
-version: '3.8'
+name: myanmar-agriculture-intelligence
 
+# This Compose project deliberately does not contain the Python model server.
+# Start GEO_MODEL_SERVER separately on host port 8001, then start this project.
 services:
-  web:
-    build:
-      context: ./web
-    container_name: agri_geo_web
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./web:/app
-      - /app/node_modules
-    environment:
-      - NODE_ENV=development
-      - BACKEND_URL=http://backend:8000
-    restart: unless-stopped
-    depends_on:
-      - backend
-
-  pipeline:
-    build:
-      context: .
-    container_name: agri_geo_pipeline
-    volumes:
-      - .:/app
-    environment:
-      - PYTHONUNBUFFERED=1
-    # The Dockerfile CMD runs `tail -f /dev/null` to keep the container alive.
-    # Developers can attach to it via: docker-compose exec pipeline bash
-    restart: unless-stopped
-
-  redis:
-    image: redis:7-alpine
-    container_name: agri_geo_redis
-    ports:
-      - "6379:6379"
-    restart: unless-stopped
-
   backend:
     build:
       context: ./backend
-    container_name: agri_geo_backend
+      dockerfile: Dockerfile
     ports:
-      - "8000:8000"
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-      - ./backend/models:/app/models
+      - "127.0.0.1:8000:8000"
     environment:
-      - NODE_ENV=development
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - PORT=8000
-    depends_on:
-      - redis
+      NODE_ENV: ${BACKEND_NODE_ENV:-development}
+      HOST: 0.0.0.0
+      PORT: 8000
+      LOG_LEVEL: ${BACKEND_LOG_LEVEL:-info}
+      API_KEY: ${BACKEND_API_KEY:-dev-public-gateway-key-replace-before-production}
+      CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:3000}
+      MODEL_SERVER_URL: ${MODEL_SERVER_URL:-http://host.docker.internal:8001}
+      MODEL_SERVER_API_KEY: ${MODEL_SERVER_API_KEY:-dev-internal-model-key-replace-before-production}
+      MODEL_SERVER_TIMEOUT_MS: ${MODEL_SERVER_TIMEOUT_MS:-40000}
+      MODEL_SERVER_MAX_RESPONSE_BYTES: ${MODEL_SERVER_MAX_RESPONSE_BYTES:-5242880}
+      ALLOW_INSECURE_MODEL_SERVER_HTTP: "true"
+      ENABLE_ASYNC_JOBS: "false"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1:8000/health/ready
+      interval: 15s
+      timeout: 5s
+      start_period: 20s
+      retries: 5
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m
     restart: unless-stopped
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      NODE_ENV: production
+      BACKEND_URL: http://backend:8000
+      BACKEND_API_KEY: ${BACKEND_API_KEY:-dev-public-gateway-key-replace-before-production}
+    depends_on:
+      backend:
+        condition: service_healthy
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m
+    restart: unless-stopped
+
+  pipeline:
+    profiles: [ "tools" ]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    environment:
+      PYTHONUNBUFFERED: "1"
+    init: true

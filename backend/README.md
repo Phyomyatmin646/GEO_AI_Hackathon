@@ -1,77 +1,96 @@
-# GeoAI Model Inference Backend
+# Myanmar Agriculture Intelligence Gateway
 
-This is a production-ready Node.js Fastify backend that serves as the model registry and inference gateway for the Myanmar GeoAI system.
+This directory is the public Node.js/Fastify gateway. It does not load model
+artifacts. The separately-run FastAPI service owns all model files and spatial
+feature lookup.
 
-## Architecture
-
-- **Fastify**: High-performance HTTP server.
-- **Zod**: Strict validation of incoming GeoAI features.
-- **BullMQ + Redis**: Asynchronous batch inference queue.
-- **Pluggable Adapters**: Supports HTTP API integration and testing Mocks.
-
-## Requirements
-- Node.js >= 22
-- Redis (for async queue)
-
-## Setup
-1. `npm install`
-2. `cp .env.example .env`
-3. `npm run dev` (Starts development server on port 8000)
-
-## API Examples
-
-### Get Readiness
-```bash
-curl http://localhost:8000/health/ready
+```text
+Browser / Next.js -> Node gateway :8000 -> FastAPI model service :8001
 ```
 
-### List Models
+The gateway is fail-closed: it never creates mock predictions, confidence,
+checksums, versions, or fallback feature rows. Responses from FastAPI must match
+the versioned `model-inference-v1` contract before they are returned.
+
+## Local setup
+
+Requirements: Node.js 22.13 or newer. Start the FastAPI model repository on
+`127.0.0.1:8001`, then:
+
 ```bash
-curl http://localhost:8000/api/v1/models
+npm ci
+cp .env.example .env
+npm run dev
 ```
 
-### Make Synchronous Prediction
+The public gateway listens on `http://127.0.0.1:8000` by default. When this
+gateway runs in Docker Desktop and FastAPI is published by a different Compose
+project, set `MODEL_SERVER_URL=http://host.docker.internal:8001`.
+
+Production requires distinct `API_KEY` (at least 16 characters) and
+`MODEL_SERVER_API_KEY` (at least 24 characters). Placeholder values are refused.
+Send the public key as `X-API-Key`; the gateway sends the internal key to FastAPI
+as `X-Internal-API-Key`. Never expose the FastAPI service directly to browsers.
+Production model-service URLs must use HTTPS unless HTTP is explicitly enabled
+for a trusted private network with `ALLOW_INSECURE_MODEL_SERVER_HTTP=true`.
+
+## Endpoints
+
+- `GET /health/live` — Node process liveness; does not call FastAPI.
+- `GET /health/ready` — ready only when model readiness and its authenticated,
+  exact 40-model catalog both validate.
+- `GET /api/v1/models` — validated proxy of the FastAPI model catalog.
+- `POST /api/v1/predictions` — validated synchronous inference.
+- `/api/v1/jobs/*` — explicitly returns `503`; Redis jobs are disabled in this
+  release and no Redis connection is opened.
+
+Example request using a source sample:
+
 ```bash
-curl -X POST http://localhost:8000/api/v1/predictions \
-  -H "Content-Type: application/json" \
+curl -X POST http://127.0.0.1:8000/api/v1/predictions \
+  -H 'Content-Type: application/json' \
+  -H 'X-API-Key: replace_with_at_least_16_characters' \
+  -H 'X-Request-ID: demo-001' \
   -d '{
-    "requestId": "123",
-    "modelId": "crop_suitability_monsoon_rice",
-    "features": {
-      "infrastructure": {
-        "distance_to_road_km": 1.2,
-        "road_density_km_per_sqkm": 0.5,
-        "distance_to_railway_km": 10.0,
-        "railway_density_km_per_sqkm": 0.1,
-        "distance_to_river_km": 5.0,
-        "river_density_km_per_sqkm": 0.2
-      },
-      "landCover": {
-        "urban_fraction": 0.05,
-        "builtup_fraction": 0.1,
-        "cropland_fraction": 0.6,
-        "non_cropland_fraction": 0.25,
-        "permanent_water_fraction": 0.0,
-        "valid_agriculture_mask": 1,
-        "landcover_source_year": 2021
-      },
-      "metadata": {
-        "data_source": "sentinel-2",
-        "source_date": "2024-01-01",
-        "source_version": "v1",
-        "quality_flag": 1
-      },
-      "base": {
-        "temperature_mean": 28.5,
-        "elevation": 100
-      }
-    }
+    "sample_id": "00000000000000000001",
+    "composite_features": ["crop_recommender"]
   }'
 ```
 
-## Adding a New Model
+Coordinate lookup requires all three fields:
 
-1. Open `models/manifest.json`.
-2. Add a new JSON block strictly adhering to the Manifest schema.
-3. Set `adapterType` to `"http"` and provide the `endpoint` to your actual Python/PyTorch inference server.
-4. Run `npm run test` or `npm run start`. The manifest will be strictly validated on startup.
+```json
+{
+  "lat": 16.8661,
+  "lon": 96.1951,
+  "observation_month": "2024-01",
+  "include_all_targets": true
+}
+```
+
+Exactly one locator is accepted: either `sample_id`, or
+`lat + lon + observation_month`. Unknown target names, composite names and
+request fields are rejected. `include_all_targets: true` cannot be combined
+with `targets`; a target selection or a composite feature is required.
+
+`X-Request-ID` is authoritative for tracing. If `request_id` is also placed in
+the JSON body, it must match that header. Model output is returned only when the
+locator, expanded target/composite set, maximum spatial distance, task shape,
+model version, unit, catalog release, serving-data checksums and published
+composite dependency capabilities match the validated catalog.
+
+The production model service limits expanded synchronous requests to 17 model
+targets, exactly enough for the bounded crop-suitability tier request.
+`include_all_targets` still returns `REQUEST_TOO_EXPENSIVE`; it belongs in a
+future durable asynchronous workflow.
+
+## Validation
+
+```bash
+npm run validate
+npm run build
+```
+
+`npm run validate` runs ESLint, TypeScript checking and the test suite. The
+gateway tests inject a fake model-service client and never require Redis or
+real model artifacts.
