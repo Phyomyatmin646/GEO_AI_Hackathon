@@ -14,4 +14,9 @@ export const CROP_COLORS: Record<string, string> = {
   teak: "#78350f",               // Brown
   oil_palm: "#14532d",           // Deep Green
   cashew: "#ea580c",             // Deep Orange
+  black_gram: "#334155",         // Dark Slate
+  groundnut: "#d97706",          // Amber/Brown
+  green_gram: "#15803d",         // Medium Green
+  pigeon_pea: "#65a30d",         // Olive Green
+  sesame: "#b45309",             // Golden Brown
 };

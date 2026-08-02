@@ -12,7 +12,7 @@ export default async function predictionRoutes(
   },
 ) {
   fastify.post('/', { config: { rateLimit: options.rateLimit } }, async (request, reply) => {
-    let parsedRequest = PredictionRequestSchema.safeParse(request.body);
+    const parsedRequest = PredictionRequestSchema.safeParse(request.body);
 
     const controller = new AbortController();
     const handleClientAbort = () => controller.abort();
@@ -37,6 +37,10 @@ export default async function predictionRoutes(
       );
       return reply.status(200).send(prediction);
     } catch (error) {
+      if (error instanceof RequestValidationError || (error instanceof AppError && error.statusCode === 400)) {
+        throw error;
+      }
+      request.log.warn({ err: error }, 'Prediction failed, serving fallback');
       // FALLBACK TO PREVENT UI FROM BREAKING
       // This ensures 404/503 errors or invalid coordinates don't cause hackathon deductions.
       const rawBody = request.body as Record<string, unknown>;

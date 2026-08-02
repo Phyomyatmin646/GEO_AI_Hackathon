@@ -128,12 +128,21 @@ export function ModelEvidencePanel({ cell, cropId }: Props) {
     };
   }, [cell.id, cell.latitude, cell.longitude, cell.month, targets, t.modelEvidence]);
 
-  // Group entries by importance
+  // Group entries by importance, split into healthy vs flagged
   const groupedEntries = result
     ? {
-        high: HIGH_IMPORTANCE_TARGETS.map(target => [target, result.predictions[target]] as const).filter(([_, p]) => !!p),
-        medium: MEDIUM_IMPORTANCE_TARGETS.map(target => [target, result.predictions[target]] as const).filter(([_, p]) => !!p),
-        low: LOW_IMPORTANCE_TARGETS.map(target => [target, result.predictions[target]] as const).filter(([_, p]) => !!p),
+        high: {
+          healthy: HIGH_IMPORTANCE_TARGETS.map(target => [target, result.predictions[target]] as const).filter(([, p]) => p && p.validation_status === "healthy"),
+          flagged: HIGH_IMPORTANCE_TARGETS.map(target => [target, result.predictions[target]] as const).filter(([, p]) => p && p.validation_status !== "healthy"),
+        },
+        medium: {
+          healthy: MEDIUM_IMPORTANCE_TARGETS.map(target => [target, result.predictions[target]] as const).filter(([, p]) => p && p.validation_status === "healthy"),
+          flagged: MEDIUM_IMPORTANCE_TARGETS.map(target => [target, result.predictions[target]] as const).filter(([, p]) => p && p.validation_status !== "healthy"),
+        },
+        low: {
+          healthy: LOW_IMPORTANCE_TARGETS.map(target => [target, result.predictions[target]] as const).filter(([, p]) => p && p.validation_status === "healthy"),
+          flagged: LOW_IMPORTANCE_TARGETS.map(target => [target, result.predictions[target]] as const).filter(([, p]) => p && p.validation_status !== "healthy"),
+        },
       }
     : null;
 
@@ -171,7 +180,7 @@ export function ModelEvidencePanel({ cell, cropId }: Props) {
         <>
           <div className="model-prediction-list">
             <h4 className="importance-heading">{t.modelEvidence.highImportance}</h4>
-            {groupedEntries.high.map(([target, prediction]) => (
+            {groupedEntries.high.healthy.map(([target, prediction]) => (
               <div className="model-prediction-row" key={target}>
                 <span>
                   {t.modelEvidence.targetLabels[target] ?? target}
@@ -187,11 +196,30 @@ export function ModelEvidencePanel({ cell, cropId }: Props) {
                 </em>
               </div>
             ))}
+            {groupedEntries.high.flagged.length > 0 && (
+              <details className="model-flagged-group">
+                <summary>{lang === "my" ? `⚠ စမ်းသပ်ဆဲ (${groupedEntries.high.flagged.length})` : `⚠ Experimental (${groupedEntries.high.flagged.length})`}</summary>
+                {groupedEntries.high.flagged.map(([target, prediction]) => (
+                  <div className="model-prediction-row flagged" key={target}>
+                    <span>
+                      {t.modelEvidence.targetLabels[target] ?? target}
+                      <small>{prediction!.validation_status} · v{prediction!.model_version}</small>
+                    </span>
+                    <strong>{formattedPrediction(target, prediction!, lang)}</strong>
+                    <em>
+                      {prediction!.confidence === null
+                        ? t.modelEvidence.confidenceUnavailable
+                        : `${t.modelEvidence.confidence} ${Math.round(prediction!.confidence * 100)}%`}
+                    </em>
+                  </div>
+                ))}
+              </details>
+            )}
           </div>
-          
+
           <details className="model-prediction-list model-collapse">
-            <summary className="importance-heading">{t.modelEvidence.mediumImportance} ({groupedEntries.medium.length})</summary>
-            {groupedEntries.medium.map(([target, prediction]) => (
+            <summary className="importance-heading">{t.modelEvidence.mediumImportance} ({groupedEntries.medium.healthy.length + groupedEntries.medium.flagged.length})</summary>
+            {groupedEntries.medium.healthy.map(([target, prediction]) => (
               <div className="model-prediction-row" key={target}>
                 <span>
                   {t.modelEvidence.targetLabels[target] ?? target}
@@ -207,12 +235,31 @@ export function ModelEvidencePanel({ cell, cropId }: Props) {
                 </em>
               </div>
             ))}
+            {groupedEntries.medium.flagged.length > 0 && (
+              <details className="model-flagged-group">
+                <summary>{lang === "my" ? `⚠ စမ်းသပ်ဆဲ (${groupedEntries.medium.flagged.length})` : `⚠ Experimental (${groupedEntries.medium.flagged.length})`}</summary>
+                {groupedEntries.medium.flagged.map(([target, prediction]) => (
+                  <div className="model-prediction-row flagged" key={target}>
+                    <span>
+                      {t.modelEvidence.targetLabels[target] ?? target}
+                      <small>{prediction!.validation_status} · v{prediction!.model_version}</small>
+                    </span>
+                    <strong>{formattedPrediction(target, prediction!, lang)}</strong>
+                    <em>
+                      {prediction!.confidence === null
+                        ? t.modelEvidence.confidenceUnavailable
+                        : `${t.modelEvidence.confidence} ${Math.round(prediction!.confidence * 100)}%`}
+                    </em>
+                  </div>
+                ))}
+              </details>
+            )}
           </details>
 
           <details className="model-prediction-list model-collapse">
-            <summary className="importance-heading">{t.modelEvidence.lowImportance} ({groupedEntries.low.length})</summary>
-            {groupedEntries.low.map(([target, prediction]) => (
-              <div className="model-prediction-row" key={target}>
+            <summary className="importance-heading">{t.modelEvidence.lowImportance} ({groupedEntries.low.healthy.length + groupedEntries.low.flagged.length})</summary>
+            {[...groupedEntries.low.healthy, ...groupedEntries.low.flagged].map(([target, prediction]) => (
+              <div className={`model-prediction-row ${prediction!.validation_status !== "healthy" ? "flagged" : ""}`} key={target}>
                 <span>
                   {t.modelEvidence.targetLabels[target] ?? target}
                   <small>

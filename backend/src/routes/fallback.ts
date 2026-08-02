@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Auto-generated fallback prediction for all 40 models
 export const fallbackPrediction = {
   "api_version": "v1",
