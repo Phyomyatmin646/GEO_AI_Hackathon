@@ -1,82 +1,35 @@
-import Fastify from 'fastify';
-import cors from '@fastify/cors';
-import rateLimit from '@fastify/rate-limit';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import 'dotenv/config';
 
-import { registry } from './services/registry.js';
-import healthRoutes from './routes/health.js';
-import modelRoutes from './routes/models.js';
-import predictionRoutes from './routes/predictions.js';
-import jobRoutes from './routes/jobs.js';
-
-dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const server = Fastify({
-  logger: {
-    transport: {
-      target: 'pino-pretty',
-      options: { translateTime: 'HH:MM:ss Z', ignore: 'pid,hostname' }
-    }
-  }
-});
-
-// Middleware
-server.register(cors, { 
-  origin: process.env.CORS_ORIGIN || '*' 
-});
-
-server.register(rateLimit, {
-  max: 100,
-  timeWindow: '1 minute'
-});
-
-// Load Models on startup
-const manifestPath = path.resolve(__dirname, '../models/manifest.json');
-try {
-  registry.loadManifest(manifestPath);
-} catch (e) {
-  server.log.error("Could not load model manifest on startup");
-}
-
-// Routes
-server.register(healthRoutes, { prefix: '/health' });
-server.register(modelRoutes, { prefix: '/api/v1/models' });
-server.register(predictionRoutes, { prefix: '/api/v1/predictions' });
-server.register(jobRoutes, { prefix: '/api/v1/jobs' });
-
-// Global Error Handler for safe errors without stack traces
-server.setErrorHandler(function (error: any, request, reply) {
-  this.log.error(error);
-  // Hide stack trace in production
-  reply.status(error.statusCode || 500).send({ 
-    error: error.name,
-    message: error.message 
-  });
-});
+import { buildApp } from './app.js';
+import { loadConfig } from './config.js';
 
 const start = async () => {
+  const config = loadConfig();
+  const server = await buildApp({ config });
+
   try {
-    const port = parseInt(process.env.PORT || '8000');
-    await server.listen({ port, host: '0.0.0.0' });
-    server.log.info(`Backend listening on ${port}`);
+    await server.listen({ port: config.port, host: config.host });
+    server.log.info({ port: config.port, host: config.host }, 'Backend listening');
   } catch (err) {
     server.log.error(err);
     process.exit(1);
   }
+
+  for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+    process.once(signal, () => {
+      server.log.info({ signal }, 'Shutting down gracefully');
+      void server.close().then(
+        () => process.exit(0),
+        (error: unknown) => {
+          server.log.error({ err: error }, 'Graceful shutdown failed');
+          process.exit(1);
+        },
+      );
+    });
+  }
 };
 
-start();
-
-// Graceful Shutdown
-['SIGINT', 'SIGTERM'].forEach((signal) => {
-  process.on(signal, async () => {
-    server.log.info(`Received ${signal}. Shutting down gracefully...`);
-    await server.close();
-    process.exit(0);
-  });
+void start().catch((error: unknown) => {
+  process.stderr.write(`Backend startup failed: ${error instanceof Error ? error.message : 'unknown error'}\n`);
+  process.exit(1);
 });

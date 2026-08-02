@@ -23,6 +23,9 @@ const GeoMap = dynamic(() => import("./GeoMap"), {
 });
 import { CROP_COLORS } from "../lib/colors";
 import Link from "next/link";
+import { LiveCropRecommendationPanel } from "./LiveCropRecommendationPanel";
+import { ModelEvidencePanel } from "./ModelEvidencePanel";
+import { cropModelTarget } from "../lib/model-contract";
 
 type PilotSource = {
   id: string;
@@ -194,18 +197,19 @@ export function PilotDashboard() {
     [payload, selectedId],
   );
 
-  const activeCrop =
-    selectedCell?.recommendations.find((crop) => crop.id === activeCropId) ??
-    selectedCell?.recommendations[0];
+  const selectedCropId = activeCropId || selectedCell?.recommendations[0]?.id;
+  const activeCrop = selectedCell?.recommendations.find(
+    (crop) => crop.id === selectedCropId,
+  );
 
   function saveReview() {
-    if (!selectedCell || !activeCrop) return;
-    const key = `myay-review-${selectedCell.id}-${activeCrop.id}`;
+    if (!selectedCell || !selectedCropId) return;
+    const key = `myay-review-${selectedCell.id}-${selectedCropId}`;
     localStorage.setItem(
       key,
       JSON.stringify({
         cellId: selectedCell.id,
-        cropId: activeCrop.id,
+        cropId: selectedCropId,
         verdict,
         note: reviewNote,
         savedAt: new Date().toISOString(),
@@ -275,6 +279,12 @@ export function PilotDashboard() {
   const recommendationStatusLabel = isAbstained
     ? t.dashboard.statusInsufficient
     : t.dashboard.statusScored;
+  const selectedCropTarget = cropModelTarget(selectedCropId);
+  const selectedCropLabel = activeCrop
+    ? cropName(activeCrop)
+    : selectedCropTarget
+      ? (t.modelEvidence.targetLabels[selectedCropTarget] ?? selectedCropId)
+      : selectedCropId;
   const climateFeatures = selectedCell.features.filter((feature) =>
     CLIMATE_FEATURE_IDS.has(feature.id),
   );
@@ -381,7 +391,7 @@ export function PilotDashboard() {
             <div className="map-toolbar">
               <strong>{localizeRegion(payload.meta.region, lang)} · {selectedCell.month}</strong>
               <span>
-                {payload.meta.grid.sizeM / 1000} {t.dashboard.mapToolbar}
+                {payload.meta.grid.sizeM / 1000} {t.dashboard.mapToolbar} · {t.dashboard.mapLayerSource}
               </span>
             </div>
             <div className="map-legend" aria-label={t.dashboard.mapLegendAria} style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -434,15 +444,20 @@ export function PilotDashboard() {
               </div>
             ) : (
               <>
+                <LiveCropRecommendationPanel
+                  cell={selectedCell}
+                  activeCropId={selectedCropId}
+                  onSelectCrop={selectCrop}
+                />
                 <p className="section-label">{t.dashboard.topShortlist}</p>
                 <div className="recommendations">
                   {selectedCell.recommendations.slice(0, 3).map((crop) => (
                     <button
                       type="button"
                       key={crop.id}
-                      className={`crop-card ${crop.id === activeCrop?.id ? "active" : ""}`}
+                      className={`crop-card ${crop.id === selectedCropId ? "active" : ""}`}
                       onClick={() => selectCrop(crop.id)}
-                      aria-pressed={crop.id === activeCrop?.id}
+                      aria-pressed={crop.id === selectedCropId}
                     >
                       <span className="crop-card-top">
                         <span className="crop-name">
@@ -485,6 +500,8 @@ export function PilotDashboard() {
                 {" "}{selectedCell.usableForTraining ? t.dashboard.qaUsableFeatureRow : t.dashboard.excludedByQa}။
               </p>
             </div>
+
+            <ModelEvidencePanel cell={selectedCell} cropId={selectedCropId} />
 
             <div className="feature-section">
               <div className="section-heading">
@@ -624,10 +641,10 @@ export function PilotDashboard() {
           <article className="evidence-card">
             <p className="card-eyebrow">{t.dashboard.reviewTitle}</p>
             <h3>{t.dashboard.reviewTitle}</h3>
-            {activeCrop ? (
+            {selectedCropId ? (
               <>
                 <p>
-                  {lang === 'my' ? activeCrop.nameMm : activeCrop.nameEn} {t.dashboard.reviewQuestion}
+                  {selectedCropLabel} {t.dashboard.reviewQuestion}
                 </p>
                 <div className="review-controls">
                   {(["agree", "uncertain", "disagree"] as ReviewVerdict[]).map((value) => (

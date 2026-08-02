@@ -289,7 +289,11 @@ def get_subscribers_by_region(region: str, csv_path: str = "data/subscribers.csv
 
 
 def broadcast_sms(message: str, phone_numbers: List[str], dry_run: bool = True) -> bool:
-    """Broadcaster supporting EasySendSMS REST API and Dry-Run."""
+    """Send SMS alerts or write a dry-run audit record.
+
+    Live delivery is fail-closed unless the provider credentials are supplied
+    through the process environment. Secrets must never be committed to source.
+    """
     if not message or not phone_numbers:
         return False
         
@@ -299,65 +303,75 @@ def broadcast_sms(message: str, phone_numbers: List[str], dry_run: bool = True) 
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     log_file = os.path.join(log_dir, f"broadcast_{timestamp}.log")
     
-    if dry_run:
-        mode = "[DRY-RUN]"
+    def write_audit_log(mode: str, provider_result: str) -> bool:
         try:
-            with open(log_file, "w") as f:
-                f.write(f"{mode} Broadcating Message:\n{message}\n\nTo:\n")
+            with open(log_file, "w", encoding="utf-8") as f:
+                f.write(f"{mode} Broadcasting Message:\n{message}\n\nTo:\n")
                 for num in phone_numbers:
                     f.write(f"- {num}\n")
+                if provider_result:
+                    f.write(f"\n--- Provider Result ---\n{provider_result}\n")
             return True
         except Exception as e:
             failed_dir = "data/output/early_warning/failed"
             os.makedirs(failed_dir, exist_ok=True)
-            with open(os.path.join(failed_dir, f"fail_{timestamp}.log"), "w") as f:
-                f.write(str(e))
+            try:
+                with open(
+                    os.path.join(failed_dir, f"fail_{timestamp}.log"),
+                    "w",
+                    encoding="utf-8",
+                ) as f:
+                    f.write(f"Could not write broadcast audit log: {e}")
+            except Exception:
+                logging.exception("Could not write SMS broadcast failure log")
             return False
-    else:
-        mode = "[SMSPOH-API]"
-        api_key = "Z6YwfqS1C6q5YKFoflwGa6g7hP3yril3"
-        api_secret = "1n4KsE2Z0uN3yi9yHMDy7BgEvZQFccu7"
-        url = "https://v3.smspoh.com/api/rest/send"
-        
-        import base64
-        auth_str = f"{api_key}:{api_secret}"
-        encoded_auth = base64.b64encode(auth_str.encode()).decode()
-        
-        headers = {
-            "Authorization": f"Bearer {encoded_auth}",
-            "Content-Type": "application/json"
-        }
-        
-        # SMSPoh natively handles 09xxxxxxxx formats beautifully
-        formatted_phones = []
-        for p in phone_numbers:
-            p = p.strip()
-            if p.startswith("959"):
-                formatted_phones.append("09" + p[3:])
-            elif p.startswith("09"):
-                formatted_phones.append(p)
-            else:
-                formatted_phones.append(p)
-        
-        api_response_text = ""
+
+    if dry_run:
+        return write_audit_log("[DRY-RUN]", "No provider request was sent.")
+
+    api_key = os.getenv("SMSPOH_API_KEY", "").strip()
+    api_secret = os.getenv("SMSPOH_API_SECRET", "").strip()
+    sender_id = os.getenv("SMSPOH_SENDER_ID", "SMSPoh Demo").strip()
+    if not api_key or not api_secret:
+        write_audit_log(
+            "[SMSPOH-API:NOT-SENT]",
+            "Provider credentials are not configured; no SMS was sent.",
+        )
+        return False
+
+    import base64
+
+    encoded_auth = base64.b64encode(f"{api_key}:{api_secret}".encode()).decode()
+    headers = {
+        "Authorization": f"Bearer {encoded_auth}",
+        "Content-Type": "application/json",
+    }
+    formatted_phones = []
+    for phone_number in phone_numbers:
+        phone = phone_number.strip()
+        if phone.startswith("959"):
+            formatted_phones.append("09" + phone[3:])
+        else:
+            formatted_phones.append(phone)
+
+    responses = []
+    all_delivered = True
+    for phone in formatted_phones:
         try:
-            responses = []
-            for phone in formatted_phones:
-                payload = {
-                    "from": "SMSPoh Demo",
-                    "to": phone,
-                    "message": message
-                }
-                resp = requests.post(url, headers=headers, json=payload, timeout=15)
-                responses.append(f"To {phone}: {resp.status_code} - {resp.text}")
-            api_response_text = "\n".join(responses)
-        except Exception as e:
-            api_response_text = f"Exception: {str(e)}"
-            
-        with open(log_file, "w") as f:
-            f.write(f"{mode} Broadcating Message:\n{message}\n\nTo:\n")
-            for num in phone_numbers:
-                f.write(f"- {num}\n")
-            f.write(f"\n--- API Response ---\n{api_response_text}\n")
-            
-        return "Status: 200" in api_response_text
+            response = requests.post(
+                "https://v3.smspoh.com/api/rest/send",
+                headers=headers,
+                json={"from": sender_id, "to": phone, "message": message},
+                timeout=15,
+            )
+            delivered = 200 <= response.status_code < 300
+            all_delivered = all_delivered and delivered
+            responses.append(
+                f"To {phone}: HTTP {response.status_code} - {response.text[:2000]}"
+            )
+        except requests.RequestException as exc:
+            all_delivered = False
+            responses.append(f"To {phone}: provider request failed ({type(exc).__name__})")
+
+    audit_written = write_audit_log("[SMSPOH-API]", "\n".join(responses))
+    return all_delivered and audit_written

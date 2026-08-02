@@ -1,19 +1,15 @@
-import { FastifyInstance } from 'fastify';
-import { registry } from '../services/registry.js';
+import type { FastifyInstance } from 'fastify';
+import type { ModelServerGateway } from '../services/model-server-client.js';
 
-export default async function (fastify: FastifyInstance) {
-  fastify.get('/', async (request, reply) => {
-    return registry.getAllModels();
-  });
-
-  fastify.get('/:modelId', async (request, reply) => {
-    const { modelId } = request.params as { modelId: string };
-    const model = registry.getModel(modelId);
-    
-    if (!model) {
-      return reply.status(404).send({ error: 'Not Found', message: `Model ${modelId} not found` });
-    }
-    
-    return model;
+export default async function modelRoutes(
+  fastify: FastifyInstance,
+  options: {
+    modelServer: ModelServerGateway;
+    rateLimit: { max: number; timeWindow: number };
+  },
+) {
+  fastify.get('/', { config: { rateLimit: options.rateLimit } }, async (request, reply) => {
+    const catalog = await options.modelServer.getModels(request.id);
+    return reply.status(200).send(catalog);
   });
 }

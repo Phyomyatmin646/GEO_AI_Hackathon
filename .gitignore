@@ -26,3 +26,4 @@ backend/models/*.bin
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+ModelTrain/

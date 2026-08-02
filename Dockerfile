@@ -13,7 +13,7 @@ COPY pyproject.toml README.md ./
 COPY src/ ./src/
 
 # Install the Python package and its dependencies
-RUN pip install --no-cache-dir .[full]
+RUN pip install --default-timeout=1000 --no-cache-dir .[full]
 
 # Keep the container alive so we can attach to it to run scripts
 CMD ["tail", "-f", "/dev/null"]

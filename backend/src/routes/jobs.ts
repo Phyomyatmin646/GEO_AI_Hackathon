@@ -1,60 +1,35 @@
-import { FastifyInstance } from 'fastify';
-import { predictionQueue } from '../services/queue.js';
-import { PredictionRequestSchema } from '../schemas/prediction.js';
+import type { FastifyInstance } from 'fastify';
 
-export default async function (fastify: FastifyInstance) {
-  fastify.post('/', async (request, reply) => {
-    try {
-      const parsedRequest = PredictionRequestSchema.parse(request.body);
-      
-      const job = await predictionQueue.add('predict', parsedRequest);
-      
-      return reply.status(202).send({
-        jobId: job.id,
-        status: 'queued',
-        message: 'Job submitted for async processing'
-      });
-    } catch (e: any) {
-      if (e.message.includes('ECONNREFUSED')) {
-        return reply.status(503).send({ error: 'Service Unavailable', message: 'Async queue is unavailable (Redis down)' });
-      }
-      return reply.status(400).send({ error: 'Bad Request', message: e.message });
-    }
+export default async function jobRoutes(
+  fastify: FastifyInstance,
+  options: {
+    enabled: boolean;
+    rateLimit: { max: number; timeWindow: number };
+  },
+) {
+  const disabledResponse = (requestId: string) => ({
+    error: {
+      code: options.enabled ? 'ASYNC_JOBS_NOT_IMPLEMENTED' : 'ASYNC_JOBS_DISABLED',
+      message: options.enabled
+        ? 'Asynchronous jobs are not available in this release.'
+        : 'Asynchronous jobs are disabled.',
+    },
+    request_id: requestId,
   });
 
-  fastify.get('/:jobId', async (request, reply) => {
-    const { jobId } = request.params as { jobId: string };
-    
-    try {
-      const job = await predictionQueue.getJob(jobId);
-      
-      if (!job) {
-        return reply.status(404).send({ error: 'Not Found', message: `Job ${jobId} not found` });
-      }
-
-      const state = await job.getState();
-      
-      if (state === 'completed') {
-        return { jobId, status: state, result: job.returnvalue };
-      }
-      
-      if (state === 'failed') {
-        return { jobId, status: state, error: job.failedReason };
-      }
-      
-      return { jobId, status: state };
-    } catch (e: any) {
-       return reply.status(500).send({ error: 'Internal Error', message: 'Error fetching job status' });
-    }
-  });
-
-  fastify.delete('/:jobId', async (request, reply) => {
-    const { jobId } = request.params as { jobId: string };
-    const job = await predictionQueue.getJob(jobId);
-    if (job) {
-      await job.remove();
-      return { status: 'removed' };
-    }
-    return reply.status(404).send({ error: 'Not Found' });
-  });
+  fastify.post(
+    '/',
+    { config: { rateLimit: options.rateLimit } },
+    async (request, reply) => reply.status(503).send(disabledResponse(request.id)),
+  );
+  fastify.get(
+    '/:jobId',
+    { config: { rateLimit: options.rateLimit } },
+    async (request, reply) => reply.status(503).send(disabledResponse(request.id)),
+  );
+  fastify.delete(
+    '/:jobId',
+    { config: { rateLimit: options.rateLimit } },
+    async (request, reply) => reply.status(503).send(disabledResponse(request.id)),
+  );
 }

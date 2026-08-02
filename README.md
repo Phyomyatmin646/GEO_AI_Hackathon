@@ -86,6 +86,53 @@ For genuine Myanmar crop-area/production statistics, use the separate
 annual admin-level data calibrate/evaluate aggregate predictions; they never
 become 5 km crop labels or model-input features.
 
+## Local website → Node → model integration
+
+The application and model repositories remain separate processes:
+
+```text
+Website :3000 -> Node/Fastify gateway :8000 -> GEO_MODEL_SERVER/FastAPI :8001
+```
+
+Start them in that order in three terminals:
+
+```bash
+# Terminal 1
+cd /Users/phyomyatmin/Desktop/GEO_MODEL_SERVER
+cp .env.example .env
+./run.sh serve
+
+# Terminal 2
+cd /Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/backend
+cp .env.example .env
+npm ci
+npm run dev
+
+# Terminal 3
+cd /Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/web
+cp .env.example .env.local
+npm ci
+npm run dev
+```
+
+Open `http://127.0.0.1:3000`. The website calls its same-origin BFF so the Node
+API key is never shipped to the browser. The gateway never loads `.pkl` files;
+only the separate FastAPI process owns the 40 artifacts. Check readiness at
+`http://127.0.0.1:8001/api/v1/ready` and
+`http://127.0.0.1:8000/health/ready`.
+
+With all three processes running, verify the real cross-repository contract and
+release identity (including the 17-crop tier and unavailable ROI path):
+
+```bash
+node scripts/smoke_model_stack.mjs
+```
+
+For local Docker, start `docker compose up --build` inside `GEO_MODEL_SERVER`
+first, then run it in this repository. The two Compose projects are not merged.
+Model outputs remain experimental surrogate predictions and are displayed
+separately from the website's rule-based pilot screening.
+
 ## Quick start
 
 Use Python 3.10+ in an isolated environment:
@@ -320,7 +367,9 @@ python -m pytest
 
 ## Early Warning and Impact Analysis
 
-The pipeline includes an active early warning system for predicting severe weather and flood impacts, and directly alerting farmers via SMS.
+The pipeline includes an experimental early-warning workflow for evaluating
+weather/flood evidence and sending reviewed SMS alerts. It is not an autonomous
+public-warning authority.
 
 - **Flood Impact Analysis**: `flood_impact_join.py` and `flood_impact_labels.py` combine grid features with flood risk data to assess potential impact on specific crops.
 - **Daily Monitoring**: `daily_gee_monitor.py` tracks near-real-time weather parameters (like CHIRPS precipitation) via Google Earth Engine to detect anomalies.
@@ -329,9 +378,19 @@ The pipeline includes an active early warning system for predicting severe weath
 Trigger the SMS broadcast pipeline manually or via cron:
 
 ```bash
+# Required only for a live provider request. Keep these in a secret manager or
+# local untracked environment; never commit them.
+export SMSPOH_API_KEY="..."
+export SMSPOH_API_SECRET="..."
+export SMSPOH_SENDER_ID="..."
+
 # Check conditions and broadcast SMS for a specific region
 myanmar-agri-geo send-early-warning --region Yangon --send --severity-min NORMAL
 ```
+
+Without both provider credentials the sender fails closed, writes an audit
+record, and makes no network request. Any credential that was previously stored
+in repository history must be revoked and replaced before live use.
 
 ## Scope boundary
 
@@ -488,4 +547,4 @@ System ကြီးတစ်ခုလုံး အလုပ်လုပ်ပု
 
 **Myanmar Agricultural Geo-CSV Pipeline** သည် ရိုးရှင်းသော Data သိမ်းဆည်းသည့်စနစ် သက်သက်မဟုတ်ဘဲ၊ ကမ္ဘာ့အဆင့်မီ ဂြိုဟ်တုနည်းပညာများ (Earth Observation) နှင့် Data Science နည်းပညာများကို မြန်မာနိုင်ငံ၏ စိုက်ပျိုးရေးကဏ္ဍတွင် တိုက်ရိုက်အသုံးချနိုင်စေရန် တည်ဆောက်ထားသော **Comprehensive GeoAI Pipeline** ကြီးတစ်ခု ဖြစ်ပါသည်။ 
 
-သီးနှံစိုက်ပျိုးမှု၊ ရာသီဥတုနှင့် စီးပွားရေးဆိုင်ရာ အချက်အလက် **၄၀ မျိုး (40 ML Models)** ကို တိကျစွာ တွက်ချက်ပေးရုံသာမက၊ ယခုအသစ် ထပ်မံဖြည့်စွက်လိုက်သော **"ရေကြီးမှု/မုန်တိုင်း အတည်ပြုစနစ်"** နှင့် **"အလိုအလျောက် သတိပေး SMS (Early Warning) စနစ်"** တို့ကြောင့်၊ မြန်မာတောင်သူများ၏ အသက်အိုးအိမ်စည်းစိမ်နှင့် စိုက်ပျိုးရေးကဏ္ဍကို လက်တွေ့ကျကျ ကာကွယ် အကျိုးပြုနိုင်မည့် အလွန်အရေးပါသော နည်းပညာ ပလက်ဖောင်းကြီး တစ်ခုဖြစ်ပါကြောင်း အသေးစိတ် မှတ်တမ်းတင် တင်ပြအပ်ပါသည်။
+သီးနှံ၊ ရာသီဥတုနှင့် စီးပွားရေးဆိုင်ရာ **model artifact ၄၀ ခု** ကို local integration အတွက် ချိတ်ဆက်ထားပါသည်။ သို့သော် ၎င်းတို့၏ label များသည် input data မှ စည်းမျဉ်းဖြင့် ဖန်တီးထားသော surrogate label များဖြစ်ပြီး မြေပြင်အတည်ပြုချက်၊ spatial/temporal holdout နှင့် agronomist approval မပြည့်သေးပါ။ ထို့ကြောင့် လက်ရှိ output များကို စမ်းသပ်ဆဲ decision-support အထောက်အထားအဖြစ်သာ သုံးရမည်ဖြစ်ပြီး တိကျမှုအာမခံချက်၊ တရားဝင် သဘာဝဘေးသတိပေးချက် သို့မဟုတ် အလိုအလျောက် စိုက်ပျိုးရေးညွှန်ကြားချက်အဖြစ် မသုံးရပါ။

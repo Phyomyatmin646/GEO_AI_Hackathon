@@ -51,6 +51,7 @@ export type Dictionary = {
     metricAbstained: string;
     metricLabels: string;
     mapToolbar: string;
+    mapLayerSource: string;
     missingUnknown: string;
     reviewTitle: string;
     reviewQuestion: string;
@@ -117,6 +118,47 @@ export type Dictionary = {
     splitPolicy: string;
     sourceRoles: Record<string, string>;
     limitations: string[];
+  };
+  liveRecommendations: {
+    kicker: string;
+    title: string;
+    loading: string;
+    loadingDescription: string;
+    unavailable: string;
+    unavailableDescription: string;
+    invalidComposite: string;
+    failClosed: string;
+    live: string;
+    topTier: string;
+    noTier: string;
+    noStrictRanking: string;
+    classCoverageWarning: string;
+    cached: string;
+    liveRun: string;
+    release: string;
+    tiers: Record<"poor" | "moderate" | "good" | "excellent", string>;
+  };
+  modelEvidence: {
+    kicker: string;
+    title: string;
+    loading: string;
+    loadingDescription: string;
+    unavailable: string;
+    unavailableDescription: string;
+    invalidResponse: string;
+    failClosed: string;
+    experimental: string;
+    confidence: string;
+    confidenceUnavailable: string;
+    matchDistance: string;
+    sourceDate: string;
+    sourceVersion: string;
+    surrogateBoundary: string;
+    warnings: string;
+    highImportance: string;
+    mediumImportance: string;
+    lowImportance: string;
+    targetLabels: Record<string, string>;
   };
   faq: {
     title: string;
@@ -187,6 +229,7 @@ export const en: Dictionary = {
     metricAbstained: "Insufficient-evidence abstentions",
     metricLabels: "Observed crop labels loaded",
     mapToolbar: "km real grid · Click on a cell",
+    mapLayerSource: "map colors = regional rule baseline",
     missingUnknown: "Missing/Unknown",
     reviewTitle: "Agronomist / user review",
     reviewQuestion: "recommendation match the local conditions?",
@@ -200,7 +243,7 @@ export const en: Dictionary = {
     mapLoading: "Preparing map...",
     abstentionTitle: "Cannot provide recommendation yet",
     abstentionDesc: "This cell has insufficient source features for rule scoring. Missing values have not been artificially imputed.",
-    topShortlist: "Top rule-based shortlist",
+    topShortlist: "Regional rule baseline · comparison only",
     summaryAria: "Real pilot summary",
     workspaceAria: "Interactive crop screening workspace",
     mapLegendAria: "Map legend",
@@ -265,11 +308,98 @@ export const en: Dictionary = {
     },
     limitations: [
       "This release contains every QA-approved cell in the selected region.",
-      "Recommendations are provisional agronomic rules, not trained-model predictions or observed crop outcomes.",
+      "Map colors and the comparison shortlist are a regional rule baseline; the green AI tier is live trained-artifact output. Both remain experimental surrogate evidence, not observed crop outcomes.",
       "Observed crop labels are not loaded yet; field and agronomist validation are still required.",
       "January 2018 has no trailing 12-month rainfall value, so scoring uses only sufficiently covered factors.",
       "A 5 km cell is a screening unit, not a farm boundary or yield promise.",
     ],
+  },
+  liveRecommendations: {
+    kicker: "Live 17-model check",
+    title: "AI suitability tier",
+    loading: "Running",
+    loadingDescription: "Checking all 17 crop artifacts for this verified grid and month...",
+    unavailable: "Unavailable",
+    unavailableDescription: "The live crop suitability tier is unavailable for this location.",
+    invalidComposite: "The model service returned an invalid crop-tier result.",
+    failClosed: "No AI crop tier shown",
+    live: "Live model",
+    topTier: "Highest shared tier",
+    noTier: "No tier",
+    noStrictRanking: "Crops inside the same tier are ties. Tree-vote shares are not calibrated across crop models, so the system does not invent a strict Top-1 ranking.",
+    classCoverageWarning: "crop models have incomplete class-coverage warnings and remain experimental.",
+    cached: "Verified cache",
+    liveRun: "Live inference",
+    release: "Release",
+    tiers: {
+      poor: "Poor",
+      moderate: "Moderate",
+      good: "Good",
+      excellent: "Excellent",
+    },
+  },
+  modelEvidence: {
+    kicker: "Live model gateway",
+    title: "Experimental model evidence",
+    loading: "Loading",
+    loadingDescription: "Running the selected real feature row through the trained primary artifacts...",
+    unavailable: "Unavailable",
+    unavailableDescription: "The model service is unavailable for this location.",
+    invalidResponse: "The model service returned an invalid response.",
+    failClosed: "No prediction shown",
+    experimental: "Experimental",
+    confidence: "Tree-vote agreement (uncalibrated)",
+    confidenceUnavailable: "Confidence unavailable",
+    matchDistance: "Nearest verified row",
+    sourceDate: "Source date",
+    sourceVersion: "Source version",
+    surrogateBoundary: "These outputs come from real trained artifacts, but their labels were rule-engineered from the inputs. They are not field-verified outcomes, model accuracy guarantees, or approved farm advice.",
+    warnings: "Model and validation warnings",
+    highImportance: "High Importance Models",
+    mediumImportance: "Medium Importance Models",
+    lowImportance: "Low Importance Models",
+    targetLabels: {
+      crop_health_score: "Crop health surrogate score",
+      crop_yield_t_ha: "Crop yield surrogate estimate",
+      flood_risk_level: "Flood risk surrogate",
+      drought_risk_score: "Drought risk surrogate",
+      heat_stress_risk: "Heat-stress risk surrogate",
+      crop_suitability_monsoon_rice: "Monsoon rice suitability",
+      crop_suitability_dry_season_rice: "Dry-season rice suitability",
+      crop_suitability_maize: "Maize suitability",
+      crop_suitability_sugarcane: "Sugarcane suitability",
+      crop_suitability_cassava: "Cassava suitability",
+      crop_suitability_durian: "Durian suitability",
+      crop_suitability_mangosteen: "Mangosteen suitability",
+      crop_suitability_longan: "Longan suitability",
+      crop_suitability_mango: "Mango suitability",
+      crop_suitability_chili: "Chili suitability",
+      crop_suitability_tomato: "Tomato suitability",
+      crop_suitability_black_gram: "Black gram suitability",
+      crop_suitability_green_gram: "Green gram suitability",
+      crop_suitability_pigeon_pea: "Pigeon pea suitability",
+      crop_suitability_groundnut: "Groundnut suitability",
+      crop_suitability_sesame: "Sesame suitability",
+      crop_suitability_rubber: "Rubber suitability",
+      irrigation_need: "Irrigation need",
+      agricultural_gdp_forecast: "Agricultural GDP forecast",
+      current_month_precipitation_mm: "Current month precipitation (mm)",
+      current_month_mean_temperature_c: "Current month mean temperature (°C)",
+      current_month_solar_rad_mj_m2_day: "Current month solar radiation",
+      soil_erosion_risk: "Soil erosion risk",
+      surface_water_occurrence: "Surface water occurrence",
+      water_scarcity_risk: "Water scarcity risk",
+      optimal_planting_month: "Optimal planting month",
+      nitrogen_requirement_level: "Nitrogen requirement level",
+      phosphorus_requirement_level: "Phosphorus requirement level",
+      irrigation_potential: "Irrigation potential",
+      market_integration_score: "Market integration score",
+      post_harvest_loss_risk: "Post-harvest loss risk",
+      supply_chain_efficiency: "Supply chain efficiency",
+      cold_chain_potential: "Cold chain potential",
+      agricultural_land_conversion_risk: "Agricultural land conversion risk",
+      urban_encroachment_risk: "Urban encroachment risk",
+    },
   },
   faq: {
     title: "Frequently Asked Questions",
@@ -340,6 +470,7 @@ export const my: Dictionary = {
     metricAbstained: "အထောက်အထား မလုံလောက်သည့် cell များ",
     metricLabels: "ထည့်သွင်းထားသော မြေပြင်သီးနှံ label များ",
     mapToolbar: "ကီလိုမီတာ grid အစစ် · cell တစ်ကွက်ကို နှိပ်ပါ",
+    mapLayerSource: "မြေပုံအရောင် = ဒေသဆိုင်ရာ စည်းမျဉ်းအခြေခံ",
     missingUnknown: "မရှိ / မသိ",
     reviewTitle: "စိုက်ပျိုးရေးပညာရှင် / အသုံးပြုသူ သုံးသပ်ချက်",
     reviewQuestion: "အကြံပြုချက်သည် ဒေသအခြေအနေနှင့် ကိုက်ညီပါသလား?",
@@ -353,7 +484,7 @@ export const my: Dictionary = {
     mapLoading: "မြေပုံ ပြင်ဆင်နေသည်…",
     abstentionTitle: "Recommendation မပေးနိုင်သေးပါ",
     abstentionDesc: "ဒီ cell မှာ rule scoring အတွက် လိုအပ်သော source features မလုံလောက်ပါ။ Missing values ကို အတုမဖြည့်ထားပါ။",
-    topShortlist: "စည်းမျဉ်းအခြေပြု ထိပ်တန်းစာရင်း",
+    topShortlist: "ဒေသဆိုင်ရာ စည်းမျဉ်းအခြေခံ · နှိုင်းယှဉ်ရန်သာ",
     summaryAria: "အမှန်တကယ် pilot အနှစ်ချုပ်",
     workspaceAria: "သီးနှံစိစစ်ရန် အပြန်အလှန် အသုံးပြုနိုင်သောနေရာ",
     mapLegendAria: "မြေပုံအညွှန်း",
@@ -418,11 +549,98 @@ export const my: Dictionary = {
     },
     limitations: [
       "ဤ release တွင် ရွေးချယ်ထားသော ဒေသ၏ QA အောင်မြင်သည့် cell အားလုံး ပါဝင်သည်။",
-      "အကြံပြုချက်များသည် ယာယီ စိုက်ပျိုးရေးစည်းမျဉ်းများသာဖြစ်ပြီး လေ့ကျင့်ထားသော model ခန့်မှန်းချက် သို့မဟုတ် မြေပြင်သီးနှံရလဒ် မဟုတ်ပါ။",
+      "မြေပုံအရောင်နှင့် နှိုင်းယှဉ်စာရင်းသည် ဒေသဆိုင်ရာ စည်းမျဉ်းအခြေခံဖြစ်ပြီး အစိမ်းရောင် AI အုပ်စုသည် လေ့ကျင့်ထားသော artifact များမှ တိုက်ရိုက်ရလဒ်ဖြစ်သည်။ နှစ်မျိုးလုံးသည် စမ်းသပ်ဆဲ surrogate အထောက်အထားသာဖြစ်ပြီး မြေပြင်သီးနှံရလဒ် မဟုတ်ပါ။",
       "မြေပြင်တွင် တွေ့ရှိထားသော သီးနှံ label များ မထည့်ရသေးသဖြင့် လယ်ကွင်းနှင့် စိုက်ပျိုးရေးပညာရှင် စစ်ဆေးမှု လိုအပ်နေဆဲဖြစ်သည်။",
       "၂၀၁၈ ဇန်နဝါရီအတွက် နောက်ဆုံး ၁၂ လ မိုးရေချိန်တန်ဖိုး မရှိသဖြင့် လုံလောက်သော အချက်များကိုသာ အသုံးပြု၍ အမှတ်တွက်ထားသည်။",
       "၅ ကီလိုမီတာ cell သည် စိစစ်ရေးယူနစ်သာဖြစ်ပြီး လယ်နယ်နိမိတ် သို့မဟုတ် အထွက်နှုန်းအာမခံချက် မဟုတ်ပါ။",
     ],
+  },
+  liveRecommendations: {
+    kicker: "Model ၁၇ ခု တိုက်ရိုက်စစ်ဆေးမှု",
+    title: "AI သင့်တော်မှုအုပ်စု",
+    loading: "တွက်ချက်နေသည်",
+    loadingDescription: "ဤစစ်ဆေးပြီး grid နှင့်လအတွက် သီးနှံ model ၁၇ ခုလုံးကို စစ်ဆေးနေသည်…",
+    unavailable: "အသုံးမပြုနိုင်ပါ",
+    unavailableDescription: "ဤနေရာအတွက် တိုက်ရိုက် AI သီးနှံအုပ်စုကို လက်ရှိမရနိုင်ပါ။",
+    invalidComposite: "Model service မှ မမှန်ကန်သော သီးနှံအုပ်စုရလဒ် ပြန်လာသည်။",
+    failClosed: "AI သီးနှံအုပ်စု မပြထားပါ",
+    live: "တိုက်ရိုက် model",
+    topTier: "အမြင့်ဆုံးတူညီအုပ်စု",
+    noTier: "အုပ်စုမရှိ",
+    noStrictRanking: "အုပ်စုတူ သီးနှံများကို အဆင့်တူဟု သတ်မှတ်ထားသည်။ Model တစ်ခုနှင့်တစ်ခု၏ tree-vote တန်ဖိုးများကို calibration မလုပ်ရသေးသဖြင့် မမှန်ကန်သော Top-1 အဆင့်ကို မဖန်တီးထားပါ။",
+    classCoverageWarning: "သီးနှံ model များတွင် class coverage မပြည့်စုံသည့် သတိပေးချက်ရှိပြီး စမ်းသပ်ဆဲဖြစ်သည်။",
+    cached: "စစ်ဆေးပြီး cache",
+    liveRun: "တိုက်ရိုက်တွက်ချက်မှု",
+    release: "Release",
+    tiers: {
+      poor: "မသင့်တော်",
+      moderate: "အသင့်အတင့်",
+      good: "ကောင်း",
+      excellent: "အလွန်ကောင်း",
+    },
+  },
+  modelEvidence: {
+    kicker: "တိုက်ရိုက် model gateway",
+    title: "စမ်းသပ်ဆဲ model အထောက်အထား",
+    loading: "တွက်ချက်နေသည်",
+    loadingDescription: "ရွေးချယ်ထားသော real feature row ကို လေ့ကျင့်ပြီး primary artifact များဖြင့် တွက်ချက်နေသည်…",
+    unavailable: "အသုံးမပြုနိုင်ပါ",
+    unavailableDescription: "ဤနေရာအတွက် model service ကို လက်ရှိ ခေါ်မရပါ။",
+    invalidResponse: "Model service မှ contract မကိုက်ညီသော response ပြန်လာသည်။",
+    failClosed: "ခန့်မှန်းချက် မပြထားပါ",
+    experimental: "စမ်းသပ်ဆဲ",
+    confidence: "Tree-vote တူညီမှု (calibration မလုပ်ရသေး)",
+    confidenceUnavailable: "ယုံကြည်မှုတန်ဖိုး မရှိပါ",
+    matchDistance: "အနီးဆုံး စစ်ဆေးပြီး row",
+    sourceDate: "Source ရက်စွဲ",
+    sourceVersion: "Source version",
+    surrogateBoundary: "ဤ output များသည် တကယ်လေ့ကျင့်ထားသော artifact များမှ ရလာသော်လည်း label များကို input များမှ စည်းမျဉ်းဖြင့် ဖန်တီးထားခြင်း ဖြစ်သည်။ မြေပြင်တွင် စစ်ဆေးအတည်ပြုထားသော ရလဒ်၊ model accuracy အာမခံချက် သို့မဟုတ် ခွင့်ပြုထားသော စိုက်ပျိုးရေးအကြံပေးချက် မဟုတ်ပါ။",
+    warnings: "Model နှင့် validation သတိပေးချက်များ",
+    highImportance: "အလွန်အရေးပါသော မော်ဒယ်များ",
+    mediumImportance: "အလတ်စား အရေးပါသော မော်ဒယ်များ",
+    lowImportance: "သာမန် အရေးပါသော မော်ဒယ်များ",
+    targetLabels: {
+      crop_health_score: "သီးနှံကျန်းမာရေး အစားထိုးအမှတ်",
+      crop_yield_t_ha: "သီးနှံအထွက်နှုန်း အစားထိုးခန့်မှန်းချက်",
+      flood_risk_level: "ရေကြီးနိုင်ခြေ အစားထိုးအဆင့်",
+      drought_risk_score: "မိုးခေါင်နိုင်ခြေ အစားထိုးအမှတ်",
+      heat_stress_risk: "အပူဒဏ်ဖြစ်နိုင်ခြေ အစားထိုးအဆင့်",
+      crop_suitability_monsoon_rice: "မိုးစပါး သင့်တော်မှု",
+      crop_suitability_dry_season_rice: "နွေစပါး သင့်တော်မှု",
+      crop_suitability_maize: "ပြောင်း သင့်တော်မှု",
+      crop_suitability_sugarcane: "ကြံ သင့်တော်မှု",
+      crop_suitability_cassava: "ပီလောပီနံ သင့်တော်မှု",
+      crop_suitability_durian: "ဒူးရင်း သင့်တော်မှု",
+      crop_suitability_mangosteen: "မင်းကွတ် သင့်တော်မှု",
+      crop_suitability_longan: "လောင်ဂန် သင့်တော်မှု",
+      crop_suitability_mango: "သရက် သင့်တော်မှု",
+      crop_suitability_chili: "ငရုတ် သင့်တော်မှု",
+      crop_suitability_tomato: "ခရမ်းချဉ်သီး သင့်တော်မှု",
+      crop_suitability_black_gram: "မတ်ပဲ သင့်တော်မှု",
+      crop_suitability_green_gram: "ပဲတီစိမ်း သင့်တော်မှု",
+      crop_suitability_pigeon_pea: "ပဲစင်းငုံ သင့်တော်မှု",
+      crop_suitability_groundnut: "မြေပဲ သင့်တော်မှု",
+      crop_suitability_sesame: "နှမ်း သင့်တော်မှု",
+      crop_suitability_rubber: "ရာဘာ သင့်တော်မှု",
+      irrigation_need: "ရေသွင်းရန် လိုအပ်မှု",
+      agricultural_gdp_forecast: "စိုက်ပျိုးရေး GDP ခန့်မှန်းချက်",
+      current_month_precipitation_mm: "ယခုလ မိုးရေချိန် (mm)",
+      current_month_mean_temperature_c: "ယခုလ ပျမ်းမျှအပူချိန် (°C)",
+      current_month_solar_rad_mj_m2_day: "ယခုလ နေရောင်ခြည်ရရှိမှု",
+      soil_erosion_risk: "မြေဆီလွှာ တိုက်စားခံရနိုင်ခြေ",
+      surface_water_occurrence: "မျက်နှာပြင် ရေရရှိနိုင်မှု",
+      water_scarcity_risk: "ရေရှားပါးနိုင်ခြေ",
+      optimal_planting_month: "အကောင်းဆုံး စိုက်ပျိုးရမည့်လ",
+      nitrogen_requirement_level: "နိုက်ထရိုဂျင် လိုအပ်မှုအဆင့်",
+      phosphorus_requirement_level: "ဖော့စဖရပ်စ် လိုအပ်မှုအဆင့်",
+      irrigation_potential: "ရေပေးဝေနိုင်မှု အလားအလာ",
+      market_integration_score: "ဈေးကွက် ချိတ်ဆက်နိုင်မှု ရမှတ်",
+      post_harvest_loss_risk: "ရိတ်သိမ်းပြီးနောက် လေလွင့်ဆုံးရှုံးနိုင်ခြေ",
+      supply_chain_efficiency: "ကုန်စည်စီးဆင်းမှု ကွန်ရက် အားကောင်းမှု",
+      cold_chain_potential: "အအေးခန်း သိမ်းဆည်းနိုင်မှု အလားအလာ",
+      agricultural_land_conversion_risk: "စိုက်ပျိုးမြေ အသွင်ပြောင်းခံရနိုင်ခြေ",
+      urban_encroachment_risk: "မြို့ပြချဲ့ထွင်မှုကြောင့် ခြိမ်းခြောက်ခံရနိုင်ခြေ",
+    },
   },
   faq: {
     title: "အမေးများသော မေးခွန်းများ",
