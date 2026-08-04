@@ -1,0 +1,60 @@
+## Daily Pipeline Configuration
+## Myanmar Agricultural Geo-CSV Pipeline
+
+# ── Satellite Lookback Windows ────────────────────────────────────────────────
+# How many days to look back when the most recent satellite pass isn't available.
+# Sentinel-2 has ~5-day revisit; Sentinel-1 has ~6-12-day revisit.
+SENTINEL2_LOOKBACK_DAYS: 15
+SENTINEL1_LOOKBACK_DAYS: 18
+# Maximum age in days before satellite data is considered too stale.
+MAX_SOURCE_AGE_DAYS: 30
+
+# ── Model Server ──────────────────────────────────────────────────────────────
+# Must match GEO_model_server's HOST and PORT settings.
+# For Docker: use host.docker.internal:8001
+MODEL_SERVER_URL: "http://localhost:8001"
+# Set via environment variable MODEL_SERVER_API_KEY instead of this file.
+# MODEL_SERVER_API_KEY: ""
+
+# ── Batch Inference ───────────────────────────────────────────────────────────
+# Number of grid cells per batch request to /api/v1/infer/batch.
+MODEL_BATCH_SIZE: 100
+# Maximum concurrent batch requests to the model server.
+MODEL_MAX_CONCURRENT_BATCHES: 1
+# Timeout in seconds for each batch request.
+MODEL_REQUEST_TIMEOUT_SECONDS: 120
+
+# ── Regions ───────────────────────────────────────────────────────────────────
+# The six Myanmar regions supported by the existing 5 km grid.
+REGIONS:
+  - yangon
+  - bago
+  - mandalay
+  - sagaing
+  - magway
+  - ayeyawaddy
+
+# ── Scheduling (disabled by default) ─────────────────────────────────────────
+# The scheduler is NOT auto-enabled. Enable it manually via launchd or cron.
+# See scripts/launchd/README.md for instructions.
+PIPELINE_TIMEZONE: "Asia/Yangon"  # UTC+6:30
+# Runs at 02:00 Yangon time = 19:30 UTC previous calendar day
+DAILY_RUN_TIME: "02:00"
+# GEE data is typically available with a 1-day lag.
+DATA_LAG_DAYS: 1
+
+# ── Paths ─────────────────────────────────────────────────────────────────────
+# All paths relative to project root unless absolute.
+DAILY_DATA_DIR: "data/daily"
+SERVING_PARQUET_PATH: "../GEO_model_server/data/processed/features_serving.parquet"
+
+# ── GEE ──────────────────────────────────────────────────────────────────────
+# Set GEE_PROJECT env var or edit here.
+# GEE_PROJECT: "gen-lang-client-0956667941"
+GRID_SIZE_M: 5000
+GRID_CRS: "EPSG:6933"
+
+# ── Safety ────────────────────────────────────────────────────────────────────
+# Never use hardcoded fallback values for missing predictions.
+# Never fabricate predictions for missing grid cells.
+FAIL_CLOSED: true

@@ -68,6 +68,9 @@ const EnvironmentSchema = z
       .max(10 * 1024 * 1024)
       .default(64 * 1024),
     ENABLE_ASYNC_JOBS: BooleanEnvironmentValue,
+    DAILY_DATA_DIR: z.string().default('../data/daily'),
+    MODEL_BATCH_SIZE: z.coerce.number().int().min(1).max(1000).default(100),
+    MODEL_MAX_CONCURRENT_BATCHES: z.coerce.number().int().min(1).max(10).default(1),
   })
   .superRefine((environment, context) => {
     if (environment.NODE_ENV === 'production' && !environment.API_KEY) {
@@ -217,5 +220,8 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
     rateLimitWindowMs: parsed.data.RATE_LIMIT_WINDOW_MS,
     bodyLimitBytes: parsed.data.BODY_LIMIT_BYTES,
     asyncJobsEnabled: parsed.data.ENABLE_ASYNC_JOBS,
+    dailyDataDir: parsed.data.DAILY_DATA_DIR,
+    modelBatchSize: parsed.data.MODEL_BATCH_SIZE,
+    modelMaxConcurrentBatches: parsed.data.MODEL_MAX_CONCURRENT_BATCHES,
   };
 }

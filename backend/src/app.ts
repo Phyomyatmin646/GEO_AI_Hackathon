@@ -10,6 +10,7 @@ import healthRoutes from './routes/health.js';
 import jobRoutes from './routes/jobs.js';
 import modelRoutes from './routes/models.js';
 import predictionRoutes from './routes/predictions.js';
+import dailyRoutes from './routes/daily.js';
 import {
   ModelServerClient,
   type ModelServerGateway,
@@ -166,6 +167,11 @@ export async function buildApp(options: BuildAppOptions) {
     enabled: config.asyncJobsEnabled,
     rateLimit: apiRateLimit,
     prefix: '/api/v1/jobs',
+  });
+  await server.register(dailyRoutes, {
+    config,
+    rateLimit: apiRateLimit,
+    prefix: '/api/v1/daily',
   });
 
   return server;

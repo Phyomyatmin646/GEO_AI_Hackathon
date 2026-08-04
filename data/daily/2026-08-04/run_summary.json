@@ -1,0 +1,106 @@
+{
+  "date": "2026-08-04",
+  "exported_at": "2026-08-04T14:38:51.430387Z",
+  "elapsed_seconds": 125.7,
+  "regions": [
+    {
+      "region": "ayeyawaddy",
+      "observation_date": "2026-08-04",
+      "observation_month": "2026-08",
+      "sources": {
+        "chirps": "2026-08-01",
+        "era5": "2026-08-01",
+        "sentinel2": "unavailable",
+        "sentinel2_age_days": 31,
+        "sentinel1": "unavailable",
+        "sentinel1_age_days": 31
+      },
+      "warnings": [
+        "Sentinel-2 unavailable within 15 days",
+        "Sentinel-1 unavailable within 18 days"
+      ],
+      "error": "Invalid JSON payload received. Unexpected token.\n {\"constantValue\": [NaN, NaN]}}}}, \"0\": \n                    ^"
+    },
+    {
+      "region": "bago",
+      "observation_date": "2026-08-04",
+      "observation_month": "2026-08",
+      "sources": {
+        "chirps": "2026-08-01",
+        "era5": "2026-08-01",
+        "sentinel2": "unavailable",
+        "sentinel2_age_days": 31,
+        "sentinel1": "unavailable",
+        "sentinel1_age_days": 31
+      },
+      "warnings": [
+        "Sentinel-2 unavailable within 15 days",
+        "Sentinel-1 unavailable within 18 days"
+      ],
+      "error": "Invalid JSON payload received. Unexpected token.\n {\"constantValue\": [NaN, NaN]}}}}, \"0\": \n                    ^"
+    },
+    {
+      "region": "magway",
+      "observation_date": "2026-08-04",
+      "observation_month": "2026-08",
+      "sources": {
+        "chirps": "2026-08-01",
+        "era5": "2026-08-01",
+        "sentinel2": "2026-08-02",
+        "sentinel2_age_days": 2,
+        "sentinel1": "2026-08-01",
+        "sentinel1_age_days": 3
+      },
+      "warnings": [],
+      "error": "Projection: The CRS of a map projection could not be parsed."
+    },
+    {
+      "region": "mandalay",
+      "observation_date": "2026-08-04",
+      "observation_month": "2026-08",
+      "sources": {
+        "chirps": "2026-08-01",
+        "era5": "2026-08-01",
+        "sentinel2": "2026-08-02",
+        "sentinel2_age_days": 2,
+        "sentinel1": "2026-08-03",
+        "sentinel1_age_days": 1
+      },
+      "warnings": [],
+      "error": "Projection: The CRS of a map projection could not be parsed."
+    },
+    {
+      "region": "sagaing",
+      "observation_date": "2026-08-04",
+      "observation_month": "2026-08",
+      "sources": {
+        "chirps": "2026-08-01",
+        "era5": "2026-08-01",
+        "sentinel2": "2026-08-02",
+        "sentinel2_age_days": 2,
+        "sentinel1": "2026-08-03",
+        "sentinel1_age_days": 1
+      },
+      "warnings": [],
+      "error": "Projection: The CRS of a map projection could not be parsed."
+    },
+    {
+      "region": "yangon",
+      "observation_date": "2026-08-04",
+      "observation_month": "2026-08",
+      "sources": {
+        "chirps": "2026-08-01",
+        "era5": "2026-08-01",
+        "sentinel2": "2026-07-25",
+        "sentinel2_age_days": 10,
+        "sentinel1": "2026-08-03",
+        "sentinel1_age_days": 1
+      },
+      "warnings": [],
+      "error": "Projection: The CRS of a map projection could not be parsed."
+    }
+  ],
+  "gee_project": "gen-lang-client-0956667941",
+  "sentinel2_lookback_days": 15,
+  "sentinel1_lookback_days": 18
+}
