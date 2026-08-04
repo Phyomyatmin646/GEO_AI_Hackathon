@@ -1,0 +1,57 @@
+============================================================
+Starting daily pipeline for 2026-08-04 at Tue Aug  4 21:06:20 +0630 2026
+/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/scripts/run_daily_pipeline.py:89: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  "started_at": datetime.utcnow().isoformat() + "Z",
+/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/scripts/export_daily_gee.py:400: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  "exported_at": datetime.utcnow().isoformat() + "Z",
+=== GEE Export: 2026-08-04 (ayeyawaddy, bago, magway, mandalay, sagaing, yangon) ===
+
+[ayeyawaddy] Extracting features for 2026-08-04 ...
+  Sampling grid centroids (this may take a few minutes)...
+  [ERROR] GEE extraction failed: Invalid JSON payload received. Unexpected token.
+ {"constantValue": [NaN, NaN]}}}}, "0": 
+                    ^
+
+[bago] Extracting features for 2026-08-04 ...
+  Sampling grid centroids (this may take a few minutes)...
+  [ERROR] GEE extraction failed: Invalid JSON payload received. Unexpected token.
+ {"constantValue": [NaN, NaN]}}}}, "0": 
+                    ^
+
+[magway] Extracting features for 2026-08-04 ...
+  Sampling grid centroids (this may take a few minutes)...
+  [ERROR] GEE extraction failed: Projection: The CRS of a map projection could not be parsed.
+
+[mandalay] Extracting features for 2026-08-04 ...
+  Sampling grid centroids (this may take a few minutes)...
+  [ERROR] GEE extraction failed: Projection: The CRS of a map projection could not be parsed.
+
+[sagaing] Extracting features for 2026-08-04 ...
+  Sampling grid centroids (this may take a few minutes)...
+  [ERROR] GEE extraction failed: Projection: The CRS of a map projection could not be parsed.
+
+[yangon] Extracting features for 2026-08-04 ...
+  Sampling grid centroids (this may take a few minutes)...
+  [ERROR] GEE extraction failed: Projection: The CRS of a map projection could not be parsed.
+
+[DONE] Summary → /Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/data/daily/2026-08-04/run_summary.json
+
+############################################################
+  DAILY PIPELINE: 2026-08-04  (ayeyawaddy, bago, magway, mandalay, sagaing, yangon)
+############################################################
+
+============================================================
+  STAGE: GEE Export
+============================================================
+[OK] GEE Export completed in 150.5s
+
+============================================================
+  STAGE: CSV Validation
+============================================================
+[OK] CSV Validation completed in 0.0s
+
+[ABORT] Zero valid rows after validation — not proceeding to inference
+
+[SUMMARY] Written to /Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/data/daily/2026-08-04/pipeline_run_summary.json
+ERROR: Daily pipeline failed with exit code 1
+============================================================

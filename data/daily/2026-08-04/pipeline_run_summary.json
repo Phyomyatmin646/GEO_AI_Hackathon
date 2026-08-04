@@ -1,0 +1,102 @@
+{
+  "date": "2026-08-04",
+  "regions": [
+    "ayeyawaddy",
+    "bago",
+    "magway",
+    "mandalay",
+    "sagaing",
+    "yangon"
+  ],
+  "started_at": "2026-08-04T14:36:21.014076Z",
+  "stages": {
+    "gee_export": {
+      "status": "success",
+      "elapsed_s": 150.5,
+      "result": {
+        "returncode": 0
+      }
+    },
+    "validation": {
+      "status": "success",
+      "elapsed_s": 0.0,
+      "result": {
+        "date": "2026-08-04",
+        "validated_at": "2026-08-04T14:38:51.562461Z",
+        "regions": [
+          {
+            "region": "ayeyawaddy",
+            "input_rows": 0,
+            "valid_rows": 0,
+            "rejected_rows": 0,
+            "acceptance_rate": 0,
+            "rejection_reasons": {},
+            "warnings": [
+              "Input file not found: /Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/data/daily/2026-08-04/raw/ayeyawaddy.csv"
+            ]
+          },
+          {
+            "region": "bago",
+            "input_rows": 0,
+            "valid_rows": 0,
+            "rejected_rows": 0,
+            "acceptance_rate": 0,
+            "rejection_reasons": {},
+            "warnings": [
+              "Input file not found: /Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/data/daily/2026-08-04/raw/bago.csv"
+            ]
+          },
+          {
+            "region": "magway",
+            "input_rows": 0,
+            "valid_rows": 0,
+            "rejected_rows": 0,
+            "acceptance_rate": 0,
+            "rejection_reasons": {},
+            "warnings": [
+              "Input file not found: /Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/data/daily/2026-08-04/raw/magway.csv"
+            ]
+          },
+          {
+            "region": "mandalay",
+            "input_rows": 0,
+            "valid_rows": 0,
+            "rejected_rows": 0,
+            "acceptance_rate": 0,
+            "rejection_reasons": {},
+            "warnings": [
+              "Input file not found: /Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/data/daily/2026-08-04/raw/mandalay.csv"
+            ]
+          },
+          {
+            "region": "sagaing",
+            "input_rows": 0,
+            "valid_rows": 0,
+            "rejected_rows": 0,
+            "acceptance_rate": 0,
+            "rejection_reasons": {},
+            "warnings": [
+              "Input file not found: /Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/data/daily/2026-08-04/raw/sagaing.csv"
+            ]
+          },
+          {
+            "region": "yangon",
+            "input_rows": 0,
+            "valid_rows": 0,
+            "rejected_rows": 0,
+            "acceptance_rate": 0,
+            "rejection_reasons": {},
+            "warnings": [
+              "Input file not found: /Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/data/daily/2026-08-04/raw/yangon.csv"
+            ]
+          }
+        ],
+        "totals": {
+          "valid": 0,
+          "rejected": 0,
+          "acceptance_rate": 0
+        }
+      }
+    }
+  }
+}
