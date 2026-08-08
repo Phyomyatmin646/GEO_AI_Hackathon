@@ -20,7 +20,6 @@ COPY --from=build --chown=node:node /app/package.json /app/package-lock.json ./
 # dependency, so retain the immutable installed tree while running built output.
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
-COPY --from=build --chown=node:node /app/.vinext ./.vinext
 COPY --from=build --chown=node:node /app/data ./data
 COPY --from=build --chown=node:node /app/public ./public
 

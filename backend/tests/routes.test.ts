@@ -69,6 +69,36 @@ describe('gateway routes', () => {
     await app.close();
   });
 
+  it('fails closed instead of returning a fabricated prediction when upstream fails', async () => {
+    const modelServer = fakeModelServer({
+      predict: vi.fn(async () => {
+        throw new Error('private upstream failure');
+      }),
+    });
+    const app = await buildApp({ config: testConfig(), modelServer });
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/predictions',
+      headers: { 'x-request-id': 'failed-prediction-001' },
+      payload: {
+        sample_id: 'sample-001',
+        targets: ['crop_health_score'],
+      },
+    });
+
+    expect(response.statusCode).toBe(500);
+    expect(response.headers['x-request-id']).toBe('failed-prediction-001');
+    expect(response.body).not.toContain('private upstream failure');
+    expect(response.json()).toEqual({
+      error: {
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'An unexpected error occurred.',
+      },
+      request_id: 'failed-prediction-001',
+    });
+    await app.close();
+  });
+
   it('rejects unknown model targets before calling FastAPI', async () => {
     const modelServer = fakeModelServer();
     const app = await buildApp({ config: testConfig(), modelServer });

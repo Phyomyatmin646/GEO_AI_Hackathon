@@ -2,7 +2,6 @@ import type { FastifyInstance } from 'fastify';
 import { AppError, RequestValidationError } from '../errors.js';
 import { PredictionRequestSchema } from '../schemas/prediction.js';
 import type { ModelServerGateway } from '../services/model-server-client.js';
-import { fallbackPrediction } from './fallback.js';
 
 export default async function predictionRoutes(
   fastify: FastifyInstance,
@@ -36,22 +35,6 @@ export default async function predictionRoutes(
         controller.signal,
       );
       return reply.status(200).send(prediction);
-    } catch (error) {
-      if (error instanceof RequestValidationError || (error instanceof AppError && error.statusCode === 400)) {
-        throw error;
-      }
-      request.log.warn({ err: error }, 'Prediction failed, serving fallback');
-      // FALLBACK TO PREVENT UI FROM BREAKING
-      // This ensures 404/503 errors or invalid coordinates don't cause hackathon deductions.
-      const rawBody = request.body as Record<string, unknown>;
-      const fakePrediction = JSON.parse(JSON.stringify(fallbackPrediction));
-      fakePrediction.request_id = request.id;
-      fakePrediction.location.requested_lat = typeof rawBody?.lat === 'number' ? rawBody.lat : null;
-      fakePrediction.location.requested_lon = typeof rawBody?.lon === 'number' ? rawBody.lon : null;
-      if (typeof rawBody?.observation_month === 'string') {
-        fakePrediction.location.observation_month = rawBody.observation_month;
-      }
-      return reply.status(200).send(fakePrediction);
     } finally {
       request.raw.off('aborted', handleClientAbort);
     }
