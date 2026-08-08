@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { PILOT_REGION_REGISTRY, type PilotRegionId } from '../../../lib/pilot-data';
+import { PILOT_REGION_REGISTRY, type PilotRegionId } from '../../../../lib/pilot-data';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
 
