@@ -3,18 +3,23 @@ type HarvestIconName =
   | "calendar"
   | "cells"
   | "chevron"
+  | "copy"
+  | "dataset"
   | "download"
   | "droplet"
   | "globe"
   | "info"
   | "lightbulb"
+  | "link"
+  | "layers"
   | "ph"
   | "pin"
   | "rain"
   | "regions"
   | "sprout"
   | "sun"
-  | "thermometer";
+  | "thermometer"
+  | "upload";
 
 type Props = {
   name: HarvestIconName;
@@ -62,6 +67,19 @@ export function HarvestIcon({ name, size = 20, strokeWidth = 1.8 }: Props) {
         </>
       )}
       {name === "chevron" && <path d="m8 10 4 4 4-4" />}
+      {name === "copy" && (
+        <>
+          <rect height="14" rx="2" width="11" x="8" y="7" />
+          <path d="M16 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h3" />
+        </>
+      )}
+      {name === "dataset" && (
+        <>
+          <ellipse cx="12" cy="5" rx="7" ry="3" />
+          <path d="M5 5v6c0 1.7 3.1 3 7 3s7-1.3 7-3V5" />
+          <path d="M5 11v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" />
+        </>
+      )}
       {name === "download" && (
         <>
           <path d="M12 3v12" />
@@ -88,6 +106,19 @@ export function HarvestIcon({ name, size = 20, strokeWidth = 1.8 }: Props) {
         <>
           <path d="M9 18h6M10 22h4" />
           <path d="M8.4 14.5A7 7 0 1 1 15.6 14.5c-.9.7-1.2 1.6-1.2 2.5H9.6c0-.9-.3-1.8-1.2-2.5Z" />
+        </>
+      )}
+      {name === "layers" && (
+        <>
+          <path d="m12 3 9 5-9 5-9-5 9-5Z" />
+          <path d="m3 12 9 5 9-5M3 16l9 5 9-5" />
+        </>
+      )}
+      {name === "link" && (
+        <>
+          <path d="m10 13.5 4-4" />
+          <path d="M7.2 16.8 5.6 18.4a3.5 3.5 0 0 1-5-5l3.1-3.1a3.5 3.5 0 0 1 5 0" transform="translate(2)" />
+          <path d="m16.8 7.2 1.6-1.6a3.5 3.5 0 0 0-5-5l-3.1 3.1a3.5 3.5 0 0 0 0 5" transform="translate(-2 2)" />
         </>
       )}
       {name === "ph" && (
@@ -132,6 +163,13 @@ export function HarvestIcon({ name, size = 20, strokeWidth = 1.8 }: Props) {
         <>
           <path d="M14 14.8V5a3 3 0 0 0-6 0v9.8a5 5 0 1 0 6 0Z" />
           <path d="M11 6v11" />
+        </>
+      )}
+      {name === "upload" && (
+        <>
+          <path d="M12 16V3" />
+          <path d="m7 8 5-5 5 5" />
+          <path d="M5 13v7h14v-7" />
         </>
       )}
     </svg>

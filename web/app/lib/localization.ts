@@ -8,6 +8,7 @@ const REGION_NAMES: Record<string, { en: string; my: string }> = {
   mandalay: { en: "Mandalay", my: "မန္တလေးတိုင်း" },
   bago: { en: "Bago", my: "ပဲခူးတိုင်း" },
   magway: { en: "Magway", my: "မကွေးတိုင်း" },
+  yangon: { en: "Yangon", my: "ရန်ကုန်တိုင်း" },
 };
 
 export function normalizeLanguage(value: string | null | undefined): Language {
