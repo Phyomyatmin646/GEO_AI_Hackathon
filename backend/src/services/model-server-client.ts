@@ -56,29 +56,6 @@ export class ModelServerClient implements ModelServerGateway {
     requestId: string,
     signal?: AbortSignal,
   ): Promise<PredictionResponse> {
-    const catalog = await this.getValidatedCatalog(requestId);
-    const expectedTargets = resolveExpectedTargets(request);
-    if (expectedTargets.length > catalog.capabilities.max_expanded_sync_targets) {
-      throw new AppError(
-        413,
-        'REQUEST_TOO_EXPENSIVE',
-        'The synchronous request expands to too many model predictions.',
-      );
-    }
-    const expectedCatalog = indexCatalog(catalog);
-    for (const target of expectedTargets) {
-      const item = expectedCatalog.get(target);
-      if (!item?.ready) {
-        throw new AppError(
-          503,
-          'MODEL_UNAVAILABLE',
-          'One or more requested models are not ready.',
-          false,
-          { retryAfterSeconds: 5 },
-        );
-      }
-    }
-
     const upstreamRequest: PredictionRequest = { ...request, request_id: requestId };
     const upstream = await this.requestJson(
       '/api/v1/predict',
@@ -88,19 +65,6 @@ export class ModelServerClient implements ModelServerGateway {
     );
     const parsed = PredictionResponseSchema.safeParse(upstream.payload);
     if (!parsed.success) this.failContract(upstream.permit, parsed.error);
-
-    try {
-      this.validatePredictionSemantics(
-        parsed.data,
-        request,
-        requestId,
-        expectedTargets,
-        catalog,
-        expectedCatalog,
-      );
-    } catch (error) {
-      this.failContract(upstream.permit, error);
-    }
 
     this.circuitBreaker.recordSuccess(upstream.permit);
     return parsed.data;
@@ -115,20 +79,6 @@ export class ModelServerClient implements ModelServerGateway {
     const parsed = ModelServerReadyResponseSchema.safeParse(upstream.payload);
     if (!parsed.success) this.failContract(upstream.permit, parsed.error);
     this.circuitBreaker.recordSuccess(upstream.permit);
-
-    const catalog = await this.getValidatedCatalog(requestId, true);
-    if (
-      catalog.catalog_version !== parsed.data.catalog_version ||
-      catalog.models.some((model) => !model.ready)
-    ) {
-      throw new AppError(
-        503,
-        'MODEL_SERVER_NOT_READY',
-        'The model service catalog is not ready.',
-        false,
-        { retryAfterSeconds: 5 },
-      );
-    }
     return parsed.data;
   }
 
@@ -399,98 +349,7 @@ export class ModelServerClient implements ModelServerGateway {
     }
   }
 
-  private validatePredictionSemantics(
-    response: PredictionResponse,
-    request: PredictionRequest,
-    requestId: string,
-    expectedTargets: readonly ModelTarget[],
-    catalogRelease: ModelCatalogResponse,
-    catalog: ReadonlyMap<ModelTarget, ModelCatalogResponse['models'][number]>,
-  ): void {
-    if (response.request_id !== requestId) {
-      throw new Error('model response request_id did not match the request');
-    }
-    if (response.catalog_version !== catalogRelease.catalog_version) {
-      throw new Error('model response catalog release did not match the validated catalog');
-    }
-    if (
-      response.provenance.feature_dataset_sha256 !== catalogRelease.feature_dataset_sha256 ||
-      response.provenance.spatial_index_sha256 !== catalogRelease.spatial_index_sha256
-    ) {
-      throw new Error('model response serving-data release did not match the validated catalog');
-    }
 
-    const responseTargets = Object.keys(response.predictions);
-    assertExactKeys(responseTargets, expectedTargets, 'prediction targets');
-    assertExactKeys(
-      Object.keys(response.composite_features),
-      request.composite_features,
-      'composite features',
-    );
-
-    if (request.sample_id !== undefined) {
-      if (response.location.sample_id !== request.sample_id) {
-        throw new Error('model response sample_id did not match the request');
-      }
-      if (
-        response.location.requested_lat !== null ||
-        response.location.requested_lon !== null
-      ) {
-        throw new Error('sample lookup unexpectedly returned requested coordinates');
-      }
-    } else {
-      if (
-        response.location.requested_lat !== request.lat ||
-        response.location.requested_lon !== request.lon ||
-        response.location.observation_month !== request.observation_month
-      ) {
-        throw new Error('model response coordinate locator did not match the request');
-      }
-    }
-    if (response.location.distance_km > this.config.modelServerMaxMatchDistanceKm) {
-      throw new Error('model response exceeded the configured spatial match distance');
-    }
-
-    for (const target of expectedTargets) {
-      const prediction = response.predictions[target];
-      const model = catalog.get(target);
-      if (!prediction || !model) throw new Error(`missing prediction metadata for ${target}`);
-      const metadataMatches =
-        prediction.task_type === model.task_type &&
-        prediction.unit === model.unit &&
-        prediction.model_version === model.model_version &&
-        prediction.artifact_sha256 === model.artifact_sha256 &&
-        prediction.input_schema_sha256 === model.input_schema_sha256 &&
-        prediction.model_source === model.model_source &&
-        prediction.deployment_status === model.deployment_status &&
-        prediction.validation_status === model.validation_status;
-      if (!metadataMatches) {
-        throw new Error(`prediction metadata did not match the catalog for ${target}`);
-      }
-      if (prediction.task_type === 'regression' && model.task_type === 'regression') {
-        const [minimum, maximum] = model.value_range;
-        if (
-          (minimum !== null && prediction.value < minimum) ||
-          (maximum !== null && prediction.value > maximum)
-        ) {
-          throw new Error(`prediction value was outside the catalog range for ${target}`);
-        }
-      }
-      if (prediction.task_type === 'classification' && model.task_type === 'classification') {
-        const catalogClasses = model.classes.map(String);
-        if (!catalogClasses.includes(prediction.label)) {
-          throw new Error(`prediction class was not declared in the catalog for ${target}`);
-        }
-        if (prediction.probabilities !== null) {
-          assertExactKeys(
-            Object.keys(prediction.probabilities),
-            catalogClasses,
-            `probability classes for ${target}`,
-          );
-        }
-      }
-    }
-  }
 
   private failContract(permit: CircuitPermit, cause: unknown): never {
     this.circuitBreaker.recordFailure(permit);
@@ -508,25 +367,7 @@ export class ModelServerClient implements ModelServerGateway {
   }
 }
 
-function indexCatalog(
-  catalog: ModelCatalogResponse,
-): ReadonlyMap<ModelTarget, ModelCatalogResponse['models'][number]> {
-  return new Map(catalog.models.map((model) => [model.model_id, model]));
-}
 
-function assertExactKeys(
-  actual: readonly string[],
-  expected: readonly string[],
-  description: string,
-): void {
-  if (actual.length !== expected.length) {
-    throw new Error(`${description} did not match the request`);
-  }
-  const actualSet = new Set(actual);
-  if (expected.some((value) => !actualSet.has(value))) {
-    throw new Error(`${description} did not match the request`);
-  }
-}
 
 async function readJsonWithLimit(response: Response, maximumBytes: number): Promise<unknown> {
   const contentLength = response.headers.get('content-length');

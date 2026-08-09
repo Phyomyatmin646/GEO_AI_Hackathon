@@ -64,69 +64,19 @@ export const ModelCatalogItemSchema = z.discriminatedUnion('task_type', [
 
 export const ModelCatalogResponseSchema = z
   .object({
-    api_version: z.literal('v1'),
-    contract_version: z.literal('model-inference-v1'),
-    catalog_version: Sha256Schema,
-    feature_dataset_sha256: Sha256Schema,
-    spatial_index_sha256: Sha256Schema,
-    capabilities: z
-      .object({
-        max_expanded_sync_targets: z.number().int().min(1).max(MODEL_TARGETS.length),
-        supports_composite_only_requests: z.literal(true),
-        composite_dependencies: z
-          .object({
-            crop_recommender: z.array(ModelTargetSchema).max(MODEL_TARGETS.length),
-            crop_health: z.array(ModelTargetSchema).max(MODEL_TARGETS.length),
-            economic_roi: z.array(ModelTargetSchema).max(MODEL_TARGETS.length),
-            risk_alerts: z.array(ModelTargetSchema).max(MODEL_TARGETS.length),
-            land_use: z.array(ModelTargetSchema).max(MODEL_TARGETS.length),
-          })
-          .strict(),
-      })
-      .strict(),
-    models: z.array(ModelCatalogItemSchema).length(MODEL_TARGETS.length),
+    api_version: z.string(),
+    contract_version: z.string(),
+    total_targets: z.number().int(),
+    crops: z.array(z.string()),
+    targets: z.array(z.string()),
   })
-  .strict()
-  .superRefine((catalog, context) => {
-    const ids = catalog.models.map((model) => model.model_id);
-    if (new Set(ids).size !== ids.length) {
-      context.addIssue({
-        code: 'custom',
-        path: ['models'],
-        message: 'model catalog contains duplicate model IDs',
-      });
-    }
-    const present = new Set(ids);
-    const missing = MODEL_TARGETS.filter((target) => !present.has(target));
-    if (missing.length > 0) {
-      context.addIssue({
-        code: 'custom',
-        path: ['models'],
-        message: `model catalog omitted required targets: ${missing.join(', ')}`,
-      });
-    }
-    for (const composite of Object.keys(COMPOSITE_DEPENDENCIES) as Array<keyof typeof COMPOSITE_DEPENDENCIES>) {
-      const actual = catalog.capabilities.composite_dependencies[composite];
-      const expected = COMPOSITE_DEPENDENCIES[composite];
-      if (
-        actual.length !== expected.length ||
-        expected.some((target) => !actual.includes(target))
-      ) {
-        context.addIssue({
-          code: 'custom',
-          path: ['capabilities', 'composite_dependencies', composite],
-          message: `model catalog composite dependency mismatch for ${composite}`,
-        });
-      }
-    }
-  });
+  .strict();
 
 export const ModelServerReadyResponseSchema = z
   .object({
     status: z.literal('ready'),
     catalog_version: Sha256Schema,
-    model_count: z.literal(MODEL_TARGETS.length),
-    spatial_rows: z.number().int().positive(),
+    model_targets_count: z.literal(MODEL_TARGETS.length),
   })
   .strict();
 

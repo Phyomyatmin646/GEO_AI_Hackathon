@@ -138,6 +138,9 @@ export type AppConfig = {
   rateLimitWindowMs: number;
   bodyLimitBytes: number;
   asyncJobsEnabled: boolean;
+  dailyDataDir: string;
+  modelBatchSize: number;
+  modelMaxConcurrentBatches: number;
 };
 
 const PLACEHOLDER_SECRET_PATTERNS = [
