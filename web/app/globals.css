@@ -1450,14 +1450,23 @@ button {
   --harvest-green-soft: #edf8ef;
   --harvest-orange-soft: #fff4e7;
   --harvest-cream: #fffdfa;
+  --harvest-page: #fffdf9;
   --harvest-ink: #101311;
   --harvest-muted: #66706a;
   --harvest-line: rgba(73, 66, 46, 0.14);
+  --harvest-content-width: min(91.51vw, 1600px);
+  --harvest-page-edge: calc((100vw - var(--harvest-content-width)) / 2);
+  --harvest-column-gap: clamp(31px, 2.63vw, 46px);
+  --harvest-art-overhang: clamp(31px, 2.63vw, 46px);
+  --harvest-content-shift: clamp(6px, 0.51vw, 8px);
   min-height: 100vh;
   color: var(--harvest-ink);
+  font-family: var(--font-walone);
+  font-weight: 400;
   background:
-    radial-gradient(circle at 15% 16%, rgba(231, 179, 13, 0.07), transparent 24rem),
-    #fff;
+    radial-gradient(circle at 16% 17%, rgba(231, 179, 13, 0.065), transparent 26rem),
+    radial-gradient(circle at 72% 14%, rgba(255, 255, 255, 0.9), transparent 32rem),
+    var(--harvest-page);
 }
 
 .harvest-dashboard .harvest-topbar {
@@ -1529,13 +1538,14 @@ button {
 
 .harvest-dashboard .content {
   display: grid;
-  grid-template-columns: minmax(330px, 377px) minmax(0, 670px);
+  grid-template-columns: minmax(0, 0.5627fr) minmax(0, 1fr);
   grid-template-rows: auto auto auto auto;
-  gap: 18px 31px;
+  gap: 18px var(--harvest-column-gap);
   align-items: start;
-  width: min(1078px, calc(100% - 48px));
+  width: var(--harvest-content-width);
   margin: 0 auto;
   padding: 0 0 64px;
+  transform: translateX(var(--harvest-content-shift));
 }
 
 .harvest-story-rail {
@@ -1550,20 +1560,40 @@ button {
   grid-column: 2;
   grid-row: 1;
   min-width: 0;
+  background: transparent;
 }
 
 .harvest-hero-art {
   position: relative;
-  width: calc(100% + max(24px, calc((100vw - 1078px) / 2)) + 37px);
-  min-height: 650px;
-  margin-left: calc(-1 * max(24px, calc((100vw - 1078px) / 2)));
+  width: calc(100% + var(--harvest-page-edge) + var(--harvest-content-shift) + var(--harvest-art-overhang));
+  min-height: clamp(650px, 55.18vw, 880px);
+  margin-left: calc(-1 * (var(--harvest-page-edge) + var(--harvest-content-shift)));
   overflow: hidden;
-  background-color: #fffdf8;
+  background-color: var(--harvest-page);
   background-image: url("/design/home-hero.png");
   background-repeat: no-repeat;
-  background-position: 6px -127px;
-  background-size: auto 768px;
+  background-position: clamp(18px, 1.53vw, 24px) calc(-1 * clamp(127px, 10.78vw, 172px));
+  background-size:
+    clamp(1180px, 100.17vw, 1600px)
+    clamp(768px, 65.2vw, 1040px);
   border-radius: 0 0 30px;
+}
+
+.harvest-hero-art::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  height: clamp(72px, 6.8vw, 108px);
+  pointer-events: none;
+  content: "";
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 253, 249, 0) 0%,
+    rgba(255, 253, 249, 0.08) 48%,
+    rgba(255, 253, 249, 0.36) 100%
+  );
 }
 
 .harvest-filter-bar {
@@ -1631,14 +1661,32 @@ button {
 .harvest-about-card {
   position: relative;
   z-index: 6;
-  margin-top: -31px;
+  height: 120px;
+  margin-top: -26px;
+  overflow: hidden;
   background: linear-gradient(145deg, rgba(241, 252, 242, 0.96), rgba(252, 255, 251, 0.96));
   border-color: rgba(36, 124, 73, 0.2);
 }
 
+.harvest-about-card > p {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 0.66rem;
+  line-height: 1.58;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
 .harvest-insight-card {
+  height: 228px;
+  overflow: hidden;
   background: linear-gradient(145deg, #fffdfa, #fff9ec);
   border-color: rgba(231, 156, 0, 0.25);
+}
+
+.harvest-condition-card {
+  height: 192px;
+  overflow: hidden;
 }
 
 .harvest-card-title {
@@ -1668,6 +1716,7 @@ button {
   margin: 11px 0 0;
   color: var(--harvest-muted);
   font-size: 0.72rem;
+  font-weight: 100;
   line-height: 1.72;
 }
 
@@ -1676,17 +1725,40 @@ button {
 }
 
 .harvest-insight-copy > strong {
+  position: relative;
   display: block;
+  padding-left: 16px;
   font-size: 0.76rem;
 }
 
+.harvest-insight-copy > strong::before {
+  position: absolute;
+  top: -1px;
+  left: 0;
+  content: "•";
+}
+
+.harvest-insight-copy > p,
+.harvest-insight-copy > .factor-list {
+  margin-left: 16px;
+}
+
 .harvest-evidence-note {
+  position: relative;
   display: grid;
   gap: 4px;
   margin-top: 14px;
-  padding-top: 12px;
+  padding: 12px 0 0 16px;
   color: var(--harvest-green);
   border-top: 1px dashed rgba(23, 98, 63, 0.22);
+}
+
+.harvest-evidence-note::before {
+  position: absolute;
+  top: 8px;
+  left: 0;
+  color: var(--harvest-ink);
+  content: "•";
 }
 
 .harvest-evidence-note strong {
@@ -1696,6 +1768,7 @@ button {
 .harvest-evidence-note span {
   color: var(--harvest-muted);
   font-size: 0.63rem;
+  font-weight: 100;
 }
 
 .harvest-condition-list {
@@ -1720,10 +1793,45 @@ button {
   font-size: 0.68rem;
 }
 
+.harvest-condition-label {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.harvest-condition-icon {
+  display: grid;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  color: #fff;
+  background: #58a9de;
+  border-radius: 7px;
+  font-style: normal;
+}
+
+.harvest-condition-row:nth-child(2) .harvest-condition-icon {
+  background: #42aa6d;
+  border-radius: 50%;
+}
+
+.harvest-condition-row:nth-child(3) .harvest-condition-icon {
+  color: #725600;
+  background: #f2c61f;
+}
+
+.harvest-condition-row:nth-child(4) .harvest-condition-icon {
+  background: #5eb2e8;
+  border-radius: 50%;
+}
+
 .harvest-condition-row strong {
   flex: 0 0 auto;
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-family: var(--font-walone);
   font-size: 0.65rem;
+  font-weight: 700;
 }
 
 .harvest-condition-row .missing-value {
@@ -1762,7 +1870,7 @@ button {
   display: block;
   margin: -56px 0 0;
   padding: 0 0 4px;
-  text-align: center;
+  text-align: left;
 }
 
 .harvest-dashboard .hero .eyebrow,
@@ -1787,7 +1895,7 @@ button {
   margin-top: 38px;
   color: var(--harvest-gold);
   font-family: var(--font-walone);
-  font-size: clamp(4.25rem, 7.1vw, 7.4rem);
+  font-size: clamp(4.25rem, 7.7vw, 7.4rem);
   font-style: normal;
   font-weight: 700;
   letter-spacing: -0.025em;
@@ -1797,35 +1905,37 @@ button {
 .harvest-dashboard .metric-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
-  margin: 40px 0 0;
-  overflow: hidden;
-  background: #fff;
-  border: 1px solid var(--harvest-line);
-  border-radius: 17px;
-  box-shadow: 0 8px 26px rgba(73, 66, 46, 0.04);
+  gap: clamp(7px, 0.68vw, 11px);
+  margin: 33px 0 0;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .harvest-dashboard .metric {
   display: flex;
   min-width: 0;
-  min-height: 120px;
+  min-height: clamp(120px, 10.19vw, 162px);
   align-items: center;
-  gap: 10px;
-  padding: 14px 12px;
-  border-right: 1px solid var(--harvest-line);
-  border-bottom: 0;
+  gap: 9px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--harvest-line);
+  border-radius: 16px;
+  box-shadow: 0 9px 26px rgba(73, 66, 46, 0.045);
 }
 
 .harvest-dashboard .metric:last-child {
-  border-right: 0;
+  border-color: rgba(225, 117, 57, 0.2);
 }
 
 .metric-icon {
   display: grid;
   flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   place-items: center;
   border-radius: 50%;
 }
@@ -1852,9 +1962,9 @@ button {
 
 .harvest-dashboard .metric-value {
   color: var(--harvest-ink);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
-  font-size: 1.35rem;
-  font-weight: 760;
+  font-family: var(--font-walone);
+  font-size: 1.45rem;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -1862,7 +1972,8 @@ button {
   min-height: 2.3em;
   margin-top: 6px;
   color: #394039;
-  font-size: 0.58rem;
+  font-size: 0.62rem;
+  font-weight: 400;
   line-height: 1.25;
 }
 
@@ -1871,7 +1982,8 @@ button {
   margin-top: 3px;
   overflow: hidden;
   color: #718078;
-  font-size: 0.5rem;
+  font-size: 0.49rem;
+  font-weight: 100;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1879,12 +1991,18 @@ button {
 .harvest-dashboard .workspace {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
   gap: 16px;
   margin-top: 16px;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .harvest-dashboard .harvest-map-card {
-  min-height: 460px;
+  min-height: clamp(460px, 39.05vw, 622px);
   overflow: hidden;
   background: #dce9de;
   border: 1px solid var(--harvest-line);
@@ -1895,16 +2013,16 @@ button {
 .harvest-dashboard .harvest-map-card .geo-map,
 .harvest-dashboard .harvest-map-card .leaflet-container,
 .harvest-dashboard .harvest-map-card .map-loading {
-  min-height: 460px;
+  min-height: calc(clamp(460px, 39.05vw, 622px) - 2px);
+}
+
+.harvest-dashboard .harvest-map-card .leaflet-tile-pane {
+  filter: saturate(0.68) brightness(1.08) contrast(0.88);
+  opacity: 0.84;
 }
 
 .harvest-dashboard .map-toolbar {
-  top: 14px;
-  left: 14px;
-  padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.94);
-  border-color: rgba(16, 19, 17, 0.09);
-  border-radius: 11px;
+  display: none;
 }
 
 .harvest-dashboard .map-toolbar strong {
@@ -1913,24 +2031,50 @@ button {
 
 .harvest-dashboard .map-toolbar span {
   font-size: 0.58rem;
+  font-weight: 100;
 }
 
 .harvest-dashboard .map-legend {
-  right: 14px;
+  right: auto;
   bottom: 14px;
   left: 14px;
-  max-width: none;
+  max-width: calc(100% - 28px);
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 9px;
   padding: 9px 11px;
   background: rgba(255, 255, 255, 0.94);
   border-color: rgba(16, 19, 17, 0.09);
   border-radius: 11px;
 }
 
+.harvest-dashboard .map-legend span {
+  flex: 0 0 auto;
+  color: #4f5752;
+  font-size: 0.58rem;
+}
+
+.harvest-heat-scale {
+  display: block;
+  width: clamp(124px, 12.8vw, 205px);
+  height: 8px;
+  background: linear-gradient(90deg, #61b9ea, #78cbb2 28%, #f1d35e 56%, #f49a45 77%, #ef5c4f);
+  border-radius: 999px;
+}
+
 .harvest-dashboard .harvest-detail-panel {
-  position: relative;
   min-width: 0;
   margin-top: 0;
-  padding: 18px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.harvest-selection-card {
+  position: relative;
+  padding: 18px 21px 26px;
   background: #fff;
   border: 1px solid var(--harvest-line);
   border-radius: 18px;
@@ -1961,13 +2105,14 @@ button {
   max-width: calc(100% - 118px);
   color: var(--harvest-ink);
   font-size: 1.38rem;
-  font-weight: 700;
+  font-weight: 400;
   line-height: 1.25;
 }
 
 .harvest-dashboard .coordinates {
   margin: 5px 0 0;
   color: #59615c;
+  font-weight: 100;
 }
 
 .harvest-selected-status {
@@ -2006,7 +2151,7 @@ button {
   display: block;
   margin-top: 5px;
   color: var(--harvest-ink);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-walone);
   font-size: 2rem;
   line-height: 1;
 }
@@ -2029,6 +2174,7 @@ button {
   margin-top: 5px;
   color: var(--harvest-muted);
   font-size: 0.54rem;
+  font-weight: 100;
   line-height: 1.35;
 }
 
@@ -2063,16 +2209,18 @@ button {
 
 .harvest-summary-conditions strong {
   flex: 0 0 auto;
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-family: var(--font-walone);
   font-size: 0.58rem;
+  font-weight: 700;
 }
 
 .harvest-download-band {
   margin-top: 13px;
-  padding: 11px 13px 12px;
+  padding: 11px 20px 12px;
   background: #fff;
   border: 1px solid var(--harvest-line);
-  border-radius: 13px;
+  border-radius: 16px;
+  box-shadow: 0 9px 28px rgba(73, 66, 46, 0.035);
 }
 
 .harvest-download-heading {
@@ -2090,17 +2238,20 @@ button {
 }
 
 .harvest-download-heading span {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 700;
 }
 
 .harvest-download-heading small {
   color: #6d776f;
   font-size: 0.52rem;
+  font-weight: 100;
 }
 
 .harvest-download-heading .download-link {
   min-height: 31px;
+  min-width: clamp(126px, 12.6vw, 180px);
+  justify-content: center;
   padding: 5px 10px;
   font-size: 0.58rem;
 }
@@ -2115,7 +2266,7 @@ button {
 .harvest-download-values article {
   display: grid;
   min-width: 0;
-  min-height: 62px;
+  min-height: 90px;
   align-content: center;
   padding: 7px 9px;
   background: linear-gradient(145deg, #fff, #fafbf7);
@@ -2128,6 +2279,7 @@ button {
   overflow: hidden;
   color: #6d776f;
   font-size: 0.5rem;
+  font-weight: 100;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2136,8 +2288,9 @@ button {
   overflow: hidden;
   margin: 3px 0 1px;
   color: var(--harvest-green);
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-family: var(--font-walone);
   font-size: 0.63rem;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2293,6 +2446,7 @@ button {
     grid-template-rows: auto;
     gap: 18px;
     width: min(820px, calc(100% - 32px));
+    transform: none;
   }
 
   .harvest-main-column,
@@ -2357,7 +2511,14 @@ button {
   }
 
   .harvest-about-card {
+    height: auto;
     margin-top: 0;
+  }
+
+  .harvest-insight-card,
+  .harvest-condition-card {
+    height: auto;
+    overflow: visible;
   }
 
   .harvest-hero-art,
@@ -2410,7 +2571,7 @@ button {
   }
 
   .harvest-dashboard .metric:nth-child(2) {
-    border-right: 0;
+    border-right: 1px solid var(--harvest-line);
   }
 
   .harvest-dashboard .metric:nth-child(-n + 2) {
@@ -2434,7 +2595,7 @@ button {
   }
 
   .harvest-dashboard .harvest-detail-panel {
-    padding: 18px;
+    padding: 0;
   }
 }
 

@@ -22,7 +22,6 @@ const GeoMap = dynamic(() => import("./GeoMap"), {
   ssr: false,
   loading: () => <MapLoading />,
 });
-import { CROP_COLORS } from "../lib/colors";
 import { LiveCropRecommendationPanel } from "./LiveCropRecommendationPanel";
 import { ModelEvidencePanel } from "./ModelEvidencePanel";
 import { ClimateLivePanel } from "./ClimateLivePanel";
@@ -95,6 +94,12 @@ const CURRENT_CONDITION_FEATURE_IDS = [
   "soil_ph_h2o_0_30cm",
   "monthly_rainfall_mm",
 ] as const;
+const DOWNLOAD_FEATURE_IDS = [
+  "monthly_rainfall_mm",
+  "mean_temperature_c",
+  "solar_radiation_mj_m2_day",
+  "era5_soil_moisture_m3_m3",
+] as const;
 
 function shortHash(value: string | undefined, notPublished: string) {
   if (!value) return notPublished;
@@ -111,6 +116,16 @@ function formatFeatureValue(
   const absolute = Math.abs(value);
   const decimals = absolute >= 100 ? 1 : absolute >= 10 ? 2 : 3;
   return `${value.toFixed(decimals)}${unit ? ` ${unit}` : ""}`;
+}
+
+function formatMonthLabel(value: string) {
+  const [year, month] = value.split("-").map(Number);
+  if (!year || !month) return value;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(year, month - 1, 1)));
 }
 
 export function PilotDashboard() {
@@ -308,13 +323,10 @@ export function PilotDashboard() {
     const feature = selectedCell.features.find((item) => item.id === featureId);
     return feature ? [feature] : [];
   });
-  const mapLegendCropIds = Array.from(
-    new Set(
-      payload.cells
-        .map((cell) => cell.recommendations[0]?.id)
-        .filter((cropId): cropId is string => Boolean(cropId)),
-    ),
-  );
+  const downloadFeatures = DOWNLOAD_FEATURE_IDS.flatMap((featureId) => {
+    const feature = selectedCell.features.find((item) => item.id === featureId);
+    return feature ? [feature] : [];
+  });
 
   return (
     <main className="app-shell harvest-dashboard">
@@ -365,7 +377,7 @@ export function PilotDashboard() {
               </label>
               <div className="harvest-filter-control harvest-month-control">
                 <HarvestIcon name="calendar" size={18} />
-                <span>{selectedCell.month}</span>
+                <span>{formatMonthLabel(selectedCell.month)}</span>
                 <HarvestIcon name="chevron" size={16} />
               </div>
             </div>
@@ -376,7 +388,7 @@ export function PilotDashboard() {
               <HarvestIcon name="sprout" size={18} />
               <h2>{lang === "my" ? "Pilot Cell အကြောင်း" : "About the pilot cell"}</h2>
             </div>
-            <p>{t.dashboard.heroNoteDesc}</p>
+            <p title={t.dashboard.heroNoteDesc}>{t.dashboard.heroNoteDesc}</p>
           </article>
 
           <article className="harvest-story-card harvest-insight-card">
@@ -391,8 +403,12 @@ export function PilotDashboard() {
               </div>
             ) : activeCrop ? (
               <div className="harvest-insight-copy">
-                <strong>{selectedCropLabel}</strong>
-                <p>{localizeBilingualNarrative(activeCrop.why, lang)}</p>
+                <strong>
+                  {lang === "my" ? "AI အကြံပြုသီးနှံ" : "AI recommendation"}: {selectedCropLabel}
+                </strong>
+                <p>
+                  {localizeBilingualNarrative(activeCrop.why, lang)} · {Math.round(activeCrop.confidence * 100)}% {t.dashboard.ruleConfidence}
+                </p>
                 <div className="factor-list">
                   {activeCrop.positiveFactors.slice(0, 2).map((factor) => (
                     <span className="factor" key={`rail-positive-${factor}`}>✓ {localizeFactor(factor, lang)}</span>
@@ -404,8 +420,12 @@ export function PilotDashboard() {
               </div>
             ) : null}
             <div className="harvest-evidence-note">
-              <strong>{t.dashboard.evidenceStatus} · {recommendationStatusLabel}</strong>
-              <span>{t.dashboard.observedLabels}: {selectedCell.observedLabelCount} · {uncertaintyLabel}</span>
+              <strong>
+                {lang === "my" ? "ဒေတာအထောက်အထားနှင့် QA" : "Evidence & QA"} · {recommendationStatusLabel}
+              </strong>
+              <span>
+                {Math.round(selectedCell.dataCoverage * 100)}% coverage · {t.dashboard.observedLabels}: {selectedCell.observedLabelCount} · {uncertaintyLabel}
+              </span>
             </div>
           </article>
 
@@ -417,7 +437,24 @@ export function PilotDashboard() {
             <div className="harvest-condition-list">
               {currentConditionFeatures.map((feature) => (
                 <div className="harvest-condition-row" key={`rail-${feature.id}`}>
-                  <span>{localizeBilingualLabel(feature.label, lang)}</span>
+                  <span className="harvest-condition-label">
+                    <i className={`harvest-condition-icon harvest-condition-icon-${feature.id}`}>
+                      <HarvestIcon
+                        name={
+                          feature.id === "mean_temperature_c"
+                            ? "thermometer"
+                            : feature.id === "era5_soil_moisture_m3_m3"
+                              ? "droplet"
+                              : feature.id === "soil_ph_h2o_0_30cm"
+                                ? "ph"
+                                : "rain"
+                        }
+                        size={14}
+                        strokeWidth={1.9}
+                      />
+                    </i>
+                    {localizeBilingualLabel(feature.label, lang)}
+                  </span>
                   <strong className={feature.value === null ? "missing-value" : ""}>
                     {formatFeatureValue(feature.value, localizeUnit(feature.unit, lang), t.cell.missing)}
                   </strong>
@@ -481,32 +518,32 @@ export function PilotDashboard() {
             <span className="metric-icon metric-icon-green"><HarvestIcon name="cells" size={23} /></span>
             <span className="metric-copy">
               <span className="metric-value">{numberFormatter.format(payload.meta.rowCount)}</span>
-              <span className="metric-label">{t.dashboard.metricCells}</span>
-              <small>{payload.meta.grid.sizeM / 1000} km · {payload.meta.grid.crs}</small>
+              <span className="metric-label">Pilot Cells</span>
+              <small>{payload.meta.grid.sizeM / 1000} km grid</small>
             </span>
           </div>
           <div className="metric">
             <span className="metric-icon metric-icon-green"><HarvestIcon name="sprout" size={24} /></span>
             <span className="metric-copy">
               <span className="metric-value">{numberFormatter.format(payload.meta.scoredCellCount)}</span>
-              <span className="metric-label">{t.dashboard.metricScored}</span>
-              <small>{t.dashboard.realPilot}</small>
+              <span className="metric-label">Active Cells</span>
+              <small>QA-passed pilot</small>
             </span>
           </div>
           <div className="metric">
             <span className="metric-icon metric-icon-gold"><HarvestIcon name="regions" size={24} /></span>
             <span className="metric-copy">
               <span className="metric-value">{numberFormatter.format(payload.meta.abstainedCellCount)}</span>
-              <span className="metric-label">{t.dashboard.metricAbstained}</span>
-              <small>{payload.meta.qa.warningCount} {lang === "my" ? "သတိပေးချက်" : "QA warnings"}</small>
+              <span className="metric-label">Review Cells</span>
+              <small>{payload.meta.qa.warningCount} QA warnings</small>
             </span>
           </div>
           <div className="metric">
             <span className="metric-icon metric-icon-alert"><HarvestIcon name="alert" size={24} /></span>
             <span className="metric-copy">
               <span className="metric-value">0</span>
-              <span className="metric-label">{t.dashboard.metricLabels}</span>
-              <small>{lang === "my" ? "Field label အသစ်မရှိသေး" : "No new field labels"}</small>
+              <span className="metric-label">Field Labels</span>
+              <small>No new labels</small>
             </span>
           </div>
           </section>
@@ -520,19 +557,9 @@ export function PilotDashboard() {
               </span>
             </div>
             <div className="map-legend" aria-label={t.dashboard.mapLegendAria}>
-              {mapLegendCropIds.map(cropId => (
-                <span key={cropId} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.85rem", color: "#4b5563" }}>
-                  <i style={{ width: "12px", height: "12px", display: "inline-block", backgroundColor: CROP_COLORS[cropId as string] || "#8b918c", borderRadius: "2px" }} />
-                  {(() => {
-                    const crop = payload.cells.find((cell) => cell.recommendations[0]?.id === cropId)?.recommendations[0];
-                    return crop ? cropName(crop) : cropId;
-                  })()}
-                </span>
-              ))}
-              <span style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.85rem", color: "#4b5563" }}>
-                <i style={{ width: "12px", height: "12px", display: "inline-block", backgroundColor: "#8b918c", borderRadius: "2px" }} />
-                {t.dashboard.missingUnknown}
-              </span>
+              <span>Low</span>
+              <i className="harvest-heat-scale" aria-hidden="true" />
+              <span>High</span>
             </div>
             <GeoMap
               cells={payload.cells}
@@ -542,13 +569,14 @@ export function PilotDashboard() {
           </div>
 
           <aside className="detail-panel harvest-detail-panel">
+            <section className="harvest-selection-card">
             <div className="panel-kicker">
               <span className="cell-id">{selectedCell.id}</span>
             </div>
             <h2>{localizeRegion(selectedCell.region, lang)} {t.dashboard.pilotCell}</h2>
             <p className="coordinates">
               {selectedCell.latitude.toFixed(4)}, {selectedCell.longitude.toFixed(4)} ·{" "}
-              {payload.meta.grid.cellAreaKm2} km²
+              {selectedCell.month} · {payload.meta.grid.cellAreaKm2} km²
             </p>
             <span className="badge-stack harvest-selected-status">
               <span className="badge">
@@ -583,23 +611,23 @@ export function PilotDashboard() {
                 ))}
               </section>
             </div>
+            </section>
 
             <section className="harvest-download-band">
               <div className="harvest-download-heading">
                 <div>
-                  <span>{lang === "my" ? "ဒေတာရယူရန်" : "Download data"}</span>
-                  <small>CHIRPS / ERA5 / SoilGrids</small>
+                  <span>Download Data (CHIRPS/ERA5)</span>
                 </div>
                 <a
                   className="download-link"
                   href={`/api/v1/cells/${encodeURIComponent(selectedCell.id)}/report.csv?region=${encodeURIComponent(region)}`}
                   download={`${selectedCell.id}_${selectedCell.month}.csv`}
                 >
-                  CSV {t.dashboard.downloadCsv} <HarvestIcon name="download" size={15} />
+                  CSV Download <HarvestIcon name="download" size={15} />
                 </a>
               </div>
               <div className="harvest-download-values">
-                {currentConditionFeatures.slice(0, 4).map((feature) => (
+                {downloadFeatures.map((feature) => (
                   <article key={`download-${feature.id}`}>
                     <span>{localizeBilingualLabel(feature.label, lang)}</span>
                     <strong className={feature.value === null ? "missing-value" : ""}>

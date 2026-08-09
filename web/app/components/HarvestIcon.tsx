@@ -4,13 +4,17 @@ type HarvestIconName =
   | "cells"
   | "chevron"
   | "download"
+  | "droplet"
   | "globe"
   | "info"
   | "lightbulb"
+  | "ph"
   | "pin"
+  | "rain"
   | "regions"
   | "sprout"
-  | "sun";
+  | "sun"
+  | "thermometer";
 
 type Props = {
   name: HarvestIconName;
@@ -65,6 +69,9 @@ export function HarvestIcon({ name, size = 20, strokeWidth = 1.8 }: Props) {
           <path d="M5 21h14" />
         </>
       )}
+      {name === "droplet" && (
+        <path d="M12 2S5 9.5 5 15a7 7 0 0 0 14 0c0-5.5-7-13-7-13Z" />
+      )}
       {name === "globe" && (
         <>
           <circle cx="12" cy="12" r="9" />
@@ -83,6 +90,12 @@ export function HarvestIcon({ name, size = 20, strokeWidth = 1.8 }: Props) {
           <path d="M8.4 14.5A7 7 0 1 1 15.6 14.5c-.9.7-1.2 1.6-1.2 2.5H9.6c0-.9-.3-1.8-1.2-2.5Z" />
         </>
       )}
+      {name === "ph" && (
+        <>
+          <rect height="18" rx="5" width="18" x="3" y="3" />
+          <path d="M7 16V8h2.2a2.2 2.2 0 0 1 0 4.4H7M14 8v8M14 12h3.5M17.5 8v8" />
+        </>
+      )}
       {name === "pin" && (
         <>
           <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
@@ -93,6 +106,12 @@ export function HarvestIcon({ name, size = 20, strokeWidth = 1.8 }: Props) {
         <>
           <path d="M12 21s7-4.4 7-11a7 7 0 1 0-14 0c0 6.6 7 11 7 11Z" />
           <path d="M9.4 10.3 11 12l3.8-4" />
+        </>
+      )}
+      {name === "rain" && (
+        <>
+          <path d="M6 15h11a4 4 0 0 0 .5-8A6 6 0 0 0 6.2 8.5 3.3 3.3 0 0 0 6 15Z" />
+          <path d="m8 18-1 2M13 18l-1 2M18 18l-1 2" />
         </>
       )}
       {name === "sprout" && (
@@ -107,6 +126,12 @@ export function HarvestIcon({ name, size = 20, strokeWidth = 1.8 }: Props) {
         <>
           <circle cx="12" cy="12" r="4" />
           <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+        </>
+      )}
+      {name === "thermometer" && (
+        <>
+          <path d="M14 14.8V5a3 3 0 0 0-6 0v9.8a5 5 0 1 0 6 0Z" />
+          <path d="M11 6v11" />
         </>
       )}
     </svg>
