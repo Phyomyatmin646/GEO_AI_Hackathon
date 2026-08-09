@@ -100,6 +100,13 @@ const DOWNLOAD_FEATURE_IDS = [
   "solar_radiation_mj_m2_day",
   "era5_soil_moisture_m3_m3",
 ] as const;
+const INPUT_SOURCE_IDS = new Set([
+  "chirps",
+  "chirps_gee_staging",
+  "era5_land",
+  "fao_gaul",
+  "jrc_surface_water",
+]);
 
 function shortHash(value: string | undefined, notPublished: string) {
   if (!value) return notPublished;
@@ -327,6 +334,8 @@ export function PilotDashboard() {
     const feature = selectedCell.features.find((item) => item.id === featureId);
     return feature ? [feature] : [];
   });
+  const inputSources = payload.meta.sources.filter((source) => INPUT_SOURCE_IDS.has(source.id));
+  const evidenceSources = payload.meta.sources.filter((source) => !INPUT_SOURCE_IDS.has(source.id));
 
   return (
     <main className="app-shell harvest-dashboard">
@@ -372,6 +381,7 @@ export function PilotDashboard() {
                   <option value="mandalay">{t.dashboard.regionMandalay}</option>
                   <option value="bago">{t.dashboard.regionBago}</option>
                   <option value="magway">{t.dashboard.regionMagway}</option>
+                  <option value="yangon">{t.dashboard.regionYangon}</option>
                 </select>
                 <HarvestIcon name="chevron" size={16} />
               </label>
@@ -486,6 +496,7 @@ export function PilotDashboard() {
                 <option value="mandalay">{t.dashboard.regionMandalay}</option>
                 <option value="bago">{t.dashboard.regionBago}</option>
                 <option value="magway">{t.dashboard.regionMagway}</option>
+                <option value="yangon">{t.dashboard.regionYangon}</option>
               </select>
               {t.dashboard.realPilot}
             </p>
@@ -791,68 +802,127 @@ export function PilotDashboard() {
           </section>
         </div>
 
-        <section className="evidence-grid">
-          <article className="evidence-card">
-            <p className="card-eyebrow">{t.dashboard.releaseEvidence}</p>
-            <h3>{t.dashboard.dataQa}</h3>
-            <div className="qa-row">
-              <span>{t.dashboard.regionalRows}</span>
-              <span>{numberFormatter.format(payload.meta.rowCount)}</span>
-            </div>
-            <div className="qa-row">
-              <span>{t.dashboard.qaGate}</span>
-              <span className={payload.meta.qa.valid ? "qa-pass" : "qa-fail"}>
-                {payload.meta.qa.valid ? t.dashboard.pass : t.dashboard.fail}
+        <section className="evidence-grid" id="harvest-evidence-grid">
+          <header className="harvest-evidence-topbar">
+            <div className="harvest-evidence-topbar-actions">
+              <button
+                onClick={() => setLang(lang === "en" ? "my" : "en")}
+                className="harvest-language-switch"
+                aria-label={lang === "en" ? t.dashboard.languageSwitchToMyanmar : t.dashboard.languageSwitchToEnglish}
+              >
+                <HarvestIcon name="globe" size={18} />
+                {lang === "en" ? "Myanmar" : "English"}
+                <HarvestIcon name="chevron" size={16} />
+              </button>
+              <span className="harvest-evidence-api-status">
+                <i aria-hidden="true" />
+                {t.dashboard.pilotApiStatus} · {payload.meta.qa.valid ? t.dashboard.qaPassed : t.dashboard.qaFailed}
               </span>
             </div>
-            <div className="qa-row">
-              <span>{t.dashboard.warningsErrors}</span>
-              <span>{payload.meta.qa.warningCount} / {payload.meta.qa.errorCount}</span>
-            </div>
-            <div className="qa-row">
-              <span>{t.dashboard.qaUsableRows}</span>
-              <span>{numberFormatter.format(payload.meta.usableCellCount)}</span>
-            </div>
-            <div className="hash-box">
-              <span>{t.dashboard.sourceCsvHash}</span>
-              <code title={sourceHash}>{shortHash(sourceHash, t.cell.notPublished)}</code>
-              <span>{t.dashboard.qaReportHash}</span>
-              <code title={qaHash}>{shortHash(qaHash, t.cell.notPublished)}</code>
-              <span>{t.dashboard.sourceManifestHash}</span>
-              <code title={manifestHash}>{shortHash(manifestHash, t.cell.notPublished)}</code>
-            </div>
-          </article>
+          </header>
 
-          <article className="evidence-card source-card">
-            <p className="card-eyebrow">{t.dashboard.traceableInputs}</p>
-            <h3>{t.dashboard.sourceProvenance}</h3>
-            <ul className="source-list">
-              {payload.meta.sources.map((source) => (
-                <li key={source.id}>
-                  <a href={source.sourceUrl} target="_blank" rel="noreferrer">
-                    {source.name}
-                  </a>
-                  <span>
-                    {t.dashboard.sourceRoles[source.id] ?? source.role} ·{" "}
-                    {source.resolution}
-                  </span>
+          <div className="harvest-evidence-left-column">
+            <article className="evidence-card harvest-release-card">
+              <p className="card-eyebrow">{t.dashboard.releaseEvidence}</p>
+              <h3>{t.dashboard.dataQa}</h3>
+              <div className="qa-row">
+                <span>{t.dashboard.regionalRows}</span>
+                <span>{numberFormatter.format(payload.meta.rowCount)}</span>
+              </div>
+              <div className="qa-row">
+                <span>{t.dashboard.qaGate}</span>
+                <span className={payload.meta.qa.valid ? "qa-pass" : "qa-fail"}>
+                  {payload.meta.qa.valid ? t.dashboard.pass : t.dashboard.fail}
+                </span>
+              </div>
+              <div className="qa-row">
+                <span>{t.dashboard.warningsErrors}</span>
+                <span>{payload.meta.qa.warningCount} / {payload.meta.qa.errorCount}</span>
+              </div>
+              <div className="qa-row">
+                <span>{t.dashboard.qaUsableRows}</span>
+                <span>{numberFormatter.format(payload.meta.usableCellCount)}</span>
+              </div>
+              <div className="hash-box">
+                <span>{t.dashboard.sourceCsvHash}</span>
+                <code title={sourceHash}>{shortHash(sourceHash, t.cell.notPublished)}</code>
+                <span>{t.dashboard.qaReportHash}</span>
+                <code title={qaHash}>{shortHash(qaHash, t.cell.notPublished)}</code>
+                <span>{t.dashboard.sourceManifestHash}</span>
+                <code title={manifestHash}>{shortHash(manifestHash, t.cell.notPublished)}</code>
+              </div>
+            </article>
+
+            <article className="evidence-card harvest-input-card">
+              <h3 className="harvest-evidence-card-heading">
+                <HarvestIcon name="upload" size={18} />
+                {t.dashboard.traceableInputs}
+              </h3>
+              <ul className="harvest-compact-source-list">
+                {inputSources.map((source) => (
+                  <li key={`input-${source.id}`}>
+                    <a href={source.sourceUrl} target="_blank" rel="noreferrer">{source.name}</a>
+                    <span>{t.dashboard.sourceRoles[source.id] ?? source.role} · {source.resolution}</span>
+                  </li>
+                ))}
+              </ul>
+              <a className="harvest-outline-action" href="#harvest-evidence-grid">
+                <HarvestIcon name="upload" size={16} />
+                View All Inputs
+              </a>
+            </article>
+          </div>
+
+          <article className="evidence-card source-card harvest-source-showcase">
+            <h3 className="harvest-evidence-card-heading">
+              <HarvestIcon name="dataset" size={18} />
+              {t.dashboard.sourceProvenance}
+            </h3>
+            <ul className="harvest-showcase-source-list">
+              {evidenceSources.map((source) => (
+                <li key={`showcase-${source.id}`}>
+                  <i className="harvest-source-icon" aria-hidden="true">
+                    <HarvestIcon
+                      name={
+                        source.id === "sentinel1"
+                          ? "globe"
+                          : source.id === "sentinel2"
+                            ? "copy"
+                            : source.id === "soilgrids"
+                              ? "layers"
+                              : source.id === "srtm"
+                                ? "dataset"
+                                : "link"
+                      }
+                      size={24}
+                    />
+                  </i>
+                  <div>
+                    <a href={source.sourceUrl} target="_blank" rel="noreferrer">{source.name}</a>
+                    <span>{t.dashboard.sourceRoles[source.id] ?? source.role} · {source.resolution}</span>
+                    {source.id === "derived_water_availability" && (
+                      <small>
+                        {t.dashboard.period}: {payload.meta.periodStart} → {payload.meta.periodEnd}. {t.dashboard.release}: {payload.meta.releaseId}.
+                      </small>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
-            <p>
-              {t.dashboard.period}: {payload.meta.periodStart} → {payload.meta.periodEnd}. {t.dashboard.release}:
-              {" "}<code>{payload.meta.releaseId}</code>.
-            </p>
+            <a className="harvest-outline-action harvest-sources-action" href="#harvest-evidence-grid">
+              <HarvestIcon name="cells" size={16} />
+              View All Sources
+            </a>
           </article>
 
-          <article className="evidence-card">
-            <p className="card-eyebrow">{t.dashboard.reviewTitle}</p>
-            <h3>{t.dashboard.reviewTitle}</h3>
+          <article className="evidence-card harvest-review-card">
+            <h3 className="harvest-review-heading">
+              <i aria-hidden="true" />
+              {t.dashboard.reviewTitle}
+            </h3>
             {selectedCropId ? (
               <>
-                <p>
-                  {selectedCropLabel} {t.dashboard.reviewQuestion}
-                </p>
+                <p>{selectedCropLabel} {t.dashboard.reviewQuestion}</p>
                 <div className="review-controls">
                   {(["agree", "uncertain", "disagree"] as ReviewVerdict[]).map((value) => (
                     <button
@@ -874,15 +944,20 @@ export function PilotDashboard() {
                 <button type="button" className="save-review" onClick={saveReview}>
                   {reviewSaved ? t.dashboard.reviewSaved : t.dashboard.saveReview}
                 </button>
-                <p className="review-disclaimer">
-                  {t.dashboard.reviewDisclaimer}
-                </p>
+                <p className="review-disclaimer">{t.dashboard.reviewDisclaimer}</p>
               </>
             ) : (
-              <p>
-                {t.dashboard.reviewAbstained}
-              </p>
+              <p>{t.dashboard.reviewAbstained}</p>
             )}
+            <div className="harvest-device-preview" aria-hidden="true">
+              <div className="harvest-laptop">
+                <div className="harvest-laptop-screen">
+                  <div className="harvest-mini-map" />
+                  <div className="harvest-mini-panel"><i /><i /><i /><i /></div>
+                </div>
+                <div className="harvest-laptop-base" />
+              </div>
+            </div>
           </article>
         </section>
 

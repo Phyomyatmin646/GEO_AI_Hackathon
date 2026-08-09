@@ -53,7 +53,7 @@ export async function GET(request: Request) {
           new ApiRequestError(
             400,
             "UNKNOWN_REGION",
-            "region must be one of: Ayeyawaddy, Sagaing, Mandalay, Bago, Magway",
+            "region must be one of: Ayeyawaddy, Sagaing, Mandalay, Bago, Magway, Yangon",
             "region",
           ),
         ),

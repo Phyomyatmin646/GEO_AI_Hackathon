@@ -39,6 +39,7 @@ export type Dictionary = {
     regionMandalay: string;
     regionBago: string;
     regionMagway: string;
+    regionYangon: string;
     macroLink: string;
     climateLink: string;
     faqLink: string;
@@ -217,6 +218,7 @@ export const en: Dictionary = {
     regionMandalay: "Mandalay",
     regionBago: "Bago",
     regionMagway: "Magway",
+    regionYangon: "Yangon",
     macroLink: "National macro-economics",
     climateLink: "Climate & disasters",
     faqLink: "Agriculture FAQ",
@@ -458,6 +460,7 @@ export const my: Dictionary = {
     regionMandalay: "မန္တလေး",
     regionBago: "ပဲခူး",
     regionMagway: "မကွေး",
+    regionYangon: "ရန်ကုန်",
     macroLink: "နိုင်ငံတော် စီးပွားရေးအချက်အလက်",
     climateLink: "ရာသီဥတုနှင့် သဘာဝဘေး",
     faqLink: "စိုက်ပျိုးရေး အမေးအဖြေ",
