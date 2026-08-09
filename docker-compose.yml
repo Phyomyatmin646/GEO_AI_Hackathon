@@ -25,13 +25,16 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
+      # Keep the gateway and rule-based UI available when the separately-run
+      # model server is offline or its immutable artifacts are not installed.
+      # Full model readiness remains exposed at GET /health/ready.
       test:
         - CMD
         - wget
         - -q
         - -O
         - /dev/null
-        - http://127.0.0.1:8000/health/ready
+        - http://127.0.0.1:8000/health/live
       interval: 15s
       timeout: 5s
       start_period: 20s
