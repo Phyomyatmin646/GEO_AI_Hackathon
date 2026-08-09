@@ -199,6 +199,44 @@ test("v1 API returns stable JSON errors for invalid and missing filters", async 
   assert.equal(unknownRegionPayload.error.parameter, "region");
 });
 
+test("registration BFF rejects unsafe requests before contacting Fastify", async () => {
+  const wrongType = await request("/api/v1/users/register", {
+    method: "POST",
+    headers: { "content-type": "text/plain" },
+    body: "{}",
+  });
+  assert.equal(wrongType.status, 415);
+  assert.equal((await wrongType.json()).error.code, "UNSUPPORTED_MEDIA_TYPE");
+
+  const crossSite = await request("/api/v1/users/register", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "sec-fetch-site": "cross-site",
+    },
+    body: "{}",
+  });
+  assert.equal(crossSite.status, 403);
+  assert.equal((await crossSite.json()).error.code, "CROSS_SITE_REQUEST_REJECTED");
+
+  const invalidJson = await request("/api/v1/users/register", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: "{",
+  });
+  assert.equal(invalidJson.status, 400);
+  assert.equal((await invalidJson.json()).error.code, "INVALID_JSON");
+
+  const oversized = await request("/api/v1/users/register", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ location: "x".repeat(9 * 1024) }),
+  });
+  assert.equal(oversized.status, 413);
+  assert.equal((await oversized.json()).error.code, "PAYLOAD_TOO_LARGE");
+  assert.equal(oversized.headers.get("cache-control"), "no-store");
+});
+
 test("selected-cell download returns UTF-8 CSV with release provenance", async () => {
   const seedResponse = await request(
     "/api/v1/cells?recommendation_status=scored&limit=1",

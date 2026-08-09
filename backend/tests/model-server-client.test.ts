@@ -1,9 +1,26 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { MODEL_TARGETS, type ModelTarget } from '../src/catalog.js';
+import {
+  AUDITED_MODEL_CATALOG_VERSION,
+  MODEL_FEATURE_NAMES,
+  type ModelFeatureRow,
+} from '../src/contracts/weekly.js';
 import { AppError } from '../src/errors.js';
 import { PredictionRequestSchema } from '../src/schemas/prediction.js';
-import { ModelServerClient } from '../src/services/model-server-client.js';
-import { modelCatalogFixture, predictionFixture, testConfig } from './helpers.js';
+import {
+  ModelServerClient,
+  type BatchInferenceRequest,
+} from '../src/services/model-server-client.js';
+import {
+  batchPredictionFixture,
+  batchResponseFixture,
+  modelCatalogFixture,
+  modelFeatureRow,
+  predictionFixture,
+  readinessFixture,
+  testConfig,
+} from './helpers.js';
 
 function modelResponse(payload: unknown, init: ResponseInit = {}): Response {
   return new Response(JSON.stringify(payload), {
@@ -12,54 +29,291 @@ function modelResponse(payload: unknown, init: ResponseInit = {}): Response {
   });
 }
 
-function predictionFetch(payload: unknown): typeof fetch {
-  return vi.fn(async (input) =>
-    String(input).endsWith('/api/v1/models')
-      ? modelResponse(modelCatalogFixture())
-      : modelResponse(payload),
-  ) as unknown as typeof fetch;
+function validBatchRequest(overrides: Partial<BatchInferenceRequest> = {}): BatchInferenceRequest {
+  return {
+    rows: [modelFeatureRow()],
+    targets: ['crop_health_score'],
+    observation_month: '2026-09',
+    ...overrides,
+  };
 }
 
-describe('ModelServerClient', () => {
-  it('forwards the versioned request with internal authentication and tracing', async () => {
-    const fetchMock = predictionFetch(predictionFixture('request-001'));
+function batchFetch(
+  responseFor: (request: BatchInferenceRequest) => unknown = batchResponseFixture,
+) {
+  return vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+    const url = String(input);
+    if (url.endsWith('/api/v1/ready')) return modelResponse(readinessFixture());
+    if (url.endsWith('/api/v1/models')) return modelResponse(modelCatalogFixture());
+    if (url.endsWith('/api/v1/infer/batch')) {
+      const request = JSON.parse(String(init?.body)) as BatchInferenceRequest;
+      return modelResponse(responseFor(request));
+    }
+    throw new Error(`Unexpected test URL: ${url}`);
+  });
+}
+
+describe('ModelServerClient batch inference contract', () => {
+  it('posts the exact model batch endpoint with internal authentication and tracing', async () => {
+    const fetchMock = batchFetch();
     const client = new ModelServerClient(
-      testConfig({ modelServerApiKey: 'internal-secret-123456789' }),
-      fetchMock,
+      testConfig({ modelServerApiKey: 'model-internal-secret-123456' }),
+      fetchMock as unknown as typeof fetch,
     );
-    const request = PredictionRequestSchema.parse({
-      sample_id: 'sample-001',
-      request_id: 'ignored-client-id',
-      targets: ['crop_health_score'],
-    });
+    const request = validBatchRequest();
 
-    const response = await client.predict(request, 'request-001');
+    const response = await client.batchInfer(request, 'weekly-request-001');
 
-    expect(response.request_id).toBe('request-001');
+    expect(response.results[0]?.grid_id).toBe(request.rows[0]?.grid_id);
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    const [url, init] = vi.mocked(fetchMock).mock.calls[1];
-    expect(url).toBe('http://127.0.0.1:8001/api/v1/predict');
-    expect(init?.headers).toMatchObject({
-      'X-Internal-API-Key': 'internal-secret-123456789',
-      'X-Request-ID': 'request-001',
+    const [readyUrl, readyInit] = fetchMock.mock.calls[0] ?? [];
+    expect(readyUrl).toBe('http://127.0.0.1:8001/api/v1/ready');
+    expect(readyInit?.method).toBe('GET');
+    const [batchUrl, batchInit] = fetchMock.mock.calls[1] ?? [];
+    expect(batchUrl).toBe('http://127.0.0.1:8001/api/v1/infer/batch');
+    expect(batchInit?.method).toBe('POST');
+    expect(batchInit?.headers).toMatchObject({
+      'X-Internal-API-Key': 'model-internal-secret-123456',
+      'X-Request-ID': 'weekly-request-001',
+      'Content-Type': 'application/json',
     });
-    expect(JSON.parse(String(init?.body))).toMatchObject({
-      request_id: 'request-001',
-      sample_id: 'sample-001',
-      targets: ['crop_health_score'],
-    });
-    expect(init?.redirect).toBe('error');
+    expect(batchInit?.redirect).toBe('error');
+    expect(JSON.parse(String(batchInit?.body))).toEqual(request);
   });
 
-  it('rejects a response that violates the model-inference-v1 contract', async () => {
-    const fetchMock = predictionFetch({ status: 'success', predictions: {} });
-    const client = new ModelServerClient(testConfig(), fetchMock);
+  it('requires the audited readiness catalog before sending a batch', async () => {
+    const fetchMock = vi.fn(async () =>
+      modelResponse(readinessFixture({ catalog_version: 'd'.repeat(64) })),
+    );
+    const client = new ModelServerClient(
+      testConfig(),
+      fetchMock as unknown as typeof fetch,
+    );
+
+    await expect(client.batchInfer(validBatchRequest(), 'catalog-drift')).rejects.toMatchObject({
+      code: 'MODEL_SERVER_CONTRACT_ERROR',
+      statusCode: 502,
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('accepts the model server batch catalog placeholder only after audited readiness succeeds', async () => {
+    const fetchMock = batchFetch((request) =>
+      batchResponseFixture(request, { catalog_version: 'unknown' }),
+    );
+    const client = new ModelServerClient(testConfig(), fetchMock as unknown as typeof fetch);
+
+    await expect(client.batchInfer(validBatchRequest(), 'catalog-placeholder')).resolves.toMatchObject({
+      catalog_version: 'unknown',
+    });
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('http://127.0.0.1:8001/api/v1/ready');
+  });
+
+  it('rejects a batch response from a different catalog release', async () => {
+    const fetchMock = batchFetch((request) =>
+      batchResponseFixture(request, { catalog_version: 'd'.repeat(64) }),
+    );
+    const client = new ModelServerClient(testConfig(), fetchMock as unknown as typeof fetch);
+
+    await expect(client.batchInfer(validBatchRequest(), 'catalog-mismatch')).rejects.toMatchObject({
+      code: 'MODEL_SERVER_CONTRACT_ERROR',
+    });
+  });
+
+  it('blocks flagged targets by default and permits them only with explicit configuration', async () => {
+    const target: ModelTarget = 'crop_suitability_maize';
+    const request = validBatchRequest({ targets: [target] });
+    const blockedFetch = batchFetch();
+    const blocked = new ModelServerClient(
+      testConfig(),
+      blockedFetch as unknown as typeof fetch,
+    );
+
+    await expect(blocked.batchInfer(request, 'flagged-disabled')).rejects.toMatchObject({
+      code: 'FLAGGED_MODEL_DISABLED',
+      statusCode: 500,
+    });
+    expect(blockedFetch).not.toHaveBeenCalled();
+
+    const allowedFetch = batchFetch();
+    const allowed = new ModelServerClient(
+      testConfig({ allowFlaggedModels: true }),
+      allowedFetch as unknown as typeof fetch,
+    );
+    await expect(allowed.batchInfer(request, 'flagged-enabled')).resolves.toMatchObject({
+      results: [
+        expect.objectContaining({
+          predictions: {
+            crop_suitability_maize: expect.objectContaining({ validation_status: 'flagged' }),
+          },
+        }),
+      ],
+    });
+  });
+
+  it.each([
+    {
+      name: 'missing feature',
+      mutate(row: Record<string, string | number>) {
+        delete row.elevation_m;
+      },
+      code: 'MODEL_FEATURE_SCHEMA_MISMATCH',
+    },
+    {
+      name: 'extra feature',
+      mutate(row: Record<string, string | number>) {
+        row.invented_feature = 1;
+      },
+      code: 'MODEL_FEATURE_SCHEMA_MISMATCH',
+    },
+    {
+      name: 'non-finite feature',
+      mutate(row: Record<string, string | number>) {
+        row.surface_water_seasonality_months = Number.NaN;
+      },
+      code: 'NON_FINITE_MODEL_FEATURE',
+    },
+  ])('fails closed on a $name row before network I/O', async ({ mutate, code }) => {
+    const row = { ...modelFeatureRow() } as Record<string, string | number>;
+    mutate(row);
+    const fetchMock = batchFetch();
+    const client = new ModelServerClient(testConfig(), fetchMock as unknown as typeof fetch);
+
+    await expect(
+      client.batchInfer(
+        validBatchRequest({ rows: [row as unknown as ModelFeatureRow] }),
+        'invalid-row',
+      ),
+    ).rejects.toMatchObject({ code });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects an out-of-order feature object before network I/O', async () => {
+    const source = modelFeatureRow();
+    const reversed = Object.fromEntries(
+      [...MODEL_FEATURE_NAMES].reverse().map((feature) => [feature, source[feature]]),
+    );
+    const row = { grid_id: source.grid_id, ...reversed } as ModelFeatureRow;
+    const fetchMock = batchFetch();
+    const client = new ModelServerClient(testConfig(), fetchMock as unknown as typeof fetch);
+
+    await expect(
+      client.batchInfer(validBatchRequest({ rows: [row] }), 'out-of-order'),
+    ).rejects.toMatchObject({ code: 'MODEL_FEATURE_SCHEMA_MISMATCH' });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it.each(['prototype heuristic was used', 'fallback model was used']) (
+    'rejects unaudited model warning: %s',
+    async (warning) => {
+      const fetchMock = batchFetch((request) => {
+        const response = batchResponseFixture(request);
+        const prediction = response.results[0]?.predictions.crop_health_score;
+        if (!prediction) throw new Error('Missing test prediction.');
+        prediction.warnings = [warning];
+        return response;
+      });
+      const client = new ModelServerClient(testConfig(), fetchMock as unknown as typeof fetch);
+
+      await expect(client.batchInfer(validBatchRequest(), 'unsafe-warning')).rejects.toMatchObject({
+        code: 'MODEL_SERVER_CONTRACT_ERROR',
+      });
+    },
+  );
+
+  it('rejects a prototype version or validation status inconsistent with the target policy', async () => {
+    const fetchMock = batchFetch((request) => {
+      const response = batchResponseFixture(request);
+      response.results[0]!.predictions.crop_health_score = batchPredictionFixture(
+        'crop_health_score',
+        { model_version: 'prototype-v1', validation_status: 'flagged' },
+      );
+      return response;
+    });
+    const client = new ModelServerClient(testConfig(), fetchMock as unknown as typeof fetch);
+
+    await expect(client.batchInfer(validBatchRequest(), 'unsafe-version')).rejects.toMatchObject({
+      code: 'MODEL_SERVER_CONTRACT_ERROR',
+    });
+  });
+
+  it('rejects malformed row indexes and row identifiers', async () => {
+    const fetchMock = batchFetch((request) => {
+      const response = batchResponseFixture(request);
+      response.results[0]!.row_index = 2;
+      response.results[0]!.grid_id = 'mm_999_999';
+      return response;
+    });
+    const client = new ModelServerClient(testConfig(), fetchMock as unknown as typeof fetch);
+
+    await expect(client.batchInfer(validBatchRequest(), 'malformed-result')).rejects.toMatchObject({
+      code: 'MODEL_SERVER_CONTRACT_ERROR',
+    });
+  });
+
+  it('rejects a response that silently omits requested rows', async () => {
+    const request = validBatchRequest({
+      rows: [modelFeatureRow('mm_123_456'), modelFeatureRow('mm_124_457')],
+    });
+    const fetchMock = batchFetch((forwarded) => {
+      const response = batchResponseFixture(forwarded);
+      return {
+        ...response,
+        total_rows: 1,
+        successful_rows: 1,
+        results: response.results.slice(0, 1),
+      };
+    });
+    const client = new ModelServerClient(testConfig(), fetchMock as unknown as typeof fetch);
+
+    await expect(client.batchInfer(request, 'omitted-row')).rejects.toMatchObject({
+      code: 'MODEL_SERVER_CONTRACT_ERROR',
+    });
+  });
+
+  it('rejects prediction/error ambiguity and unrequested targets', async () => {
+    const fetchMock = batchFetch((request) => {
+      const response = batchResponseFixture(request);
+      const row = response.results[0]!;
+      row.errors.crop_health_score = 'failed too';
+      row.predictions.crop_yield_t_ha = batchPredictionFixture('crop_yield_t_ha');
+      return response;
+    });
+    const client = new ModelServerClient(testConfig(), fetchMock as unknown as typeof fetch);
+
+    await expect(client.batchInfer(validBatchRequest(), 'ambiguous-result')).rejects.toMatchObject({
+      code: 'MODEL_SERVER_CONTRACT_ERROR',
+    });
+  });
+});
+
+describe('ModelServerClient transport safeguards and legacy routes', () => {
+  it('validates the actual compact model catalog shape', async () => {
+    const validFetch = vi.fn(async () => modelResponse(modelCatalogFixture()));
+    const valid = new ModelServerClient(testConfig(), validFetch as unknown as typeof fetch);
+    await expect(valid.getModels('models-valid')).resolves.toEqual(modelCatalogFixture());
+
+    const duplicateCatalog = modelCatalogFixture();
+    duplicateCatalog.targets = [
+      ...MODEL_TARGETS.slice(0, -1),
+      MODEL_TARGETS[0],
+    ];
+    const invalidFetch = vi.fn(async () => modelResponse(duplicateCatalog));
+    const invalid = new ModelServerClient(testConfig(), invalidFetch as unknown as typeof fetch);
+    await expect(invalid.getModels('models-invalid')).rejects.toMatchObject({
+      code: 'MODEL_SERVER_CONTRACT_ERROR',
+    });
+  });
+
+  it('keeps the legacy prediction response validation fail-closed', async () => {
+    const fetchMock = vi.fn(async () => modelResponse({ status: 'success', predictions: {} }));
+    const client = new ModelServerClient(testConfig(), fetchMock as unknown as typeof fetch);
     const request = PredictionRequestSchema.parse({
       sample_id: 'sample-001',
       targets: ['crop_health_score'],
     });
 
-    await expect(client.predict(request, 'request-001')).rejects.toMatchObject({
+    await expect(client.predict(request, 'legacy-contract')).rejects.toMatchObject({
       code: 'MODEL_SERVER_CONTRACT_ERROR',
       statusCode: 502,
     });
@@ -78,26 +332,23 @@ describe('ModelServerClient', () => {
           },
         }),
         {
-        headers: { 'Content-Length': '5000', 'Content-Type': 'application/json' },
+          headers: { 'Content-Length': '5000', 'Content-Type': 'application/json' },
         },
       ),
-    ) as unknown as typeof fetch;
+    );
     const client = new ModelServerClient(
-      testConfig({
-        modelServerMaxResponseBytes: 1024,
-        circuitFailureThreshold: 1,
-      }),
-      fetchMock,
+      testConfig({ modelServerMaxResponseBytes: 1024, circuitFailureThreshold: 1 }),
+      fetchMock as unknown as typeof fetch,
     );
     const request = PredictionRequestSchema.parse({
       sample_id: 'sample-001',
       targets: ['crop_health_score'],
     });
 
-    await expect(client.predict(request, 'request-001')).rejects.toMatchObject({
+    await expect(client.predict(request, 'response-too-large')).rejects.toMatchObject({
       code: 'MODEL_SERVER_RESPONSE_TOO_LARGE',
     });
-    await expect(client.predict(request, 'request-002')).rejects.toMatchObject({
+    await expect(client.predict(request, 'circuit-open')).rejects.toMatchObject({
       code: 'MODEL_SERVER_CIRCUIT_OPEN',
       statusCode: 503,
     });
@@ -110,14 +361,14 @@ describe('ModelServerClient', () => {
     timeout.name = 'TimeoutError';
     const fetchMock = vi.fn(async () => {
       throw timeout;
-    }) as unknown as typeof fetch;
-    const client = new ModelServerClient(testConfig(), fetchMock);
+    });
+    const client = new ModelServerClient(testConfig(), fetchMock as unknown as typeof fetch);
     const request = PredictionRequestSchema.parse({
       sample_id: 'sample-001',
       targets: ['crop_health_score'],
     });
 
-    const promise = client.predict(request, 'request-001');
+    const promise = client.predict(request, 'request-timeout');
     await expect(promise).rejects.toBeInstanceOf(AppError);
     await expect(promise).rejects.toMatchObject({
       code: 'MODEL_SERVER_TIMEOUT',
@@ -126,290 +377,58 @@ describe('ModelServerClient', () => {
     });
   });
 
-  it.each([
-    ['missing', modelCatalogFixture().models.slice(0, -1)],
-    [
-      'duplicate',
-      [
-        ...modelCatalogFixture().models.slice(0, -1),
-        modelCatalogFixture().models[0],
-      ],
-    ],
-  ])('rejects a %s model catalog', async (_description, models) => {
-    const catalog = { ...modelCatalogFixture(), models };
-    const fetchMock = vi.fn(async () => modelResponse(catalog)) as unknown as typeof fetch;
-    const client = new ModelServerClient(testConfig(), fetchMock);
-
-    await expect(client.getModels('catalog-request')).rejects.toMatchObject({
-      code: 'MODEL_SERVER_CONTRACT_ERROR',
-      statusCode: 502,
-    });
-  });
-
-  it('rejects prediction targets not implied by the request', async () => {
-    const prediction = predictionFixture('request-001');
-    prediction.predictions.crop_yield_t_ha = {
-      ...prediction.predictions.crop_health_score!,
-      unit: 'unitless',
-    };
-    const client = new ModelServerClient(testConfig(), predictionFetch(prediction));
-    const request = PredictionRequestSchema.parse({
-      sample_id: 'sample-001',
-      targets: ['crop_health_score'],
-    });
-
-    await expect(client.predict(request, 'request-001')).rejects.toMatchObject({
-      code: 'MODEL_SERVER_CONTRACT_ERROR',
-    });
-  });
-
-  it('does not invent model dependencies for the unavailable economic ROI composite', async () => {
-    const prediction = predictionFixture('request-001');
-    prediction.predictions = {};
-    prediction.composite_features = {
-      economic_roi: {
-        status: 'unavailable',
-        reason_code: 'VERIFIED_ECONOMIC_INPUTS_REQUIRED',
-        message: 'Verified farm-gate price and cost inputs are required.',
-      },
-    };
-    const client = new ModelServerClient(testConfig(), predictionFetch(prediction));
-    const request = PredictionRequestSchema.parse({
-      sample_id: 'sample-001',
-      composite_features: ['economic_roi'],
-    });
-
-    await expect(client.predict(request, 'request-001')).resolves.toEqual(prediction);
-  });
-
-  it('rejects catalog capability drift before forwarding a prediction', async () => {
-    const catalog = modelCatalogFixture();
-    catalog.capabilities.composite_dependencies.economic_roi = ['crop_yield_t_ha'];
-    const fetchMock = vi.fn(async () => modelResponse(catalog)) as unknown as typeof fetch;
-    const client = new ModelServerClient(testConfig(), fetchMock);
-
-    await expect(client.getModels('catalog-request')).rejects.toMatchObject({
-      code: 'MODEL_SERVER_CONTRACT_ERROR',
-      statusCode: 502,
-    });
-  });
-
-  it('rejects mixed catalog or serving-data releases', async () => {
-    const prediction = predictionFixture('request-001');
-    prediction.catalog_version = 'd'.repeat(64);
-    const client = new ModelServerClient(testConfig(), predictionFetch(prediction));
-    const request = PredictionRequestSchema.parse({
-      sample_id: 'sample-001',
-      targets: ['crop_health_score'],
-    });
-
-    await expect(client.predict(request, 'request-001')).rejects.toMatchObject({
-      code: 'MODEL_SERVER_CONTRACT_ERROR',
-    });
-  });
-
-  it('rejects locator and catalog provenance mismatches', async () => {
-    const prediction = predictionFixture('request-001');
-    prediction.location.sample_id = 'different-sample';
-    prediction.predictions.crop_health_score!.artifact_sha256 = 'c'.repeat(64);
-    const client = new ModelServerClient(testConfig(), predictionFetch(prediction));
-    const request = PredictionRequestSchema.parse({
-      sample_id: 'sample-001',
-      targets: ['crop_health_score'],
-    });
-
-    await expect(client.predict(request, 'request-001')).rejects.toMatchObject({
-      code: 'MODEL_SERVER_CONTRACT_ERROR',
-    });
-  });
-
-  it('rejects regression output outside the catalog value range', async () => {
-    const catalog = modelCatalogFixture();
-    const item = catalog.models.find((model) => model.model_id === 'crop_health_score');
-    if (!item || item.task_type !== 'regression') throw new Error('invalid test catalog');
-    item.value_range = [0, 0.5];
-    const fetchMock = vi.fn(async (input) =>
-      String(input).endsWith('/api/v1/models')
-        ? modelResponse(catalog)
-        : modelResponse(predictionFixture('request-001')),
-    ) as unknown as typeof fetch;
-    const client = new ModelServerClient(testConfig(), fetchMock);
-    const request = PredictionRequestSchema.parse({
-      sample_id: 'sample-001',
-      targets: ['crop_health_score'],
-    });
-
-    await expect(client.predict(request, 'request-001')).rejects.toMatchObject({
-      code: 'MODEL_SERVER_CONTRACT_ERROR',
-    });
-  });
-
-  it('accepts an exact coordinate match and rejects matches beyond the distance limit', async () => {
-    const prediction = predictionFixture('request-001');
-    prediction.location.requested_lat = 16.8661;
-    prediction.location.requested_lon = 96.1951;
-    prediction.location.distance_km = 8.1;
-    const client = new ModelServerClient(testConfig(), predictionFetch(prediction));
-    const request = PredictionRequestSchema.parse({
-      lat: 16.8661,
-      lon: 96.1951,
-      observation_month: '2024-01',
-      targets: ['crop_health_score'],
-    });
-
-    await expect(client.predict(request, 'request-001')).rejects.toMatchObject({
-      code: 'MODEL_SERVER_CONTRACT_ERROR',
-    });
-  });
-
-  it('maps a structured expensive-request response without exposing its message', async () => {
+  it('maps a structured error without exposing the upstream message', async () => {
     const upstreamSecret = 'private implementation details';
-    const fetchMock = vi.fn(async (input) => {
-      if (String(input).endsWith('/api/v1/models')) return modelResponse(modelCatalogFixture());
-      return modelResponse(
+    const fetchMock = vi.fn(async () =>
+      modelResponse(
         {
           error: {
             code: 'REQUEST_TOO_EXPENSIVE',
             message: upstreamSecret,
-            request_id: 'request-001',
+            request_id: 'request-expensive',
             retryable: false,
             details: null,
           },
         },
         { status: 422 },
-      );
-    }) as unknown as typeof fetch;
-    const client = new ModelServerClient(testConfig(), fetchMock);
+      ),
+    );
+    const client = new ModelServerClient(testConfig(), fetchMock as unknown as typeof fetch);
     const request = PredictionRequestSchema.parse({
       sample_id: 'sample-001',
       targets: ['crop_health_score'],
     });
 
-    const promise = client.predict(request, 'request-001');
-    await expect(promise).rejects.toMatchObject({
-      code: 'REQUEST_TOO_EXPENSIVE',
-      statusCode: 413,
-    });
+    const promise = client.predict(request, 'request-expensive');
+    await expect(promise).rejects.toMatchObject({ code: 'REQUEST_TOO_EXPENSIVE', statusCode: 413 });
     await expect(promise).rejects.not.toMatchObject({ publicMessage: upstreamSecret });
   });
 
-  it('maps the model server execution deadline to a gateway timeout', async () => {
-    const fetchMock = vi.fn(async (input) => {
-      if (String(input).endsWith('/api/v1/models')) return modelResponse(modelCatalogFixture());
-      return modelResponse(
-        {
-          error: {
-            code: 'INFERENCE_TIMEOUT',
-            message: 'private worker timing detail',
-            request_id: 'request-001',
-            retryable: true,
-            details: null,
-          },
-        },
-        { status: 504 },
-      );
-    }) as unknown as typeof fetch;
-    const client = new ModelServerClient(testConfig(), fetchMock);
+  it('forwards authoritative request IDs on the retained legacy prediction route', async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      expect(String(input)).toContain('/api/v1/predict');
+      expect(init?.method).toBe('POST');
+      return modelResponse(predictionFixture('legacy-request'));
+    });
+    const client = new ModelServerClient(
+      testConfig({ modelServerApiKey: 'model-internal-secret-123456' }),
+      fetchMock as unknown as typeof fetch,
+    );
     const request = PredictionRequestSchema.parse({
       sample_id: 'sample-001',
+      request_id: 'legacy-request',
       targets: ['crop_health_score'],
     });
 
-    await expect(client.predict(request, 'request-001')).rejects.toMatchObject({
-      code: 'MODEL_SERVER_TIMEOUT',
-      statusCode: 504,
-      retryAfterSeconds: 2,
+    await expect(client.predict(request, 'legacy-request')).resolves.toMatchObject({
+      catalog_version: AUDITED_MODEL_CATALOG_VERSION,
+      request_id: 'legacy-request',
     });
-  });
-
-  it('rejects undeclared classes and probability keys', async () => {
-    const catalog = modelCatalogFixture();
-    const index = catalog.models.findIndex((model) => model.model_id === 'flood_risk_level');
-    const catalogBase = catalog.models[index];
-    if (!catalogBase) throw new Error('invalid test catalog');
-    catalog.models[index] = {
-      ...catalogBase,
-      task_type: 'classification',
-      classes: ['low', 'medium', 'high'],
-      value_range: null,
-      probability_calibrated: false,
-    };
-
-    const response = predictionFixture('request-001');
-    const predictionBase = response.predictions.crop_health_score!;
-    response.predictions = {
-      flood_risk_level: {
-        ...predictionBase,
-        value: 'extreme',
-        label: 'extreme',
-        unit: catalogBase.unit,
-        task_type: 'classification',
-        confidence: 0.7,
-        confidence_kind: 'random_forest_vote_share_uncalibrated',
-        probabilities: { low: 0.1, medium: 0.1, high: 0.1, extreme: 0.7 },
-      },
-    };
-    const request = PredictionRequestSchema.parse({
-      sample_id: 'sample-001',
-      targets: ['flood_risk_level'],
+    const [url, init] = fetchMock.mock.calls[0] ?? [];
+    expect(url).toBe('http://127.0.0.1:8001/api/v1/predict');
+    expect(init?.headers).toMatchObject({
+      'X-Internal-API-Key': 'model-internal-secret-123456',
+      'X-Request-ID': 'legacy-request',
     });
-    const fetchFor = (payload: unknown) =>
-      vi.fn(async (input) =>
-        String(input).endsWith('/api/v1/models')
-          ? modelResponse(catalog)
-          : modelResponse(payload),
-      ) as unknown as typeof fetch;
-
-    const unknownClassClient = new ModelServerClient(testConfig(), fetchFor(response));
-    await expect(unknownClassClient.predict(request, 'request-001')).rejects.toMatchObject({
-      code: 'MODEL_SERVER_CONTRACT_ERROR',
-    });
-
-    response.predictions.flood_risk_level = {
-      ...predictionBase,
-      value: 'high',
-      label: 'high',
-      unit: catalogBase.unit,
-      task_type: 'classification',
-      confidence: 0.8,
-      confidence_kind: 'random_forest_vote_share_uncalibrated',
-      probabilities: { low: 0.2, high: 0.8 },
-    };
-    const missingProbabilityClient = new ModelServerClient(testConfig(), fetchFor(response));
-    await expect(missingProbabilityClient.predict(request, 'request-001')).rejects.toMatchObject({
-      code: 'MODEL_SERVER_CONTRACT_ERROR',
-    });
-  });
-
-  it('checks the authenticated catalog as part of readiness', async () => {
-    const fetchMock = vi.fn(async (input) => {
-      if (String(input).endsWith('/api/v1/ready')) {
-        return modelResponse({
-          status: 'ready',
-          catalog_version: modelCatalogFixture().catalog_version,
-          model_count: 40,
-          spatial_rows: 1_029_348,
-        });
-      }
-      return modelResponse(
-        {
-          error: {
-            code: 'UNAUTHORIZED',
-            message: 'wrong internal key',
-            request_id: 'ready-request',
-            retryable: false,
-            details: null,
-          },
-        },
-        { status: 401 },
-      );
-    }) as unknown as typeof fetch;
-    const client = new ModelServerClient(testConfig(), fetchMock);
-
-    await expect(client.getReadiness('ready-request')).rejects.toMatchObject({
-      code: 'MODEL_SERVER_AUTH_FAILED',
-      statusCode: 503,
-    });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
