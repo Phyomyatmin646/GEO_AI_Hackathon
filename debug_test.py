@@ -1,27 +1,19 @@
-import pandas as pd
-from pathlib import Path
-from src.myanmar_agri_geo.daily.feature_builder import FeatureBuilder, ALL_75_FEATURES
+"""Manual smoke check for the row-aligned weekly feature builder."""
 
-parquet_path = Path("test_features_serving.parquet")
-pd.DataFrame({
-    "grid_id": ["1818,402"],
-    "elevation_m": [15],
-    "crop_area_pct_monsoon_rice": [80],
-    "chirps_precipitation_mm_mean": [40],
-}).to_parquet(parquet_path)
+from src.myanmar_agri_geo.weekly.feature_builder import FeatureBuilder, FeatureContractError
 
-builder = FeatureBuilder(parquet_path)
-builder._load_parquet()
-grid_id = "1818,402"
-static_row = builder._static_index.loc[grid_id]
-print("Type of static_row:", type(static_row))
-print("static_row contents:")
-print(static_row)
-print("Does it contain elevation_m?")
-print("elevation_m" in static_row)
-val = static_row.get("elevation_m")
-print("Value of elevation_m from static_row:", val)
-
-from src.myanmar_agri_geo.daily.feature_builder import _safe_float
-print("safe_float result:", _safe_float(val))
-
+try:
+    print(
+        FeatureBuilder().build_feature_row(
+            {
+                "grid_id": "mm_1847_432",
+                "observation_month": "2026-08",
+                "chirps_precipitation_mm": 55,
+                "mean_temperature_c": 28,
+                "solar_radiation_mj_m2_day": 20,
+            },
+            "yangon",
+        )
+    )
+except FeatureContractError as exc:
+    print(f"Weekly feature contract stopped safely: {exc}")

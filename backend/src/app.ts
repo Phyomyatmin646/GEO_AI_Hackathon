@@ -4,23 +4,37 @@ import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import Fastify, { type FastifyServerOptions } from 'fastify';
 
+import { CsoMarketPriceAdapter } from './adapters/market-prices/cso.js';
+import { DoaMarketPriceAdapter } from './adapters/market-prices/doa.js';
+import { MrfMarketPriceAdapter } from './adapters/market-prices/mrf.js';
+import { WisarraMarketPriceAdapter } from './adapters/market-prices/wisarra.js';
 import type { AppConfig } from './config.js';
+import { PostgresStore, type AppStore } from './db/store.js';
 import { AppError, RequestValidationError } from './errors.js';
+import dailyCompatibilityRoutes from './routes/daily.js';
 import healthRoutes from './routes/health.js';
+import internalRoutes from './routes/internal.js';
 import jobRoutes from './routes/jobs.js';
+import marketPriceRoutes from './routes/market-prices.js';
 import modelRoutes from './routes/models.js';
+import pipelineRoutes from './routes/pipeline.js';
 import predictionRoutes from './routes/predictions.js';
-import dailyRoutes from './routes/daily.js';
+import userRoutes from './routes/users.js';
+import weeklyRoutes from './routes/weekly.js';
 import {
   ModelServerClient,
   type ModelServerGateway,
 } from './services/model-server-client.js';
+import { MarketPriceService } from './services/market-price-service.js';
+import { WeeklyOrchestrator } from './services/weekly-orchestrator.js';
 
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
 
 export type BuildAppOptions = {
   config: AppConfig;
   modelServer?: ModelServerGateway;
+  store?: AppStore;
+  marketPriceService?: MarketPriceService;
   logger?: FastifyServerOptions['logger'];
 };
 
@@ -63,6 +77,23 @@ export async function buildApp(options: BuildAppOptions) {
     },
   });
   const modelServer = options.modelServer ?? new ModelServerClient(config);
+  const ownsStore = options.store === undefined && config.databaseUrl !== undefined;
+  const store = options.store ?? (config.databaseUrl ? new PostgresStore(config.databaseUrl) : undefined);
+  const orchestrator = store ? new WeeklyOrchestrator(config, modelServer, store) : undefined;
+  const marketPriceService =
+    options.marketPriceService ??
+    (store
+      ? new MarketPriceService(
+          store,
+          [
+            new DoaMarketPriceAdapter(config.marketPriceSourceUrls.doa),
+            new MrfMarketPriceAdapter(config.marketPriceSourceUrls.mrf),
+            new CsoMarketPriceAdapter(config.marketPriceSourceUrls.cso),
+            new WisarraMarketPriceAdapter(config.marketPriceSourceUrls.wisarra),
+          ],
+          config.marketPriceRequestTimeoutMs,
+        )
+      : undefined);
 
   await server.register(cors, {
     origin: config.corsOrigins,
@@ -91,13 +122,24 @@ export async function buildApp(options: BuildAppOptions) {
   });
 
   server.addHook('onRequest', async (request) => {
-    if (
-      request.method === 'OPTIONS' ||
-      !request.url.startsWith('/api/v1/') ||
-      !config.apiKey
-    ) {
+    if (request.method === 'OPTIONS' || !request.url.startsWith('/api/v1/')) {
       return;
     }
+    if (request.url.startsWith('/api/v1/internal/')) {
+      if (!config.internalApiKey) {
+        throw new AppError(
+          503,
+          'INTERNAL_AUTH_NOT_CONFIGURED',
+          'Internal API authentication is not configured.',
+        );
+      }
+      const candidate = request.headers['x-internal-api-key'];
+      if (typeof candidate !== 'string' || !safeKeyEquals(candidate, config.internalApiKey)) {
+        throw new AppError(401, 'UNAUTHORIZED', 'A valid internal API key is required.');
+      }
+      return;
+    }
+    if (!config.apiKey) return;
     const candidate = request.headers['x-api-key'];
     if (typeof candidate !== 'string' || !safeKeyEquals(candidate, config.apiKey)) {
       throw new AppError(401, 'UNAUTHORIZED', 'A valid API key is required.');
@@ -151,7 +193,7 @@ export async function buildApp(options: BuildAppOptions) {
     });
   });
 
-  await server.register(healthRoutes, { modelServer, prefix: '/health' });
+  await server.register(healthRoutes, { modelServer, store, prefix: '/health' });
   const apiRateLimit = { max: config.rateLimitMax, timeWindow: config.rateLimitWindowMs };
   await server.register(modelRoutes, {
     modelServer,
@@ -163,15 +205,58 @@ export async function buildApp(options: BuildAppOptions) {
     rateLimit: apiRateLimit,
     prefix: '/api/v1/predictions',
   });
+  await server.register(userRoutes, {
+    store,
+    rateLimit: apiRateLimit,
+    prefix: '/api/v1/users',
+  });
   await server.register(jobRoutes, {
     enabled: config.asyncJobsEnabled,
     rateLimit: apiRateLimit,
     prefix: '/api/v1/jobs',
   });
-  await server.register(dailyRoutes, {
-    config,
+  await server.register(marketPriceRoutes, {
+    service: marketPriceService,
+    rateLimit: apiRateLimit,
+    prefix: '/api/v1/market-prices',
+  });
+  await server.register(dailyCompatibilityRoutes, {
+    store,
     rateLimit: apiRateLimit,
     prefix: '/api/v1/daily',
+  });
+  await server.register(pipelineRoutes, {
+    store,
+    orchestrator,
+    rateLimit: apiRateLimit,
+    prefix: '/api/v1/pipeline',
+  });
+  await server.register(weeklyRoutes, {
+    store,
+    rateLimit: apiRateLimit,
+    prefix: '/api/v1/weekly',
+  });
+  await server.register(internalRoutes, {
+    store,
+    orchestrator,
+    marketPriceService,
+    marketPriceRefreshEnabled: config.marketPriceRefreshEnabled,
+    rateLimit: apiRateLimit,
+    prefix: '/api/v1/internal',
+  });
+
+  let cleanupTimer: NodeJS.Timeout | undefined;
+  if (store && config.predictionCleanupIntervalMs > 0) {
+    cleanupTimer = setInterval(() => {
+      void store.cleanupExpiredPredictions().catch((error: unknown) => {
+        server.log.error({ err: error }, 'Expired prediction cleanup failed');
+      });
+    }, config.predictionCleanupIntervalMs);
+    cleanupTimer.unref();
+  }
+  server.addHook('onClose', async () => {
+    if (cleanupTimer) clearInterval(cleanupTimer);
+    if (ownsStore && store) await store.close();
   });
 
   return server;

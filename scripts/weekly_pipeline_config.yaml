@@ -1,0 +1,54 @@
+## Weekly operational prediction pipeline configuration
+## Early Warning/SMS remains daily and is not configured here.
+
+# Week contract: Monday 00:00 through the next Monday 00:00, end-exclusive.
+PIPELINE_TIMEZONE: "Asia/Yangon"
+WEEK_START_DAY: "Monday"
+WEEK_INTERVAL: "[week_start,next_monday)"
+# Run after the interval closes. The Monday job processes the previous Monday.
+WEEKLY_RUN_DAY: "Monday"
+WEEKLY_RUN_TIME: "02:00"
+
+# Satellite lookback is only for observing real Sentinel passes. Missing passes
+# stay missing; the pipeline does not pad observation dates or invent values.
+SENTINEL2_LOOKBACK_DAYS: 15
+SENTINEL1_LOOKBACK_DAYS: 18
+
+REGIONS:
+  - yangon
+  - bago
+  - mandalay
+  - sagaing
+  - magway
+  - ayeyawaddy
+
+# Python creates trusted files; Fastify derives their paths under this root.
+WEEKLY_DATA_DIR: "data/weekly"
+
+# The two Parquets are positionally aligned and must always be configured as a
+# pair. Environment overrides: FEATURES_SERVING_PARQUET, SPATIAL_INDEX_PARQUET,
+# or their common parent GEO_MODEL_DATA_DIR.
+FEATURES_SERVING_PARQUET: "../GEO_MODEL_SERVER/data/processed/features_serving.parquet"
+SPATIAL_INDEX_PARQUET: "../GEO_MODEL_SERVER/data/processed/spatial_index.parquet"
+MODEL_INPUT_SCHEMA_SHA256: "35bca85b7200cac8d9c2caf59d3fb9c4c6fe2dc1c4dc1cc512bb221d9df6b7a8"
+
+# The models remain monthly. Weekly extraction refreshes these three fields as
+# provisional month-to-date values; all released aggregate columns remain the
+# selected aligned serving values. Cross-month weeks use the month containing
+# week_end - 1 day; that monthly refresh stays within the calendar boundary.
+MONTH_TO_DATE_REFRESH_FIELDS:
+  - chirps_precipitation_mm
+  - mean_temperature_c
+  - solar_radiation_mj_m2_day
+
+# Python calls Fastify only. It never calls GEO_MODEL_SERVER directly.
+BACKEND_URL: "http://127.0.0.1:8000"
+BACKEND_INTERNAL_INGEST_PATH: "/api/v1/internal/weekly/ingest"
+# Set INTERNAL_API_KEY in the environment; never commit it here.
+BACKEND_REQUEST_TIMEOUT_SECONDS: 7200
+
+GRID_SIZE_M: 5000
+GRID_CRS: "EPSG:6933"
+
+# Fail closed: no unknown-grid fallback, zero/default substitution, NaN, or Inf.
+FAIL_CLOSED: true

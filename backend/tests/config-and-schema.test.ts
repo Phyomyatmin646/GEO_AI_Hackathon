@@ -11,12 +11,20 @@ describe('configuration', () => {
     const config = loadConfig({ NODE_ENV: 'test' });
     expect(config.modelServerUrl).toBe('http://127.0.0.1:8001');
     expect(config.port).toBe(8000);
-    expect(config.modelServerTimeoutMs).toBe(40_000);
+    expect(config.modelServerTimeoutMs).toBe(120_000);
+    expect(config.modelBatchSize).toBe(50);
+    expect(config.allowFlaggedModels).toBe(false);
+    expect(config.weeklyRunStaleAfterMs).toBe(24 * 60 * 60_000);
+    expect(config.predictionRetentionDays).toBe(7);
+    expect(config.marketPriceRequestTimeoutMs).toBe(120_000);
     expect(config.rateLimitWindowMs).toBe(60_000);
   });
 
-  it('requires both service keys in production', () => {
+  it('requires public, pipeline, model, and database credentials in production', () => {
     expect(() => loadConfig({ NODE_ENV: 'production' })).toThrow(/API_KEY/);
+    expect(() => loadConfig({ NODE_ENV: 'production' })).toThrow(/INTERNAL_API_KEY/);
+    expect(() => loadConfig({ NODE_ENV: 'production' })).toThrow(/DATABASE_URL/);
+    expect(() => loadConfig({ NODE_ENV: 'production' })).toThrow(/GEO_MODEL_SERVER_API_KEY/);
   });
 
   it('requires a 24-character internal key', () => {
@@ -30,8 +38,10 @@ describe('configuration', () => {
       loadConfig({
         NODE_ENV: 'production',
         API_KEY: 'local-public-key-change-me',
-        MODEL_SERVER_API_KEY: 'local-internal-key-change-me',
-        MODEL_SERVER_URL: 'https://models.example.org',
+        INTERNAL_API_KEY: 'pipeline-production-key-1234',
+        DATABASE_URL: 'postgresql://example.invalid/database',
+        GEO_MODEL_SERVER_API_KEY: 'local-internal-key-change-me',
+        GEO_MODEL_SERVER_URL: 'https://models.example.org',
       }),
     ).toThrow(/placeholder/);
 
@@ -40,8 +50,10 @@ describe('configuration', () => {
       loadConfig({
         NODE_ENV: 'production',
         API_KEY: sharedKey,
-        MODEL_SERVER_API_KEY: sharedKey,
-        MODEL_SERVER_URL: 'https://models.example.org',
+        INTERNAL_API_KEY: 'pipeline-production-key-1234',
+        DATABASE_URL: 'postgresql://example.invalid/database',
+        GEO_MODEL_SERVER_API_KEY: sharedKey,
+        GEO_MODEL_SERVER_URL: 'https://models.example.org',
       }),
     ).toThrow(/must differ/);
 
@@ -49,8 +61,10 @@ describe('configuration', () => {
       loadConfig({
         NODE_ENV: 'production',
         API_KEY: 'public-production-key-1234',
-        MODEL_SERVER_API_KEY: 'internal-production-key-1234',
-        MODEL_SERVER_URL: 'http://models.internal:8001',
+        INTERNAL_API_KEY: 'pipeline-production-key-1234',
+        DATABASE_URL: 'postgresql://example.invalid/database',
+        GEO_MODEL_SERVER_API_KEY: 'model-production-key-123456',
+        GEO_MODEL_SERVER_URL: 'http://models.internal:8001',
       }),
     ).toThrow(/must use HTTPS/);
   });
@@ -59,8 +73,10 @@ describe('configuration', () => {
     const config = loadConfig({
       NODE_ENV: 'production',
       API_KEY: 'public-production-key-1234',
-      MODEL_SERVER_API_KEY: 'internal-production-key-1234',
-      MODEL_SERVER_URL: 'http://models.internal:8001',
+      INTERNAL_API_KEY: 'pipeline-production-key-1234',
+      DATABASE_URL: 'postgresql://example.invalid/database',
+      GEO_MODEL_SERVER_API_KEY: 'model-production-key-123456',
+      GEO_MODEL_SERVER_URL: 'http://models.internal:8001',
       ALLOW_INSECURE_MODEL_SERVER_HTTP: 'true',
       RATE_LIMIT_WINDOW_MS: '30000',
     });
@@ -71,10 +87,33 @@ describe('configuration', () => {
     );
   });
 
+  it('prefers the GEO model aliases and keeps all three trust boundaries distinct', () => {
+    const config = loadConfig({
+      NODE_ENV: 'test',
+      API_KEY: 'public-secret-123456',
+      INTERNAL_API_KEY: 'pipeline-secret-123456789',
+      GEO_MODEL_SERVER_API_KEY: 'geo-model-secret-123456789',
+      MODEL_SERVER_API_KEY: 'legacy-model-secret-123456',
+      GEO_MODEL_SERVER_URL: 'https://geo-model.example.test',
+      MODEL_SERVER_URL: 'https://legacy-model.example.test',
+    });
+    expect(config.modelServerApiKey).toBe('geo-model-secret-123456789');
+    expect(config.modelServerUrl).toBe('https://geo-model.example.test');
+  });
+
   it('rejects wildcard CORS configuration', () => {
     expect(() => loadConfig({ NODE_ENV: 'test', CORS_ORIGINS: '*' })).toThrow(
       /explicit allowlist/,
     );
+  });
+
+  it('refuses environment-only schema or catalog drift', () => {
+    expect(() =>
+      loadConfig({ NODE_ENV: 'test', MODEL_EXPECTED_INPUT_SCHEMA_SHA256: 'a'.repeat(64) }),
+    ).toThrow(/MODEL_EXPECTED_INPUT_SCHEMA_SHA256/);
+    expect(() =>
+      loadConfig({ NODE_ENV: 'test', MODEL_EXPECTED_CATALOG_VERSION: 'b'.repeat(64) }),
+    ).toThrow(/MODEL_EXPECTED_CATALOG_VERSION/);
   });
 });
 

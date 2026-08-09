@@ -3,6 +3,19 @@ name: myanmar-agriculture-intelligence
 # This Compose project deliberately does not contain the Python model server.
 # Start GEO_MODEL_SERVER separately on host port 8001, then start this project.
 services:
+  migrate:
+    profiles: [ "ops" ]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-}
+    command: [ "node", "dist/db/migrate.js" ]
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m
+
   backend:
     build:
       context: ./backend
@@ -15,19 +28,35 @@ services:
       PORT: 8000
       LOG_LEVEL: ${BACKEND_LOG_LEVEL:-info}
       API_KEY: ${BACKEND_API_KEY:-dev-public-gateway-key-replace-before-production}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-weekly-ingest-key-replace-before-production}
       CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:3000}
-      MODEL_SERVER_URL: ${MODEL_SERVER_URL:-http://host.docker.internal:8001}
-      MODEL_SERVER_API_KEY: ${MODEL_SERVER_API_KEY:-dev-internal-model-key-replace-before-production}
-      MODEL_SERVER_TIMEOUT_MS: ${MODEL_SERVER_TIMEOUT_MS:-40000}
+      DATABASE_URL: ${DATABASE_URL:-}
+      GEO_MODEL_SERVER_URL: ${GEO_MODEL_SERVER_URL:-http://host.docker.internal:8001}
+      GEO_MODEL_SERVER_API_KEY: ${GEO_MODEL_SERVER_API_KEY:-dev-internal-model-key-replace-before-production}
+      MODEL_REQUEST_TIMEOUT_MS: ${MODEL_REQUEST_TIMEOUT_MS:-120000}
       MODEL_SERVER_MAX_RESPONSE_BYTES: ${MODEL_SERVER_MAX_RESPONSE_BYTES:-5242880}
-      ALLOW_INSECURE_MODEL_SERVER_HTTP: "true"
+      MODEL_BATCH_SIZE: ${MODEL_BATCH_SIZE:-50}
+      MODEL_MAX_CONCURRENT_BATCHES: ${MODEL_MAX_CONCURRENT_BATCHES:-1}
+      ALLOW_FLAGGED_MODELS: ${ALLOW_FLAGGED_MODELS:-false}
+      ALLOW_INSECURE_MODEL_SERVER_HTTP: ${ALLOW_INSECURE_MODEL_SERVER_HTTP:-false}
+      WEEKLY_DATA_DIR: /data/weekly
+      WEEKLY_RUN_STALE_AFTER_MS: ${WEEKLY_RUN_STALE_AFTER_MS:-86400000}
+      PREDICTION_RETENTION_DAYS: ${PREDICTION_RETENTION_DAYS:-7}
+      PREDICTION_CLEANUP_INTERVAL_MS: ${PREDICTION_CLEANUP_INTERVAL_MS:-21600000}
+      MARKET_PRICE_REFRESH_ENABLED: ${MARKET_PRICE_REFRESH_ENABLED:-true}
+      MARKET_PRICE_REQUEST_TIMEOUT_MS: ${MARKET_PRICE_REQUEST_TIMEOUT_MS:-120000}
+      MARKET_PRICE_DOA_URL: ${MARKET_PRICE_DOA_URL:-https://www.doa.gov.mm/mis_market/index.php?filter_category=44&filter_seller=4&route=market%2Fweekly_crop_price_by_seller}
+      MARKET_PRICE_MRF_URL: ${MARKET_PRICE_MRF_URL:-https://www.myanmarricefederation.org/reference-domestic-price/}
+      MARKET_PRICE_CSO_URL: ${MARKET_PRICE_CSO_URL:-https://monpifer.gov.mm/en/basic-page/planning/central-statistical-organization-cso/20961}
+      MARKET_PRICE_WISARRA_URL: ${MARKET_PRICE_WISARRA_URL:-https://wisarra.com/en/market-price}
       ENABLE_ASYNC_JOBS: "false"
+    volumes:
+      - ./data/weekly:/data/weekly:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
-      # Keep the gateway and rule-based UI available when the separately-run
-      # model server is offline or its immutable artifacts are not installed.
-      # Full model readiness remains exposed at GET /health/ready.
+      # Liveness only proves that Fastify is running. PostgreSQL and authenticated
+      # model readiness are checked separately at GET /health/ready.
       test:
         - CMD
         - wget
@@ -71,6 +100,18 @@ services:
       dockerfile: Dockerfile
     volumes:
       - .:/app
+      - type: bind
+        source: ${GEO_MODEL_DATA_DIR:-../GEO_MODEL_SERVER/data/processed}
+        target: /model-data
+        read_only: true
     environment:
       PYTHONUNBUFFERED: "1"
+      WEEKLY_DATA_DIR: /app/data/weekly
+      GEO_MODEL_DATA_DIR: /model-data
+      BACKEND_URL: http://backend:8000
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-weekly-ingest-key-replace-before-production}
+      BACKEND_REQUEST_TIMEOUT_SECONDS: ${BACKEND_REQUEST_TIMEOUT_SECONDS:-7200}
+    depends_on:
+      backend:
+        condition: service_healthy
     init: true
