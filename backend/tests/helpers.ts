@@ -74,6 +74,11 @@ export function testConfig(overrides: Partial<AppConfig> = {}): AppConfig {
     rateLimitWindowMs: 60_000,
     bodyLimitBytes: 64 * 1024,
     asyncJobsEnabled: false,
+    geminiApiKey: 'dev-test-gemini-key-1234567890',
+    geminiModel: 'gemini-2.5-flash',
+    geminiApiUrl: 'https://generativelanguage.googleapis.com',
+    chatbotRequestTimeoutMs: 1_000,
+    chatbotSearchGroundingEnabled: true,
     ...overrides,
   };
 }
