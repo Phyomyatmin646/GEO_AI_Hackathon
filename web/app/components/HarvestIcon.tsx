@@ -19,7 +19,9 @@ type HarvestIconName =
   | "sprout"
   | "sun"
   | "thermometer"
-  | "upload";
+  | "upload"
+  | "user"
+  | "phone";
 
 type Props = {
   name: HarvestIconName;
@@ -171,6 +173,15 @@ export function HarvestIcon({ name, size = 20, strokeWidth = 1.8 }: Props) {
           <path d="m7 8 5-5 5 5" />
           <path d="M5 13v7h14v-7" />
         </>
+      )}
+      {name === "user" && (
+        <>
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4.5 21a7.5 7.5 0 0 1 15 0" />
+        </>
+      )}
+      {name === "phone" && (
+        <path d="M5.2 3.5h3l1.4 4.2-2.1 1.6a16.7 16.7 0 0 0 7.2 7.2l1.6-2.1 4.2 1.4v3a2.2 2.2 0 0 1-2.2 2.2A15.3 15.3 0 0 1 3 5.7a2.2 2.2 0 0 1 2.2-2.2Z" />
       )}
     </svg>
   );

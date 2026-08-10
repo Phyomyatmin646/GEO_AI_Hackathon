@@ -803,23 +803,7 @@ export function PilotDashboard() {
         </div>
 
         <section className="evidence-grid" id="harvest-evidence-grid">
-          <header className="harvest-evidence-topbar">
-            <div className="harvest-evidence-topbar-actions">
-              <button
-                onClick={() => setLang(lang === "en" ? "my" : "en")}
-                className="harvest-language-switch"
-                aria-label={lang === "en" ? t.dashboard.languageSwitchToMyanmar : t.dashboard.languageSwitchToEnglish}
-              >
-                <HarvestIcon name="globe" size={18} />
-                {lang === "en" ? "Myanmar" : "English"}
-                <HarvestIcon name="chevron" size={16} />
-              </button>
-              <span className="harvest-evidence-api-status">
-                <i aria-hidden="true" />
-                {t.dashboard.pilotApiStatus} · {payload.meta.qa.valid ? t.dashboard.qaPassed : t.dashboard.qaFailed}
-              </span>
-            </div>
-          </header>
+
 
           <div className="harvest-evidence-left-column">
             <article className="evidence-card harvest-release-card">
