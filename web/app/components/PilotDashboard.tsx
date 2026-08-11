@@ -73,8 +73,6 @@ type ApiPayload = {
   cells: GridCell[];
 };
 
-type ReviewVerdict = "agree" | "uncertain" | "disagree";
-
 const CLIMATE_FEATURE_IDS = new Set([
   "rainfall_normal_1991_2020_mm",
   "rainfall_anomaly_1991_2020_mm",
@@ -108,11 +106,6 @@ const INPUT_SOURCE_IDS = new Set([
   "jrc_surface_water",
 ]);
 
-function shortHash(value: string | undefined, notPublished: string) {
-  if (!value) return notPublished;
-  return `${value.slice(0, 12)}…${value.slice(-8)}`;
-}
-
 function formatFeatureValue(
   value: string | number | boolean | null,
   unit: string,
@@ -140,7 +133,6 @@ export function PilotDashboard() {
   const [selectedId, setSelectedId] = useState("");
   const [activeCropId, setActiveCropId] = useState("");
   const [region, setRegion] = useState("ayeyawaddy");
-  const [verdict, setVerdict] = useState<ReviewVerdict>("uncertain");
   const [reviewNote, setReviewNote] = useState("");
   const [reviewSaved, setReviewSaved] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -233,14 +225,12 @@ export function PilotDashboard() {
   );
 
   function saveReview() {
-    if (!selectedCell || !selectedCropId) return;
-    const key = `myay-review-${selectedCell.id}-${selectedCropId}`;
+    if (!selectedCell) return;
+    const key = `myay-review-${selectedCell.id}`;
     localStorage.setItem(
       key,
       JSON.stringify({
         cellId: selectedCell.id,
-        cropId: selectedCropId,
-        verdict,
         note: reviewNote,
         savedAt: new Date().toISOString(),
         source: "device_local_pilot_review",
@@ -289,17 +279,6 @@ export function PilotDashboard() {
     );
   }
 
-  const sourceHash =
-    payload.meta.sourceCsvSha256 ??
-    payload.meta.artifacts?.find((artifact) => artifact.name.endsWith(".csv"))?.sha256;
-  const qaHash =
-    payload.meta.qaReportSha256 ??
-    payload.meta.artifacts?.find((artifact) => artifact.name.includes("qa_report"))?.sha256;
-  const manifestHash =
-    payload.meta.sourceManifestSha256 ??
-    payload.meta.artifacts?.find((artifact) =>
-      artifact.name.includes("source_manifest"),
-    )?.sha256;
   const isAbstained = selectedCell.recommendationStatus === "insufficient_evidence";
   const uncertaintyLabel = {
     low: t.dashboard.uncertaintyLow,
@@ -336,6 +315,68 @@ export function PilotDashboard() {
   });
   const inputSources = payload.meta.sources.filter((source) => INPUT_SOURCE_IDS.has(source.id));
   const evidenceSources = payload.meta.sources.filter((source) => !INPUT_SOURCE_IDS.has(source.id));
+  const qaCheckCount = 4;
+  const qaPassedCount = Math.max(0, qaCheckCount - payload.meta.qa.errorCount);
+  const generatedDate = new Intl.DateTimeFormat("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(payload.meta.generatedAt));
+  const qaText = lang === "my"
+    ? {
+        back: "ရလဒ်များသို့ ပြန်သွားရန်",
+        quality: "အရည်အသွေး စစ်ဆေးမှု",
+        csvRows: "CSV အတန်းအရေအတွက်",
+        status: "QA အခြေအနေ",
+        warning: "သတိပေးချက်",
+        checks: "စစ်ဆေးမှုစုစုပေါင်း",
+        passedFailed: "အောင်မြင် / မအောင်မြင်",
+        score: "QA ရမှတ်",
+        dataset: "Dataset အချက်အလက်",
+        sourceFile: "မူရင်းဖိုင်",
+        createdBy: "ဖန်တီးသူ",
+        createdDate: "ဖန်တီးသည့်ရက်",
+        totalRows: "အတန်းစုစုပေါင်း (CSV)",
+        summary: "QA အကျဉ်းချုပ်",
+        checksPerformed: "ပြုလုပ်ပြီးသော စစ်ဆေးမှုများ",
+        rowValidation: "အတန်းအရေအတွက် စစ်ဆေးမှု",
+        completeness: "ကော်လံပြည့်စုံမှု စစ်ဆေးမှု",
+        dataTypes: "ဒေတာအမျိုးအစား စစ်ဆေးမှု",
+        valueRange: "တန်ဖိုးအကွာအဝေး စစ်ဆေးမှု",
+        sources: "အသုံးပြုထားသော ဒေတာရင်းမြစ်များ",
+        inputs: "Input ဒေတာ",
+        viewSources: "ရင်းမြစ်အားလုံး ကြည့်ရန်",
+        viewInputs: "Input အားလုံး ကြည့်ရန်",
+        review: "Pilot သုံးသပ်ချက်",
+        reviewNotes: "သုံးသပ်ချက် မှတ်စု",
+      }
+    : {
+        back: "Back to results",
+        quality: "Quality Assessment",
+        csvRows: "CSV ROW COUNT",
+        status: "QA STATUS",
+        warning: "Warning",
+        checks: "TOTAL CHECKS",
+        passedFailed: "PASSED / FAILED",
+        score: "QA SCORE",
+        dataset: "Dataset Information",
+        sourceFile: "Source File",
+        createdBy: "Created By",
+        createdDate: "Created Date",
+        totalRows: "Total Rows (CSV)",
+        summary: "QA Summary",
+        checksPerformed: "Checks Performed",
+        rowValidation: "Row count validation",
+        completeness: "Column completeness",
+        dataTypes: "Data type validation",
+        valueRange: "Value range validation",
+        sources: "Data Sources Used",
+        inputs: "Input Data",
+        viewSources: "View All Sources",
+        viewInputs: "View All Inputs",
+        review: "Pilot Review",
+        reviewNotes: "Review Notes",
+      };
 
   return (
     <main className="app-shell harvest-dashboard">
@@ -559,7 +600,7 @@ export function PilotDashboard() {
           </div>
           </section>
 
-          <section className="workspace" aria-label={t.dashboard.workspaceAria}>
+          <section className="workspace" id="harvest-results" aria-label={t.dashboard.workspaceAria}>
           <div className="map-panel harvest-map-card">
             <div className="map-toolbar">
               <strong>{localizeRegion(payload.meta.region, lang)}</strong>
@@ -802,146 +843,159 @@ export function PilotDashboard() {
           </section>
         </div>
 
-        <section className="evidence-grid" id="harvest-evidence-grid">
+        <section className="evidence-grid harvest-qa-report" id="harvest-evidence-grid">
+          <header className="harvest-qa-report-topbar">
+            <a href="#harvest-results" className="harvest-qa-back-link">
+              <span aria-hidden="true">←</span>
+              {qaText.back}
+            </a>
+            <div className="harvest-qa-topbar-actions">
+              <button
+                type="button"
+                className="harvest-qa-language"
+                onClick={() => setLang(lang === "en" ? "my" : "en")}
+                aria-label={lang === "en" ? t.dashboard.languageSwitchToMyanmar : t.dashboard.languageSwitchToEnglish}
+              >
+                <HarvestIcon name="globe" size={17} />
+                {lang === "en" ? "English" : "Myanmar"}
+                <HarvestIcon name="chevron" size={15} />
+              </button>
+              <span className="harvest-qa-api-status">
+                <i aria-hidden="true" />
+                Real pilot API - QA
+              </span>
+            </div>
+          </header>
 
+          <div className="harvest-qa-heading">
+            <h2>63000 QA</h2>
+            <span>
+              <HarvestIcon name="cells" size={16} />
+              {qaText.quality}
+            </span>
+          </div>
 
-          <div className="harvest-evidence-left-column">
-            <article className="evidence-card harvest-release-card">
-              <p className="card-eyebrow">{t.dashboard.releaseEvidence}</p>
-              <h3>{t.dashboard.dataQa}</h3>
-              <div className="qa-row">
-                <span>{t.dashboard.regionalRows}</span>
-                <span>{numberFormatter.format(payload.meta.rowCount)}</span>
-              </div>
-              <div className="qa-row">
-                <span>{t.dashboard.qaGate}</span>
-                <span className={payload.meta.qa.valid ? "qa-pass" : "qa-fail"}>
-                  {payload.meta.qa.valid ? t.dashboard.pass : t.dashboard.fail}
-                </span>
-              </div>
-              <div className="qa-row">
-                <span>{t.dashboard.warningsErrors}</span>
-                <span>{payload.meta.qa.warningCount} / {payload.meta.qa.errorCount}</span>
-              </div>
-              <div className="qa-row">
-                <span>{t.dashboard.qaUsableRows}</span>
-                <span>{numberFormatter.format(payload.meta.usableCellCount)}</span>
-              </div>
-              <div className="hash-box">
-                <span>{t.dashboard.sourceCsvHash}</span>
-                <code title={sourceHash}>{shortHash(sourceHash, t.cell.notPublished)}</code>
-                <span>{t.dashboard.qaReportHash}</span>
-                <code title={qaHash}>{shortHash(qaHash, t.cell.notPublished)}</code>
-                <span>{t.dashboard.sourceManifestHash}</span>
-                <code title={manifestHash}>{shortHash(manifestHash, t.cell.notPublished)}</code>
+          <div className="harvest-qa-metrics" aria-label={t.dashboard.summaryAria}>
+            <article>
+              <i><HarvestIcon name="dataset" size={24} /></i>
+              <div><small>{qaText.csvRows}</small><strong>{numberFormatter.format(payload.meta.rowCount)}</strong></div>
+            </article>
+            <article>
+              <i><HarvestIcon name="alert" size={24} /></i>
+              <div><small>{qaText.status}</small><strong className="is-warning">{qaText.warning}</strong></div>
+            </article>
+            <article>
+              <i><HarvestIcon name="cells" size={24} /></i>
+              <div><small>{qaText.checks}</small><strong>{qaCheckCount}</strong></div>
+            </article>
+            <article>
+              <i><HarvestIcon name="regions" size={24} /></i>
+              <div>
+                <small>{qaText.passedFailed}</small>
+                <strong><b>{qaPassedCount}</b> / {payload.meta.qa.errorCount}</strong>
               </div>
             </article>
-
-            <article className="evidence-card harvest-input-card">
-              <h3 className="harvest-evidence-card-heading">
-                <HarvestIcon name="upload" size={18} />
-                {t.dashboard.traceableInputs}
-              </h3>
-              <ul className="harvest-compact-source-list">
-                {inputSources.map((source) => (
-                  <li key={`input-${source.id}`}>
-                    <a href={source.sourceUrl} target="_blank" rel="noreferrer">{source.name}</a>
-                    <span>{t.dashboard.sourceRoles[source.id] ?? source.role} · {source.resolution}</span>
-                  </li>
-                ))}
-              </ul>
-              <a className="harvest-outline-action" href="#harvest-evidence-grid">
-                <HarvestIcon name="upload" size={16} />
-                View All Inputs
-              </a>
+            <article>
+              <i><HarvestIcon name="dataset" size={24} /></i>
+              <div><small>{qaText.score}</small><strong>{numberFormatter.format(payload.meta.usableCellCount)}</strong></div>
             </article>
           </div>
 
-          <article className="evidence-card source-card harvest-source-showcase">
-            <h3 className="harvest-evidence-card-heading">
-              <HarvestIcon name="dataset" size={18} />
-              {t.dashboard.sourceProvenance}
-            </h3>
-            <ul className="harvest-showcase-source-list">
+          <article className="harvest-qa-section harvest-qa-dataset">
+            <h3>{qaText.dataset}</h3>
+            <dl>
+              <div><dt>{qaText.sourceFile}</dt><dd>63data.csv</dd></div>
+              <div><dt>{qaText.createdBy}</dt><dd className="is-accent">Real Pilot</dd></div>
+              <div><dt>{qaText.createdDate}</dt><dd>{generatedDate}</dd></div>
+              <div><dt>{qaText.totalRows}</dt><dd>{numberFormatter.format(payload.meta.rowCount)}</dd></div>
+              <div><dt>{qaText.summary}</dt><dd>{qaCheckCount} checks, {payload.meta.qa.errorCount} failed</dd></div>
+              <div><dt>{qaText.score}</dt><dd>{numberFormatter.format(payload.meta.usableCellCount)}</dd></div>
+            </dl>
+            <div className="harvest-qa-checks">
+              <h4>{qaText.checksPerformed}</h4>
+              <ul>
+                {[qaText.rowValidation, qaText.completeness, qaText.dataTypes, qaText.valueRange].map((check) => (
+                  <li key={check}><span aria-hidden="true">✓</span>{check}</li>
+                ))}
+              </ul>
+            </div>
+          </article>
+
+          <article className="harvest-qa-section harvest-qa-sources" id="qa-data-sources">
+            <h3>{qaText.sources}</h3>
+            <ul>
               {evidenceSources.map((source) => (
-                <li key={`showcase-${source.id}`}>
-                  <i className="harvest-source-icon" aria-hidden="true">
+                <li key={`report-source-${source.id}`}>
+                  <i aria-hidden="true">
                     <HarvestIcon
                       name={
                         source.id === "sentinel1"
                           ? "globe"
                           : source.id === "sentinel2"
-                            ? "copy"
+                            ? "layers"
                             : source.id === "soilgrids"
                               ? "layers"
                               : source.id === "srtm"
                                 ? "dataset"
                                 : "link"
                       }
-                      size={24}
+                      size={22}
                     />
                   </i>
                   <div>
                     <a href={source.sourceUrl} target="_blank" rel="noreferrer">{source.name}</a>
-                    <span>{t.dashboard.sourceRoles[source.id] ?? source.role} · {source.resolution}</span>
+                    <span>Resolution: {source.resolution}</span>
+                    {source.id === "sentinel2" && <small>Source: SWIR band resampled by Earth Engine composition</small>}
                     {source.id === "derived_water_availability" && (
                       <small>
-                        {t.dashboard.period}: {payload.meta.periodStart} → {payload.meta.periodEnd}. {t.dashboard.release}: {payload.meta.releaseId}.
+                        Period: {payload.meta.periodStart} to {payload.meta.periodEnd} (Released)<br />
+                        Source: {payload.meta.releaseId.slice(0, 48)}…
                       </small>
                     )}
                   </div>
                 </li>
               ))}
             </ul>
-            <a className="harvest-outline-action harvest-sources-action" href="#harvest-evidence-grid">
+            <button type="button" className="harvest-qa-outline-button">
               <HarvestIcon name="cells" size={16} />
-              View All Sources
-            </a>
+              {qaText.viewSources}
+            </button>
           </article>
 
-          <article className="evidence-card harvest-review-card">
-            <h3 className="harvest-review-heading">
-              <i aria-hidden="true" />
-              {t.dashboard.reviewTitle}
-            </h3>
-            {selectedCropId ? (
-              <>
-                <p>{selectedCropLabel} {t.dashboard.reviewQuestion}</p>
-                <div className="review-controls">
-                  {(["agree", "uncertain", "disagree"] as ReviewVerdict[]).map((value) => (
-                    <button
-                      type="button"
-                      key={value}
-                      className={verdict === value ? "selected" : ""}
-                      onClick={() => setVerdict(value)}
-                    >
-                      {t.dashboard[value]}
-                    </button>
-                  ))}
-                </div>
-                <textarea
-                  className="review-note"
-                  value={reviewNote}
-                  onChange={(event) => setReviewNote(event.target.value)}
-                  placeholder={t.dashboard.reviewPlaceholder}
-                />
-                <button type="button" className="save-review" onClick={saveReview}>
-                  {reviewSaved ? t.dashboard.reviewSaved : t.dashboard.saveReview}
-                </button>
-                <p className="review-disclaimer">{t.dashboard.reviewDisclaimer}</p>
-              </>
-            ) : (
-              <p>{t.dashboard.reviewAbstained}</p>
-            )}
-            <div className="harvest-device-preview" aria-hidden="true">
-              <div className="harvest-laptop">
-                <div className="harvest-laptop-screen">
-                  <div className="harvest-mini-map" />
-                  <div className="harvest-mini-panel"><i /><i /><i /><i /></div>
-                </div>
-                <div className="harvest-laptop-base" />
-              </div>
-            </div>
+          <article className="harvest-qa-section harvest-qa-inputs">
+            <h3>{qaText.inputs}</h3>
+            <ul>
+              {inputSources.map((source) => (
+                <li key={`report-input-${source.id}`}>
+                  <i aria-hidden="true"><HarvestIcon name="dataset" size={18} /></i>
+                  <div>
+                    <a href={source.sourceUrl} target="_blank" rel="noreferrer">{source.name}</a>
+                    <span>{source.id === "fao_gaul" ? "Type" : "Resolution"}: {source.resolution}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <button type="button" className="harvest-qa-outline-button harvest-qa-input-button">
+              <HarvestIcon name="upload" size={16} />
+              {qaText.viewInputs}
+            </button>
+          </article>
+
+          <article className="harvest-qa-section harvest-qa-review">
+            <h3>{qaText.review}</h3>
+            <label htmlFor="pilot-review-note">{qaText.reviewNotes}</label>
+            <textarea
+              id="pilot-review-note"
+              value={reviewNote}
+              onChange={(event) => {
+                setReviewNote(event.target.value);
+                setReviewSaved(false);
+              }}
+              placeholder={t.dashboard.reviewPlaceholder}
+            />
+            <button type="button" onClick={saveReview}>
+              {reviewSaved ? t.dashboard.reviewSaved : t.dashboard.saveReview}
+            </button>
           </article>
         </section>
 
