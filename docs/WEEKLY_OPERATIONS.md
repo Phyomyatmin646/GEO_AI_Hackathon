@@ -354,12 +354,50 @@ payloads, not the run history.
 
 `MARKET_PRICE_REFRESH_ENABLED=true` enables collection from the configured DOA,
 MRF, CSO, and Wisarra URLs. It does not create an in-process network scheduler.
-Run `npm run db:migrate` first and confirm
-`0003_market_commodity_coverage.sql` in `schema_migrations`; this additive
-migration allows valid non-model Wisarra crops while retaining the exact
-canonical-key constraint for mapped model crops.
+Run `npm run db:migrate` first and confirm both
+`0003_market_commodity_coverage.sql` and `0004_market_mapping_version.sql` in
+`schema_migrations`. The additive commodity migration allows valid non-model
+Wisarra crops while retaining the exact canonical-key constraint. The mapping
+version migration preserves old audit rows as `legacy` but serves only rows
+written by the corrected active commodity mapper; trigger a refresh immediately
+after deploying that migration.
+
+The DOA collector discovers seller IDs from six exact official marketplace
+labels, pins every request to the discovered source date, and fetches the six
+all-category pages with concurrency capped at three. It validates the complete
+13-category table inventory before accepting the snapshot. This bounded set was
+selected from a read-only audit of all 28 seller filters on 2026-08-11; fetching
+all 28 consumed nearly the entire 120-second source timeout and added no crop
+beyond the selected set.
+
 Trigger it once daily from the external scheduler, separate from the weekly model
-job:
+job. The checked-in runner authenticates the request, validates the complete
+response contract, and exits non-zero when any source fails:
+
+```bash
+BACKEND_URL=https://backend.example \
+INTERNAL_API_KEY='<production-secret>' \
+./scripts/run_market_refresh.sh
+```
+
+For a host scheduler, keep both values in its protected environment rather than
+the crontab. One example is:
+
+```cron
+CRON_TZ=Asia/Yangon
+0 8 * * * /absolute/path/to/myanmar-agri-geo-csv-pipeline/scripts/run_market_refresh.sh
+```
+
+The repository also includes `.github/workflows/market-price-refresh.yml`, which
+runs at 08:00 Asia/Yangon and can be dispatched manually. Configure the protected
+`production` environment secrets `MARKET_BACKEND_URL` and
+`MARKET_INTERNAL_API_KEY` before enabling that workflow. A partial refresh fails
+the scheduler job so source outages remain visible, even though the backend keeps
+successful source snapshots. The runner refuses redirects so the internal key
+cannot be forwarded to another origin, and it requires HTTPS except for loopback
+or an explicitly trusted private-network HTTP deployment.
+
+The equivalent direct request is:
 
 ```bash
 curl -fsS -X POST \
@@ -381,7 +419,7 @@ GET /api/v1/market-prices/:crop/history
 model crops: monsoon rice, dry-season rice, black gram, groundnut, maize,
 sugarcane, cassava, chili, tomato, green gram, pigeon pea, sesame, rubber,
 durian, mangosteen, longan, and mango. The separate
-`/commodities/latest` route returns all currently valid Wisarra crop
+`/commodities/latest` route returns the latest stored valid Wisarra crop
 observations, including non-model crops, without changing that model catalog.
 The refresh walks every available Wisarra result page; its bounded sequential
 requests use the 120-second default `MARKET_PRICE_REQUEST_TIMEOUT_MS` budget.
@@ -392,7 +430,26 @@ failure can produce a partial refresh. Each successful adapter transaction
 replaces its complete source/date snapshot, so same-day corrections and removed
 rows do not leave a mixed snapshot. When a canonical crop has no
 usable source observation, the canonical latest response returns
-`no_current_data` instead of guessing or fabricating a price.
+`no_current_data` instead of guessing or fabricating a price. The refresh
+response also returns `coverage.total_crops`, `coverage.current_crops`,
+`coverage.stale_crops`, and `coverage.missing_crops`. “Current” means at least
+one stored source observation is no more than seven days old; “stale” means only
+older observations exist. The scheduler validates that those arrays partition
+the exact 17-crop catalog and warns whenever coverage is stale or missing.
+
+### Current source limitations (audited 2026-08-11)
+
+The bounded DOA set currently supplies 13 of the 17 canonical crops. Across all
+28 DOA sellers, no priced row was published for cassava, durian, mangosteen, or
+longan on the audited source date, so those crops must remain `no_current_data`
+unless another verified source publishes them.
+
+The MRF reference page currently publishes weekly image-only PDFs rather than a
+machine-readable HTML price table. The adapter validates the latest report
+period and fails closed instead of guessing prices. Consequently a refresh is
+expected to be `partially_succeeded`, and the scheduler intentionally exits
+non-zero, until MRF provides structured data or a separately validated OCR
+ingestion path is introduced.
 
 ## 9. Fail-closed blocker and recovery
 

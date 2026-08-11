@@ -80,7 +80,7 @@ All `/api/v1/internal/*` routes always require `X-Internal-API-Key`.
 - `POST /api/v1/internal/market-prices/refresh` — refresh configured sources.
 - `GET /api/v1/market-prices/latest` — latest prices, with optional filters.
 - `GET /api/v1/market-prices/crops` — the exact 17 model crop keys.
-- `GET /api/v1/market-prices/commodities/latest` — current valid Wisarra crop
+- `GET /api/v1/market-prices/commodities/latest` — latest stored valid Wisarra crop
   observations, including additional non-model crops, with source price basis
   and pagination retained.
 - `GET /api/v1/market-prices/:crop/latest` and
@@ -94,6 +94,9 @@ crops plus other valid crop observations; it does not expand the model catalog.
 Wisarra refresh follows every available results page, so the default
 `MARKET_PRICE_REQUEST_TIMEOUT_MS` is 120 seconds for the bounded sequential
 requests.
+DOA refresh uses six audited seller-filtered pages with concurrency capped at
+three; it discovers their numeric IDs by exact marketplace label and rejects
+source-date, category, marketplace, or table drift.
 
 The legacy model catalog and single-prediction routes remain registered, but
 the weekly production path uses the model server's authenticated batch endpoint.

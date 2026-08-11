@@ -1,0 +1,36 @@
+name: daily-market-price-refresh
+
+on:
+  schedule:
+    # 08:00 Asia/Yangon (UTC+06:30).
+    - cron: "30 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-market-price-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    env:
+      BACKEND_URL: ${{ secrets.MARKET_BACKEND_URL }}
+      INTERNAL_API_KEY: ${{ secrets.MARKET_INTERNAL_API_KEY }}
+      MARKET_REFRESH_REQUEST_TIMEOUT_SECONDS: "150"
+      ALLOW_INSECURE_MARKET_REFRESH_HTTP: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate scheduler secrets
+        run: |
+          test -n "$BACKEND_URL" || { echo "MARKET_BACKEND_URL is not configured" >&2; exit 1; }
+          test -n "$INTERNAL_API_KEY" || { echo "MARKET_INTERNAL_API_KEY is not configured" >&2; exit 1; }
+      - name: Refresh market prices
+        run: python scripts/run_market_refresh.py

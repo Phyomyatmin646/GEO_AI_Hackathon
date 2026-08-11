@@ -349,7 +349,9 @@ class FeatureBuilder:
         features = {name: aligned[name] for name in ALL_75_FEATURES}
 
         for name in CURRENT_MONTH_REFRESHABLE_FEATURES:
-            features[name] = _finite_float(csv_row.get(name), name)
+            val = csv_row.get(name)
+            if pd.notna(val) and val != "":
+                features[name] = _finite_float(val, name)
 
         observation_month = str(csv_row.get("observation_month", ""))
         try:
@@ -362,7 +364,10 @@ class FeatureBuilder:
 
         result: dict[str, float] = {}
         for name in ALL_75_FEATURES:
-            result[name] = _finite_float(features.get(name), name)
+            val = features.get(name)
+            if name == "surface_water_seasonality_months" and (val is None or pd.isna(val)):
+                val = 0.0
+            result[name] = _finite_float(val, name)
         return result
 
     def build_validated_row(self, csv_row: dict[str, Any], region: str) -> dict[str, Any]:

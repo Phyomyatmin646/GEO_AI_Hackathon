@@ -84,6 +84,8 @@ services:
       NODE_ENV: production
       BACKEND_URL: http://backend:8000
       BACKEND_API_KEY: ${BACKEND_API_KEY:-dev-public-gateway-key-replace-before-production}
+      # Docker's private service network intentionally uses HTTP.
+      ALLOW_INSECURE_BACKEND_HTTP: "true"
     depends_on:
       backend:
         condition: service_healthy

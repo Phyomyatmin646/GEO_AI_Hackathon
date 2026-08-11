@@ -42,6 +42,10 @@ returned primary-artifact outputs as experimental, rule-engineered surrogate,
 and not field-validated. It does not relabel the existing rule-based shortlist
 as trained-model output.
 
+Non-loopback `BACKEND_URL` values must use HTTPS. Set
+`ALLOW_INSECURE_BACKEND_HTTP=true` only for a trusted private service network,
+such as the repository's Docker Compose network.
+
 ## Verification
 
 ```bash

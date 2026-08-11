@@ -1,0 +1,111 @@
+Traceback (most recent call last):
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/urllib3/connectionpool.py", line 788, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/urllib3/connectionpool.py", line 534, in _make_request
+    response = conn.getresponse()
+               ^^^^^^^^^^^^^^^^^^
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/urllib3/connection.py", line 571, in getresponse
+    httplib_response = super().getresponse()
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/client.py", line 1430, in getresponse
+    response.begin()
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/client.py", line 331, in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/client.py", line 300, in _read_status
+    raise RemoteDisconnected("Remote end closed connection without"
+http.client.RemoteDisconnected: Remote end closed connection without response
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/requests/adapters.py", line 696, in send
+    resp = conn.urlopen(
+           ^^^^^^^^^^^^^
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/urllib3/connectionpool.py", line 842, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/urllib3/util/retry.py", line 498, in increment
+    raise reraise(type(error), error, _stacktrace)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/urllib3/util/util.py", line 38, in reraise
+    raise value.with_traceback(tb)
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/urllib3/connectionpool.py", line 788, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/urllib3/connectionpool.py", line 534, in _make_request
+    response = conn.getresponse()
+               ^^^^^^^^^^^^^^^^^^
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/urllib3/connection.py", line 571, in getresponse
+    httplib_response = super().getresponse()
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/client.py", line 1430, in getresponse
+    response.begin()
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/client.py", line 331, in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/client.py", line 300, in _read_status
+    raise RemoteDisconnected("Remote end closed connection without"
+urllib3.exceptions.ProtocolError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/ee/_cloud_api_utils.py", line 79, in request
+    response = self._session.request(
+               ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/requests/sessions.py", line 651, in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/requests/sessions.py", line 784, in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/requests/adapters.py", line 711, in send
+    raise ConnectionError(err, request=request)
+requests.exceptions.ConnectionError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/scripts/export_weekly_gee.py", line 413, in main_programmatic
+    }
+    ^^
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/scripts/export_weekly_gee.py", line 329, in export_region
+    max_lat = canonical["latitude"].max()
+                                         
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/scripts/export_weekly_gee.py", line 254, in _build_observation_image
+    sentinel2_used_dates = _collection_dates(sentinel2)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/scripts/export_weekly_gee.py", line 86, in _collection_dates
+    milliseconds = collection.aggregate_array("system:time_start").getInfo()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/ee/computedobject.py", line 108, in getInfo
+    return data.computeValue(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/ee/data.py", line 1080, in computeValue
+    return _execute_cloud_call(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/ee/data.py", line 359, in _execute_cloud_call
+    return call.execute(num_retries=num_retries)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/googleapiclient/_helpers.py", line 130, in positional_wrapper
+    return wrapped(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/googleapiclient/http.py", line 923, in execute
+    resp, content = _retry_request(
+                    ^^^^^^^^^^^^^^^
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/googleapiclient/http.py", line 222, in _retry_request
+    raise exception
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/googleapiclient/http.py", line 191, in _retry_request
+    resp, content = http.request(uri, method, *args, **kwargs)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/google_auth_httplib2.py", line 214, in request
+    response, content = self.http.request(
+                        ^^^^^^^^^^^^^^^^^^
+  File "/Users/phyomyatmin/Desktop/myanmar-agri-geo-csv-pipeline/.venv/lib/python3.12/site-packages/ee/_cloud_api_utils.py", line 83, in request
+    raise ConnectionError(connection_error) from connection_error
+ConnectionError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+WARNING: CHIRPS has zero real observations in the requested week. Proceeding anyway.
+WARNING: month-to-date model refresh sources are unavailable. Proceeding anyway.

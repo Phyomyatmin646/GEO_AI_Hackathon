@@ -10,6 +10,10 @@ const marketCommodityMigrationUrl = new URL(
   '../migrations/0003_market_commodity_coverage.sql',
   import.meta.url,
 );
+const marketMappingMigrationUrl = new URL(
+  '../migrations/0004_market_mapping_version.sql',
+  import.meta.url,
+);
 
 describe('weekly PostgreSQL migration contract', () => {
   it('defines durable weekly runs, six-region payloads, market prices, and idempotency guards', async () => {
@@ -70,6 +74,21 @@ describe('market commodity PostgreSQL migration contract', () => {
   });
 });
 
+describe('market mapping-version PostgreSQL migration contract', () => {
+  it('quarantines legacy mappings without deleting their audit rows', async () => {
+    const sql = await readFile(marketMappingMigrationUrl, 'utf8');
+
+    expect(sql).toMatch(/ADD COLUMN mapping_version TEXT NOT NULL DEFAULT 'legacy'/i);
+    expect(sql).toMatch(/mapping_version ~ '\^\[a-z0-9\]/i);
+    expect(sql).toMatch(/DROP INDEX crop_market_prices_dedupe_idx/i);
+    expect(sql).toMatch(/CREATE UNIQUE INDEX crop_market_prices_dedupe_idx/i);
+    expect(sql).toMatch(/mapping_version,[\s\S]*COALESCE\(crop_key, '__unmapped__'\)/i);
+    expect(sql).toMatch(/crop_market_prices_mapping_crop_date_idx/i);
+    expect(sql).toMatch(/crop_market_prices_mapping_source_date_idx/i);
+    expect(sql).not.toMatch(/DELETE FROM|DROP TABLE|TRUNCATE/i);
+  });
+});
+
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const databaseIt = databaseUrl ? it : it.skip;
 
@@ -87,6 +106,7 @@ describe('optional PostgreSQL migration integration', () => {
         await client.query(await readFile(migrationUrl, 'utf8'));
         await client.query(await readFile(userMigrationUrl, 'utf8'));
         await client.query(await readFile(marketCommodityMigrationUrl, 'utf8'));
+        await client.query(await readFile(marketMappingMigrationUrl, 'utf8'));
 
         const tables = await client.query<{ table_name: string }>(
           `SELECT table_name
@@ -122,6 +142,25 @@ describe('optional PostgreSQL migration integration', () => {
              )`,
           ),
         ).rejects.toMatchObject({ code: '23505' });
+        await client.query(
+          `INSERT INTO crop_market_prices (
+             crop_key, commodity_name_raw, price_min, currency, quantity, unit,
+             source_name, source_date, source_url, fetched_at, mapping_version
+           ) VALUES (
+             NULL, 'Onion', 1900, 'MMK', 1, 'viss',
+             'wisarra', '2026-08-09', 'https://wisarra.example/onion-v2', NOW(),
+             'market-map-v2'
+           )`,
+        );
+        const mappingVersions = await client.query<{ mapping_version: string }>(
+          `SELECT mapping_version FROM crop_market_prices
+           WHERE commodity_name_raw = 'Onion'
+           ORDER BY mapping_version`,
+        );
+        expect(mappingVersions.rows.map((row) => row.mapping_version)).toEqual([
+          'legacy',
+          'market-map-v2',
+        ]);
         await expect(
           client.query(
             `INSERT INTO crop_market_prices (

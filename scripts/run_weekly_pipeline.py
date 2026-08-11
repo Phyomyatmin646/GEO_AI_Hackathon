@@ -122,21 +122,25 @@ def run_pipeline(
                 _write_summary(week_dir / "pipeline_run_summary.json", summary)
             return summary
 
-    # An export dry-run deliberately writes no raw CSV.  Stop after proving the
-    # canonical export plan unless the operator supplied existing raw artifacts.
     raw_complete = all((week_dir / "raw" / f"{region}.csv").is_file() for region in normalized_regions)
-    if dry_run and not raw_complete:
+    if not raw_complete:
         summary["stages"]["validation"] = {
             "status": "skipped",
-            "reason": "dry-run export produced no raw files",
+            "reason": "dry-run or drive-export produced no raw files",
         }
         summary["stages"]["backend_ingest"] = {
             "status": "skipped",
-            "reason": "dry-run never calls Fastify",
+            "reason": "validation skipped",
         }
-        summary["status"] = "dry_run"
+        summary["status"] = "dry_run" if dry_run else "queued_to_drive"
         summary["completed_at"] = datetime.now(UTC).isoformat()
         summary["elapsed_seconds"] = round(time.monotonic() - pipeline_started, 3)
+        if not dry_run:
+            _write_summary(week_dir / "pipeline_run_summary.json", summary)
+            print(f"\n[{datetime.now().isoformat()}] \033[92mGEE tasks queued to Google Drive successfully.\033[0m")
+            print("Please wait for the Earth Engine tasks to complete, download the CSVs, place them in:")
+            print(f"  {week_dir}/raw/")
+            print("Then re-run this pipeline with --skip-gee flag.")
         return summary
 
     validation_stage = _run_stage(

@@ -1,12 +1,26 @@
 <!doctype html>
 <html lang="my">
   <body>
-    <input type="date" value="2026-08-08" />
-    <select name="seller"><option selected>Bayintnaung Commodity Exchange</option></select>
+    <input name="filter_date_start" type="date" value="2026-08-08" />
+    <select name="filter_seller">
+      <option value="">All commodity exchanges</option>
+      <option value="8" selected>Bayintnaung Commodity Exchange</option>
+    </select>
     <table>
       <thead>
         <tr>
-          <th>စဉ်</th><th>သီးနှံ</th><th>အရေအတွက်</th><th>ယူနစ်</th><th>အနိမ့်ဈေး</th><th>အမြင့်ဈေး</th>
+          <th rowspan="3">စဉ်</th>
+          <th rowspan="3">သီးနှံအမည်</th>
+          <th colspan="2">ယူနစ်</th>
+          <th colspan="2">Bayintnaung Commodity Exchange</th>
+        </tr>
+        <tr>
+          <th rowspan="2">ရေတွက်ပုံ</th>
+          <th rowspan="2">တစ်ယူနစ် ပမာဏ</th>
+        </tr>
+        <tr>
+          <th>အနိမ့်ဈေး</th>
+          <th>အမြင့်ဈေး</th>
         </tr>
       </thead>
       <tbody>
