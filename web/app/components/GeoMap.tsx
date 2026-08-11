@@ -9,6 +9,13 @@ type Props = {
   cells: GridCell[];
   selectedId: string;
   onSelect: (id: string) => void;
+  overlay?: Record<string, MapCellOverlay>;
+};
+
+export type MapCellOverlay = {
+  score: number;
+  label: string;
+  kind: "crop" | "health";
 };
 
 const HEAT_STOPS = ["#61b9ea", "#78cbb2", "#f1d35e", "#f49a45", "#ef5c4f"];
@@ -53,7 +60,7 @@ function MapViewportSync({ bounds }: { bounds: [[number, number], [number, numbe
   return null;
 }
 
-export default function GeoMap({ cells, selectedId, onSelect }: Props) {
+export default function GeoMap({ cells, selectedId, onSelect, overlay }: Props) {
   const { lang, t } = useLanguage();
   const bounds = useMemo<[[number, number], [number, number]]>(() => (
     cells.length
@@ -71,7 +78,7 @@ export default function GeoMap({ cells, selectedId, onSelect }: Props) {
   ), [cells]);
   const scorePercentiles = useMemo(() => {
     const scores = cells.flatMap((cell) => {
-      const score = cell.recommendations[0]?.score;
+      const score = overlay ? overlay[cell.id]?.score : cell.recommendations[0]?.score;
       return typeof score === "number" ? [score] : [];
     }).sort((a, b) => a - b);
     const percentiles = new Map<number, number>();
@@ -86,7 +93,7 @@ export default function GeoMap({ cells, selectedId, onSelect }: Props) {
       groupStart = groupEnd + 1;
     }
     return percentiles;
-  }, [cells]);
+  }, [cells, overlay]);
 
   return (
     <MapContainer
@@ -105,10 +112,13 @@ export default function GeoMap({ cells, selectedId, onSelect }: Props) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       {cells.map((cell) => {
-        const topCrop = cell.recommendations[0]?.id ?? null;
-        const topScore = cell.recommendations[0]?.score ?? null;
+        const liveOverlay = overlay?.[cell.id];
+        const topCrop = overlay ? (liveOverlay?.label ?? null) : (cell.recommendations[0]?.id ?? null);
+        const topScore = overlay ? (liveOverlay?.score ?? null) : (cell.recommendations[0]?.score ?? null);
         const selected = cell.id === selectedId;
-        const abstained = cell.recommendationStatus === "insufficient_evidence";
+        const abstained = overlay
+          ? !liveOverlay
+          : cell.recommendationStatus === "insufficient_evidence";
         return (
           <Polygon
             key={cell.id}
@@ -127,11 +137,16 @@ export default function GeoMap({ cells, selectedId, onSelect }: Props) {
               <br />
               {topCrop === null
                 ? t.dashboard.tooltipInsufficient
-                : `${t.dashboard.tooltipTopCrop}: ${
+                : liveOverlay?.kind === "health"
+                  ? `${lang === "my" ? "Weekly သီးနှံကျန်းမာရေး" : "Weekly crop health"}: ${topScore?.toFixed(1)}/100`
+                  : `${t.dashboard.tooltipTopCrop}: ${
+                    liveOverlay
+                      ? topCrop.replaceAll("_", " ")
+                      :
                     lang === "my"
                       ? cell.recommendations[0]?.nameMm
                       : cell.recommendations[0]?.nameEn
-                  } (${cell.recommendations[0]?.score.toFixed(1)}/100)`}
+                  } (${topScore?.toFixed(1)}/100)`}
               <br />
               {t.dashboard.tooltipMissing}: {Math.round((1 - cell.dataCoverage) * 100)}%
             </Tooltip>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import "./globals.css";
 import { LanguageProvider } from "./lib/i18n";
+import { ChatbotWidget } from "./components/ChatbotWidget";
 
 
 
@@ -47,6 +48,7 @@ export default function RootLayout({
       <body suppressHydrationWarning>
         <LanguageProvider>
           {children}
+          <ChatbotWidget />
         </LanguageProvider>
       </body>
     </html>

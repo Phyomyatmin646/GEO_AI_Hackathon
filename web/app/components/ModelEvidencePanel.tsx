@@ -1,304 +1,114 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 
+import type { HomeLiveState, HomePrediction, HomeWeeklyCell } from "../lib/home-data";
 import { useLanguage } from "../lib/i18n";
-import {
-  CORE_MODEL_TARGETS,
-  HIGH_IMPORTANCE_TARGETS,
-  MEDIUM_IMPORTANCE_TARGETS,
-  LOW_IMPORTANCE_TARGETS,
-  cropModelTarget,
-  isPredictionResponse,
-  type DashboardModelTarget,
-  type ModelPrediction,
-  type PredictionRequest,
-  type PredictionResponse,
-} from "../lib/model-contract";
+import { cropModelTarget } from "../lib/model-contract";
 import type { GridCell } from "../lib/pilot-data";
 
 type Props = {
-  cell: Pick<GridCell, "id" | "latitude" | "longitude" | "month">;
+  cell: Pick<GridCell, "id">;
+  live: HomeLiveState;
+  liveCell?: HomeWeeklyCell;
   cropId?: string;
 };
 
-type ModelApiError = {
-  error?: { message?: string };
-};
-
-function shortHash(value: string): string {
-  return `${value.slice(0, 10)}…${value.slice(-6)}`;
-}
-
-function formattedPrediction(
-  target: DashboardModelTarget,
-  prediction: ModelPrediction,
-  language: "en" | "my",
-): string {
-  const raw = prediction.value;
-  if (typeof raw === "string") {
-    const suitability: Record<string, [string, string]> = {
-      poor: ["Poor", "မသင့်တော်"],
-      moderate: ["Moderate", "အသင့်အတင့်"],
-      good: ["Good", "ကောင်း"],
-      excellent: ["Excellent", "အလွန်ကောင်း"],
-    };
-    const translated = suitability[raw.toLowerCase()];
-    return translated ? translated[language === "en" ? 0 : 1] : raw;
-  }
-  if (prediction.task_type === "classification" && ["flood_risk_level", "heat_stress_risk"].includes(target)) {
-    const riskLabels = language === "en" ? ["Low", "Medium", "High"] : ["နည်း", "အလယ်အလတ်", "မြင့်"];
-    return riskLabels[Math.round(raw)] ?? String(raw);
-  }
-  const decimals = prediction.unit === "tonnes_per_hectare" ? 2 : 3;
-  const number = new Intl.NumberFormat(language === "my" ? "my-MM" : "en-US", {
-    maximumFractionDigits: decimals,
-  }).format(raw);
+function formatPrediction(prediction: HomePrediction, language: "en" | "my"): string {
+  if (prediction.value === null) return "—";
+  if (typeof prediction.value === "string") return prediction.value;
+  const value = new Intl.NumberFormat(language === "my" ? "my-MM" : "en-US", {
+    maximumFractionDigits: 3,
+  }).format(prediction.value);
   const units: Record<string, [string, string]> = {
     score_0_to_1: ["score (0–1)", "အမှတ် (၀–၁)"],
     tonnes_per_hectare: ["t/ha", "တန်/ဟက်တာ"],
     suitability_class: ["class", "အဆင့်"],
     class_0_to_2: ["class", "အဆင့်"],
   };
-  const unit = units[prediction.unit]?.[language === "en" ? 0 : 1] ?? prediction.unit;
-  return `${number} ${unit}`;
+  const unit = prediction.unit
+    ? (units[prediction.unit]?.[language === "en" ? 0 : 1] ?? prediction.unit)
+    : "";
+  return `${value}${unit ? ` ${unit}` : ""}`;
 }
 
-export function ModelEvidencePanel({ cell, cropId }: Props) {
-  const [result, setResult] = useState<PredictionResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const requestSequence = useRef(0);
+export function ModelEvidencePanel({ cell, live, liveCell, cropId }: Props) {
   const { lang, t } = useLanguage();
-  const selectedCropTarget = cropModelTarget(cropId);
-  const targets = useMemo<DashboardModelTarget[]>(
-    () => selectedCropTarget ? [selectedCropTarget, ...CORE_MODEL_TARGETS] : [...CORE_MODEL_TARGETS],
-    [selectedCropTarget],
-  );
-
-  useEffect(() => {
-    const sequence = ++requestSequence.current;
-    const controller = new AbortController();
-    const timer = window.setTimeout(async () => {
-      setLoading(true);
-      setError("");
-      setResult(null);
-      const body: PredictionRequest = {
-        lat: cell.latitude,
-        lon: cell.longitude,
-        observation_month: cell.month,
-        include_all_targets: true,
-      };
-      try {
-        const response = await fetch("/api/v1/predictions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-          cache: "no-store",
-          signal: controller.signal,
-        });
-        const payload = (await response.json()) as unknown;
-        if (!response.ok) {
-          const apiError = payload as ModelApiError;
-          throw new Error(apiError.error?.message || t.modelEvidence.unavailableDescription);
-        }
-        if (!isPredictionResponse(payload)) {
-          throw new Error(t.modelEvidence.invalidResponse);
-        }
-        if (!controller.signal.aborted && sequence === requestSequence.current) {
-          setResult(payload);
-        }
-      } catch (requestError) {
-        if (controller.signal.aborted || sequence !== requestSequence.current) return;
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : t.modelEvidence.unavailableDescription,
-        );
-      } finally {
-        if (!controller.signal.aborted && sequence === requestSequence.current) {
-          setLoading(false);
-        }
-      }
-    }, 250);
-
-    return () => {
-      window.clearTimeout(timer);
-      controller.abort();
-    };
-  }, [cell.id, cell.latitude, cell.longitude, cell.month, targets, t.modelEvidence]);
-
-  // Group entries by importance, split into healthy vs flagged
-  const groupedEntries = result
-    ? {
-        high: {
-          healthy: HIGH_IMPORTANCE_TARGETS.map(target => [target, result.predictions[target]] as const).filter(([, p]) => p && p.validation_status === "healthy"),
-          flagged: HIGH_IMPORTANCE_TARGETS.map(target => [target, result.predictions[target]] as const).filter(([, p]) => p && p.validation_status !== "healthy"),
-        },
-        medium: {
-          healthy: MEDIUM_IMPORTANCE_TARGETS.map(target => [target, result.predictions[target]] as const).filter(([, p]) => p && p.validation_status === "healthy"),
-          flagged: MEDIUM_IMPORTANCE_TARGETS.map(target => [target, result.predictions[target]] as const).filter(([, p]) => p && p.validation_status !== "healthy"),
-        },
-        low: {
-          healthy: LOW_IMPORTANCE_TARGETS.map(target => [target, result.predictions[target]] as const).filter(([, p]) => p && p.validation_status === "healthy"),
-          flagged: LOW_IMPORTANCE_TARGETS.map(target => [target, result.predictions[target]] as const).filter(([, p]) => p && p.validation_status !== "healthy"),
-        },
-      }
-    : null;
-
-  const warnings = result ? CORE_MODEL_TARGETS.flatMap((target) => {
-    const prediction = result.predictions[target];
-    return prediction
-      ? prediction.warnings.map((warning) => `${t.modelEvidence.targetLabels[target] ?? target}: ${warning}`)
-      : [];
-  }) : [];
+  const cropTarget = cropModelTarget(cropId);
+  const entries = useMemo(() => {
+    if (!liveCell) return [];
+    const values = Object.entries(liveCell.predictions);
+    return values.sort(([left], [right]) => {
+      if (left === cropTarget) return -1;
+      if (right === cropTarget) return 1;
+      return left.localeCompare(right);
+    });
+  }, [cropTarget, liveCell]);
+  const unavailable = live.mode !== "weekly" || !liveCell;
 
   return (
-    <section className="model-evidence" aria-live="polite">
+    <section className="model-evidence" aria-live="polite" data-cell-id={cell.id}>
       <div className="model-evidence-heading">
         <div>
           <p className="section-label">{t.modelEvidence.kicker}</p>
           <h3>{t.modelEvidence.title}</h3>
         </div>
-        <span className={`model-status ${error ? "unavailable" : ""}`}>
-          {loading
-            ? t.modelEvidence.loading
-            : error
-              ? t.modelEvidence.unavailable
-              : t.modelEvidence.experimental}
+        <span className={`model-status ${unavailable ? "unavailable" : ""}`}>
+          {unavailable ? t.modelEvidence.unavailable : t.modelEvidence.experimental}
         </span>
       </div>
 
-      {loading ? (
-        <p className="model-message">{t.modelEvidence.loadingDescription}</p>
-      ) : error ? (
+      {unavailable ? (
         <div className="model-error" role="status">
           <strong>{t.modelEvidence.failClosed}</strong>
-          <p>{error}</p>
+          <p>
+            {lang === "my"
+              ? "နောက်ဆုံး weekly model result မရသေးပါ။ Historical pilot တန်ဖိုးကို live model result အဖြစ် မပြထားပါ။"
+              : "No latest weekly model result is available. Historical pilot values are not presented as live model output."}
+          </p>
         </div>
-      ) : result && groupedEntries ? (
+      ) : (
         <>
           <div className="model-prediction-list">
-            <h4 className="importance-heading">{t.modelEvidence.highImportance}</h4>
-            {groupedEntries.high.healthy.map(([target, prediction]) => (
-              <div className="model-prediction-row" key={target}>
+            <h4 className="importance-heading">
+              {lang === "my" ? "သိမ်းထားသော weekly predictions" : "Persisted weekly predictions"}
+            </h4>
+            {entries.map(([target, prediction]) => (
+              <div
+                className={`model-prediction-row ${prediction.validationStatus === "flagged" ? "flagged" : ""}`}
+                key={target}
+              >
                 <span>
-                  {t.modelEvidence.targetLabels[target] ?? target}
+                  {t.modelEvidence.targetLabels[target as keyof typeof t.modelEvidence.targetLabels] ?? target}
                   <small>
-                    {prediction!.validation_status} · v{prediction!.model_version}
+                    {prediction.validationStatus ?? "stored"}
+                    {prediction.modelVersion ? ` · v${prediction.modelVersion}` : ""}
                   </small>
                 </span>
-                <strong>{formattedPrediction(target, prediction!, lang)}</strong>
+                <strong>{formatPrediction(prediction, lang)}</strong>
                 <em>
-                  {prediction!.confidence === null
+                  {prediction.confidence === null
                     ? t.modelEvidence.confidenceUnavailable
-                    : `${t.modelEvidence.confidence} ${Math.round(prediction!.confidence * 100)}%`}
+                    : `${t.modelEvidence.confidence} ${Math.round(prediction.confidence * 100)}%`}
                 </em>
               </div>
             ))}
-            {groupedEntries.high.flagged.length > 0 && (
-              <details className="model-flagged-group">
-                <summary>{lang === "my" ? `⚠ စမ်းသပ်ဆဲ (${groupedEntries.high.flagged.length})` : `⚠ Experimental (${groupedEntries.high.flagged.length})`}</summary>
-                {groupedEntries.high.flagged.map(([target, prediction]) => (
-                  <div className="model-prediction-row flagged" key={target}>
-                    <span>
-                      {t.modelEvidence.targetLabels[target] ?? target}
-                      <small>{prediction!.validation_status} · v{prediction!.model_version}</small>
-                    </span>
-                    <strong>{formattedPrediction(target, prediction!, lang)}</strong>
-                    <em>
-                      {prediction!.confidence === null
-                        ? t.modelEvidence.confidenceUnavailable
-                        : `${t.modelEvidence.confidence} ${Math.round(prediction!.confidence * 100)}%`}
-                    </em>
-                  </div>
-                ))}
-              </details>
-            )}
           </div>
-
-          <details className="model-prediction-list model-collapse">
-            <summary className="importance-heading">{t.modelEvidence.mediumImportance} ({groupedEntries.medium.healthy.length + groupedEntries.medium.flagged.length})</summary>
-            {groupedEntries.medium.healthy.map(([target, prediction]) => (
-              <div className="model-prediction-row" key={target}>
-                <span>
-                  {t.modelEvidence.targetLabels[target] ?? target}
-                  <small>
-                    {prediction!.validation_status} · v{prediction!.model_version}
-                  </small>
-                </span>
-                <strong>{formattedPrediction(target, prediction!, lang)}</strong>
-                <em>
-                  {prediction!.confidence === null
-                    ? t.modelEvidence.confidenceUnavailable
-                    : `${t.modelEvidence.confidence} ${Math.round(prediction!.confidence * 100)}%`}
-                </em>
-              </div>
-            ))}
-            {groupedEntries.medium.flagged.length > 0 && (
-              <details className="model-flagged-group">
-                <summary>{lang === "my" ? `⚠ စမ်းသပ်ဆဲ (${groupedEntries.medium.flagged.length})` : `⚠ Experimental (${groupedEntries.medium.flagged.length})`}</summary>
-                {groupedEntries.medium.flagged.map(([target, prediction]) => (
-                  <div className="model-prediction-row flagged" key={target}>
-                    <span>
-                      {t.modelEvidence.targetLabels[target] ?? target}
-                      <small>{prediction!.validation_status} · v{prediction!.model_version}</small>
-                    </span>
-                    <strong>{formattedPrediction(target, prediction!, lang)}</strong>
-                    <em>
-                      {prediction!.confidence === null
-                        ? t.modelEvidence.confidenceUnavailable
-                        : `${t.modelEvidence.confidence} ${Math.round(prediction!.confidence * 100)}%`}
-                    </em>
-                  </div>
-                ))}
-              </details>
-            )}
-          </details>
-
-          <details className="model-prediction-list model-collapse">
-            <summary className="importance-heading">{t.modelEvidence.lowImportance} ({groupedEntries.low.healthy.length + groupedEntries.low.flagged.length})</summary>
-            {[...groupedEntries.low.healthy, ...groupedEntries.low.flagged].map(([target, prediction]) => (
-              <div className={`model-prediction-row ${prediction!.validation_status !== "healthy" ? "flagged" : ""}`} key={target}>
-                <span>
-                  {t.modelEvidence.targetLabels[target] ?? target}
-                  <small>
-                    {prediction!.validation_status} · v{prediction!.model_version}
-                  </small>
-                </span>
-                <strong>{formattedPrediction(target, prediction!, lang)}</strong>
-                <em>
-                  {prediction!.confidence === null
-                    ? t.modelEvidence.confidenceUnavailable
-                    : `${t.modelEvidence.confidence} ${Math.round(prediction!.confidence * 100)}%`}
-                </em>
-              </div>
-            ))}
-          </details>
-
           <div className="model-provenance">
-            <span>{t.modelEvidence.matchDistance}: {result.location.distance_km.toFixed(3)} km</span>
-            <span>{t.modelEvidence.sourceDate}: {result.provenance.source_date ?? t.cell.notPublished}</span>
-            <span>{t.modelEvidence.sourceVersion}: {result.provenance.source_version ?? t.cell.notPublished}</span>
-            <span title={result.provenance.feature_dataset_sha256}>
-              Dataset SHA-256: {shortHash(result.provenance.feature_dataset_sha256)}
-            </span>
+            <span>{live.weekStart} → {live.weekEnd}</span>
+            <span>{live.isPartialWeek ? "Partial week" : "Full week"}</span>
+            <span>{Object.keys(liveCell.errors).length} target errors</span>
+            {live.modelCatalogVersion && (
+              <span title={live.modelCatalogVersion}>Catalog: {live.modelCatalogVersion.slice(0, 10)}…</span>
+            )}
           </div>
           <p className="model-boundary">
-            {t.modelEvidence.surrogateBoundary}
+            {lang === "my"
+              ? "ဤတန်ဖိုးများသည် backend တွင် သိမ်းထားသော weekly run မှဖြစ်ပြီး browser မှ model ကို ထပ်မံမခေါ်ပါ။"
+              : "These values come from the persisted weekly run; the browser does not invoke the model again."}
           </p>
-          {warnings.length > 0 && (
-            <details className="model-warnings">
-              <summary>{t.modelEvidence.warnings} ({warnings.length})</summary>
-              <ul>
-                {warnings.map((warning, index) => (
-                  <li key={`${index}-${warning}`}>{warning}</li>
-                ))}
-              </ul>
-            </details>
-          )}
         </>
-      ) : null}
+      )}
     </section>
   );
 }

@@ -116,6 +116,31 @@ test("v1 API can return every Ayeyawaddy pilot cell for the map", async () => {
   assert.equal(payload.pagination.offset, 0);
 });
 
+test("home BFF returns one frontend payload with an explicit historical mode", async () => {
+  const response = await request("/api/v1/home?region=yangon&period=pilot");
+  const payload = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("x-home-data-mode"), "historical");
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  assert.equal(payload.meta.region, "Yangon");
+  assert.equal(payload.live.mode, "historical");
+  assert.equal(payload.live.requestedPeriod, "pilot");
+  assert.equal(payload.live.weekStart, null);
+  assert.equal(payload.live.cropPredictionsAvailable, false);
+  assert.deepEqual(payload.live.cells, []);
+  assert.equal(payload.cells.length, payload.meta.rowCount);
+});
+
+test("home BFF rejects unsupported periods without contacting the backend", async () => {
+  const response = await request("/api/v1/home?region=yangon&period=future");
+  const payload = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.equal(payload.error.code, "INVALID_PERIOD");
+  assert.equal(response.headers.get("cache-control"), "no-store");
+});
+
 test("v1 API selects each named regional bundle", async () => {
   const expectedRows = {
     ayeyawaddy: 1344,
