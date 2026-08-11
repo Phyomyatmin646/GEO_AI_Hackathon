@@ -11,6 +11,7 @@ import { WisarraMarketPriceAdapter } from './adapters/market-prices/wisarra.js';
 import type { AppConfig } from './config.js';
 import { PostgresStore, type AppStore } from './db/store.js';
 import { AppError, RequestValidationError } from './errors.js';
+import chatbotRoutes from './routes/chatbot.js';
 import dailyCompatibilityRoutes from './routes/daily.js';
 import healthRoutes from './routes/health.js';
 import internalRoutes from './routes/internal.js';
@@ -21,6 +22,10 @@ import pipelineRoutes from './routes/pipeline.js';
 import predictionRoutes from './routes/predictions.js';
 import userRoutes from './routes/users.js';
 import weeklyRoutes from './routes/weekly.js';
+import {
+  GeminiChatbotService,
+  type ChatbotServiceGateway,
+} from './services/gemini-chatbot-service.js';
 import {
   ModelServerClient,
   type ModelServerGateway,
@@ -35,6 +40,7 @@ export type BuildAppOptions = {
   modelServer?: ModelServerGateway;
   store?: AppStore;
   marketPriceService?: MarketPriceService;
+  chatbotService?: ChatbotServiceGateway;
   logger?: FastifyServerOptions['logger'];
 };
 
@@ -77,6 +83,7 @@ export async function buildApp(options: BuildAppOptions) {
     },
   });
   const modelServer = options.modelServer ?? new ModelServerClient(config);
+  const chatbotService = options.chatbotService ?? new GeminiChatbotService(config);
   const ownsStore = options.store === undefined && config.databaseUrl !== undefined;
   const store = options.store ?? (config.databaseUrl ? new PostgresStore(config.databaseUrl) : undefined);
   const orchestrator = store ? new WeeklyOrchestrator(config, modelServer, store) : undefined;
@@ -243,6 +250,20 @@ export async function buildApp(options: BuildAppOptions) {
     marketPriceRefreshEnabled: config.marketPriceRefreshEnabled,
     rateLimit: apiRateLimit,
     prefix: '/api/v1/internal',
+  });
+  await server.register(chatbotRoutes, {
+    chatbotService,
+    modelServer,
+    store,
+    rateLimit: apiRateLimit,
+    prefix: '/api/v1/chatbot',
+  });
+  await server.register(chatbotRoutes, {
+    chatbotService,
+    modelServer,
+    store,
+    rateLimit: apiRateLimit,
+    prefix: '/api/v1/chat',
   });
 
   let cleanupTimer: NodeJS.Timeout | undefined;
