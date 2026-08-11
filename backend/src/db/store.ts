@@ -1,6 +1,7 @@
 import { Pool, type PoolClient, type QueryResultRow } from 'pg';
 
 import type { CropKey, WeeklyRegion } from '../contracts/weekly.js';
+import { MARKET_MAPPING_VERSION } from '../market-mapping-version.js';
 import type { RegisteredUser, UserRegistrationInput } from '../schemas/users.js';
 
 export class UserRegistrationConflictError extends Error {
@@ -489,17 +490,17 @@ export class PostgresStore implements AppStore {
       // transactionally keeps same-day corrections and removals truthful.
       await client.query(
         `DELETE FROM crop_market_prices
-         WHERE source_name = $1 AND source_date = $2`,
-        [snapshotSource, snapshotDate],
+         WHERE source_name = $1 AND source_date = $2 AND mapping_version = $3`,
+        [snapshotSource, snapshotDate, MARKET_MAPPING_VERSION],
       );
       for (const price of prices) {
         const result = await client.query(
           `INSERT INTO crop_market_prices (
              crop_key, commodity_name_raw, variety, region, marketplace,
              price_min, price_max, currency, quantity, unit, source_name,
-             source_date, source_url, fetched_at, raw_payload
+             source_date, source_url, fetched_at, raw_payload, mapping_version
            ) VALUES (
-             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15::jsonb
+             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15::jsonb, $16
            ) ON CONFLICT DO NOTHING`,
           [
             price.crop_key,
@@ -517,6 +518,7 @@ export class PostgresStore implements AppStore {
             price.source_url,
             price.fetched_at,
             JSON.stringify(price.raw_payload),
+            MARKET_MAPPING_VERSION,
           ],
         );
         inserted += result.rowCount ?? 0;
@@ -532,8 +534,8 @@ export class PostgresStore implements AppStore {
   }
 
   async listMarketPrices(filters: MarketPriceFilters): Promise<MarketPrice[]> {
-    const conditions: string[] = ['crop_key IS NOT NULL'];
-    const values: unknown[] = [];
+    const conditions: string[] = ['crop_key IS NOT NULL', 'mapping_version = $1'];
+    const values: unknown[] = [MARKET_MAPPING_VERSION];
     const add = (condition: string, value: unknown) => {
       values.push(value);
       conditions.push(condition.replace('?', `$${values.length}`));
@@ -568,10 +570,10 @@ export class PostgresStore implements AppStore {
   ): Promise<MarketPrice[]> {
     const result = await this.pool.query<QueryResultRow>(
       `SELECT * FROM crop_market_prices
-       WHERE crop_key = $1
+       WHERE crop_key = $1 AND mapping_version = $2
        ORDER BY source_date DESC, fetched_at DESC, source_name
-       LIMIT $2 OFFSET $3`,
-      [crop, limit, offset],
+       LIMIT $3 OFFSET $4`,
+      [crop, MARKET_MAPPING_VERSION, limit, offset],
     );
     return result.rows.map(mapMarketPrice);
   }
@@ -579,8 +581,8 @@ export class PostgresStore implements AppStore {
   async listMarketCommodityPrices(
     filters: MarketCommodityPriceFilters,
   ): Promise<MarketPrice[]> {
-    const conditions: string[] = [];
-    const values: unknown[] = [];
+    const conditions: string[] = ['mapping_version = $1'];
+    const values: unknown[] = [MARKET_MAPPING_VERSION];
     const add = (condition: string, value: unknown) => {
       values.push(value);
       conditions.push(condition.replace('?', `$${values.length}`));

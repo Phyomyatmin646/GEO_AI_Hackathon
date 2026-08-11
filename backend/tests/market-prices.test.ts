@@ -6,6 +6,7 @@ import {
   MARKET_SOURCE_NAMES,
   MARKET_SOURCE_PRIORITY,
   mapCommodityToCropKeys,
+  marketInputs,
   parseNumber,
   type MarketPriceAdapter,
 } from '../src/adapters/market-prices/common.js';
@@ -74,6 +75,35 @@ describe('market source parsers', () => {
     expect(paddy).toMatchObject({ price_min: 25000, price_max: null });
   });
 
+  it('fails closed when MRF publishes only weekly PDF reports', async () => {
+    const html = await fixture('mrf-pdf-listing.html');
+    expect(() =>
+      parseMrfMarketPrices(
+        html,
+        FETCHED_AT,
+        'https://example.test/reference-domestic-price/',
+      ),
+    ).toThrow(
+      'MRF latest report (2026-08-04) is PDF-only; no machine-readable HTML price table was published',
+    );
+  });
+
+  it('does not infer an MRF report date from an invalid PDF period', () => {
+    expect(() =>
+      parseMrfMarketPrices(
+        `
+          <main>
+            <a href="/reports/latest.pdf">
+              Market Indicated Reference Domestic and FOB Rice Prices (2026 February 30 to March 8)
+            </a>
+          </main>
+        `,
+        FETCHED_AT,
+        'https://example.test/reference-domestic-price/',
+      ),
+    ).toThrow('MRF page is PDF-only and its latest report period could not be validated');
+  });
+
   it('selects the latest dated CSO column and preserves the stated retail unit', async () => {
     const rows = parseCsoMarketPrices(
       await fixture('cso-market.html'),
@@ -128,8 +158,57 @@ describe('market source parsers', () => {
     expect(mapCommodityToCropKeys('ပဲတီစိမ်း')).toEqual(['green_gram']);
     expect(mapCommodityToCropKeys('Groundnut Oil')).toEqual([]);
     expect(mapCommodityToCropKeys('Rice Flour')).toEqual([]);
+    expect(mapCommodityToCropKeys('ဆီ မြေပဲဆီ')).toEqual([]);
+    expect(mapCommodityToCropKeys('ဆီ နှမ်းဆီ')).toEqual([]);
+    expect(mapCommodityToCropKeys('ဆန်မှုန့်')).toEqual([]);
+    expect(mapCommodityToCropKeys('သရက်ဖျော်ရည်')).toEqual([]);
+    expect(mapCommodityToCropKeys('ကြံသကာ')).toEqual([]);
+    expect(mapCommodityToCropKeys('ဆီထွက် မြေပဲ(အဆန်)')).toEqual(['groundnut']);
+    expect(mapCommodityToCropKeys('ဟင်းခတ်အမွှေးအကြိုင် ငရုတ်ကောင်း')).toEqual([]);
+    expect(mapCommodityToCropKeys('ဟင်းခတ်အမွှေးအကြိုင် ငရုတ် ကောင်း')).toEqual([]);
+    expect(mapCommodityToCropKeys('ဆီထွက် ပန်းနှမ်း')).toEqual([]);
+    expect(mapCommodityToCropKeys('ဆီထွက် ပန်း နှမ်း')).toEqual([]);
+    expect(mapCommodityToCropKeys('သစ်သီးဝလံ ဆန်းကစ်သီး')).toEqual([]);
+    expect(mapCommodityToCropKeys('တညင်း')).toEqual([]);
+    expect(mapCommodityToCropKeys('ဒညင်း')).toEqual([]);
+    expect(mapCommodityToCropKeys('ဆန်(ရွှေဘိုပေါ်ဆန်း)')).toEqual([
+      'monsoon_rice',
+      'dry_season_rice',
+    ]);
+    expect(mapCommodityToCropKeys('ဆန်-ဧရာမင်း')).toEqual([
+      'monsoon_rice',
+      'dry_season_rice',
+    ]);
     expect(mapCommodityToCropKeys('Green pea')).toEqual([]);
     expect(mapCommodityToCropKeys('Unknown Commodity')).toEqual([]);
+  });
+
+  it('rejects source dates more than one UTC day after collection', () => {
+    const base = {
+      commodityName: 'Maize',
+      priceMin: 1_000,
+      priceMax: 1_200,
+      currency: 'MMK',
+      quantity: 1,
+      unit: 'Viss',
+      rawPayload: {},
+    };
+    expect(
+      marketInputs(
+        { ...base, sourceDate: '2026-08-11' },
+        MARKET_SOURCE_NAMES.wisarra,
+        'https://example.test/wisarra',
+        '2026-08-10T18:00:00.000Z',
+      ),
+    ).toHaveLength(1);
+    expect(
+      marketInputs(
+        { ...base, sourceDate: '2026-08-12' },
+        MARKET_SOURCE_NAMES.wisarra,
+        'https://example.test/wisarra',
+        '2026-08-10T18:00:00.000Z',
+      ),
+    ).toEqual([]);
   });
 
   it('parses source numbers without turning non-numeric placeholders into zero', () => {
@@ -179,7 +258,7 @@ describe('market source parsers', () => {
     ['ရော်ဘာ', 'rubber'],
     ['ဒူးရင်း', 'durian'],
     ['မင်းကွတ်', 'mangosteen'],
-    ['တညင်း', 'longan'],
+    ['လောင်ဂန်', 'longan'],
     ['သရက်', 'mango'],
   ])('maps the requested Myanmar model label %s to %s', (commodity, crop) => {
     expect(mapCommodityToCropKeys(commodity)).toEqual([crop]);
@@ -215,7 +294,7 @@ describe('MarketPriceService', () => {
     };
   }
 
-  it('applies deterministic source priority and labels every crop without fabricating data', async () => {
+  it('prefers current data over a higher-priority stale source without fabricating data', async () => {
     const store = new MemoryStore();
     store.marketPrices.push(
       storedPrice('maize', MARKET_SOURCE_NAMES.wisarra, '2026-08-08'),
@@ -236,16 +315,50 @@ describe('MarketPriceService', () => {
     expect(response.prices).toHaveLength(CROP_KEYS.length);
     expect(response.prices.find((price) => price.crop === 'maize')).toMatchObject({
       status: 'available',
-      source: MARKET_SOURCE_NAMES.doa,
-      price_min: null,
+      source: MARKET_SOURCE_NAMES.wisarra,
+      price_min: '1000',
       price_max: '1200',
       quantity: '1',
-      unit: 'Basket',
-      is_stale: true,
+      unit: 'Viss',
+      is_stale: false,
     });
     expect(response.prices.find((price) => price.crop === 'durian')).toEqual({
       crop: 'durian',
       status: 'no_current_data',
+    });
+  });
+
+  it('uses source priority within the current window and recency when every source is stale', async () => {
+    const currentStore = new MemoryStore();
+    currentStore.marketPrices.push(
+      storedPrice('maize', MARKET_SOURCE_NAMES.wisarra, '2026-08-08'),
+      storedPrice('maize', MARKET_SOURCE_NAMES.doa, '2026-08-03'),
+    );
+    const currentService = new MarketPriceService(
+      currentStore,
+      [],
+      1_000,
+      () => new Date('2026-08-09T00:00:00.000Z'),
+    );
+    expect((await currentService.latest({ crop: 'maize' })).prices[0]).toMatchObject({
+      source: MARKET_SOURCE_NAMES.doa,
+      is_stale: false,
+    });
+
+    const staleStore = new MemoryStore();
+    staleStore.marketPrices.push(
+      storedPrice('maize', MARKET_SOURCE_NAMES.wisarra, '2026-08-01'),
+      storedPrice('maize', MARKET_SOURCE_NAMES.doa, '2026-07-01'),
+    );
+    const staleService = new MarketPriceService(
+      staleStore,
+      [],
+      1_000,
+      () => new Date('2026-08-20T00:00:00.000Z'),
+    );
+    expect((await staleService.latest({ crop: 'maize' })).prices[0]).toMatchObject({
+      source: MARKET_SOURCE_NAMES.wisarra,
+      is_stale: true,
     });
   });
 
@@ -284,11 +397,22 @@ describe('MarketPriceService', () => {
         throw new Error('private source parsing detail');
       },
     };
-    const service = new MarketPriceService(store, [successful, failed], 1_000);
+    const service = new MarketPriceService(
+      store,
+      [successful, failed],
+      1_000,
+      () => new Date('2026-08-09T00:00:00.000Z'),
+    );
 
     await expect(service.refresh()).resolves.toEqual({
       status: 'partially_succeeded',
       inserted: 1,
+      coverage: {
+        total_crops: CROP_KEYS.length,
+        current_crops: ['maize'],
+        stale_crops: [],
+        missing_crops: CROP_KEYS.filter((crop) => crop !== 'maize'),
+      },
       sources: [
         { source: MARKET_SOURCE_NAMES.wisarra, status: 'succeeded', parsed: 1, inserted: 1 },
         {

@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
+import { createServer } from "node:http";
 import test from "node:test";
 import { csvValue } from "../app/lib/csv-value.ts";
 import { en } from "../app/lib/dictionaries.ts";
+import { MARKET_CROP_KEYS } from "../app/lib/market-contract.ts";
 import {
   localizeBilingualLabel,
   localizeBilingualNarrative,
@@ -235,6 +237,182 @@ test("registration BFF rejects unsafe requests before contacting Fastify", async
   assert.equal(oversized.status, 413);
   assert.equal((await oversized.json()).error.code, "PAYLOAD_TOO_LARGE");
   assert.equal(oversized.headers.get("cache-control"), "no-store");
+});
+
+test("market-price BFF mirrors the typed backend API without exposing its key", async () => {
+  const upstreamRequests = [];
+  const backend = createServer((incoming, outgoing) => {
+    upstreamRequests.push({
+      method: incoming.method,
+      url: incoming.url,
+      apiKey: incoming.headers["x-api-key"],
+      requestId: incoming.headers["x-request-id"],
+    });
+    const requestUrl = new URL(incoming.url ?? "/", "http://backend.test");
+    const requestId = String(incoming.headers["x-request-id"] ?? "missing");
+    if (requestId === "malformed-json") {
+      outgoing.writeHead(200, { "content-type": "application/json" });
+      outgoing.end("{");
+      return;
+    }
+    let payload;
+    if (requestUrl.pathname === "/api/v1/market-prices/latest") {
+      payload = {
+        label: "Latest available market price",
+        fetched_at: "2026-08-11T00:00:00.000Z",
+        prices: MARKET_CROP_KEYS.map((crop) => ({ crop, status: "no_current_data" })),
+      };
+    } else if (requestUrl.pathname === "/api/v1/market-prices/crops") {
+      payload = {
+        crops: requestId === "bad-contract" ? MARKET_CROP_KEYS.slice(0, -1) : MARKET_CROP_KEYS,
+      };
+    } else if (requestUrl.pathname === "/api/v1/market-prices/commodities/latest") {
+      payload = {
+        label: "Latest available market commodity prices",
+        fetched_at: "2026-08-11T00:00:00.000Z",
+        source: "Wisarra",
+        source_date: null,
+        commodities: [],
+        pagination: {
+          limit: 2,
+          offset: 1,
+          returned: 0,
+          total: 0,
+          has_more: false,
+          next_offset: null,
+        },
+      };
+    } else if (requestUrl.pathname === "/api/v1/market-prices/maize/latest") {
+      payload = {
+        label: "Latest available market price",
+        fetched_at: "2026-08-11T00:00:00.000Z",
+        prices: [{ crop: "maize", status: "no_current_data" }],
+      };
+    } else if (requestUrl.pathname === "/api/v1/market-prices/maize/history") {
+      payload = {
+        crop: "maize",
+        prices: [],
+        pagination: { limit: 2, offset: 1 },
+      };
+    } else {
+      outgoing.writeHead(404, { "content-type": "application/json" });
+      outgoing.end(JSON.stringify({ error: { code: "NOT_FOUND", message: "Not found" } }));
+      return;
+    }
+    outgoing.writeHead(200, {
+      "content-type": "application/json",
+      "x-request-id": requestId,
+    });
+    outgoing.end(JSON.stringify(payload));
+  });
+  await new Promise((resolve, reject) => {
+    backend.once("error", reject);
+    backend.listen(0, "127.0.0.1", resolve);
+  });
+  const address = backend.address();
+  assert.ok(address && typeof address !== "string");
+  const previousUrl = process.env.BACKEND_URL;
+  const previousKey = process.env.BACKEND_API_KEY;
+  const previousAllowInsecure = process.env.ALLOW_INSECURE_BACKEND_HTTP;
+  process.env.BACKEND_URL = `http://127.0.0.1:${address.port}`;
+  process.env.BACKEND_API_KEY = "server-only-market-key";
+  delete process.env.ALLOW_INSECURE_BACKEND_HTTP;
+
+  try {
+    const requestId = "market-bff-test";
+    const bffHeaders = { "x-request-id": requestId };
+    const responses = await Promise.all([
+      request("/api/v1/market-prices/latest?region=Yangon&source=Wisarra", {
+        headers: bffHeaders,
+      }),
+      request("/api/v1/market-prices/crops", { headers: bffHeaders }),
+      request(
+        "/api/v1/market-prices/commodities/latest?source=Wisarra&region=Yangon&limit=2&offset=1",
+        { headers: bffHeaders },
+      ),
+      request("/api/v1/market-prices/maize/latest", { headers: bffHeaders }),
+      request("/api/v1/market-prices/maize/history?limit=2&offset=1", {
+        headers: bffHeaders,
+      }),
+    ]);
+    for (const response of responses) {
+      assert.equal(response.status, 200);
+      assert.equal(response.headers.get("cache-control"), "no-store");
+      assert.equal(response.headers.get("x-request-id"), requestId);
+      assert.doesNotMatch(await response.text(), /server-only-market-key/);
+    }
+    assert.deepEqual(
+      upstreamRequests.map(({ method, url }) => ({ method, url })).sort((a, b) =>
+        String(a.url).localeCompare(String(b.url)),
+      ),
+      [
+        { method: "GET", url: "/api/v1/market-prices/commodities/latest?source=Wisarra&region=Yangon&limit=2&offset=1" },
+        { method: "GET", url: "/api/v1/market-prices/crops" },
+        { method: "GET", url: "/api/v1/market-prices/latest?region=Yangon&source=Wisarra" },
+        { method: "GET", url: "/api/v1/market-prices/maize/history?limit=2&offset=1" },
+        { method: "GET", url: "/api/v1/market-prices/maize/latest" },
+      ],
+    );
+    assert.ok(upstreamRequests.every(({ apiKey }) => apiKey === "server-only-market-key"));
+    assert.ok(upstreamRequests.every(({ requestId: seenId }) => seenId === requestId));
+
+    const requestsBeforeInvalidQuery = upstreamRequests.length;
+    const invalidQuery = await request("/api/v1/market-prices/latest?crop=maize&crop=tomato");
+    assert.equal(invalidQuery.status, 400);
+    assert.equal((await invalidQuery.json()).error.code, "VALIDATION_ERROR");
+    assert.equal(upstreamRequests.length, requestsBeforeInvalidQuery);
+
+    const invalidContract = await request("/api/v1/market-prices/crops", {
+      headers: { "x-request-id": "bad-contract" },
+    });
+    assert.equal(invalidContract.status, 502);
+    assert.equal((await invalidContract.json()).error.code, "BACKEND_CONTRACT_ERROR");
+
+    const malformedJson = await request("/api/v1/market-prices/crops", {
+      headers: { "x-request-id": "malformed-json" },
+    });
+    assert.equal(malformedJson.status, 502);
+    assert.equal((await malformedJson.json()).error.code, "BACKEND_INVALID_RESPONSE");
+
+    const requestsBeforeInvalidKey = upstreamRequests.length;
+    process.env.BACKEND_API_KEY = "invalid\nkey";
+    const invalidKey = await request("/api/v1/market-prices/latest");
+    assert.equal(invalidKey.status, 503);
+    assert.equal((await invalidKey.json()).error.code, "BACKEND_CONFIGURATION_INVALID");
+    assert.equal(upstreamRequests.length, requestsBeforeInvalidKey);
+    process.env.BACKEND_API_KEY = "server-only-market-key";
+
+    const requestsBeforeMissingKey = upstreamRequests.length;
+    delete process.env.BACKEND_API_KEY;
+    const missingKey = await request("/api/v1/market-prices/latest");
+    assert.equal(missingKey.status, 503);
+    assert.equal((await missingKey.json()).error.code, "BACKEND_CONFIGURATION_INVALID");
+    assert.equal(upstreamRequests.length, requestsBeforeMissingKey);
+    process.env.BACKEND_API_KEY = "server-only-market-key";
+
+    const requestsBeforeUnsafeOrigin = upstreamRequests.length;
+    process.env.BACKEND_URL = "http://backend.example";
+    const unsafeOrigin = await request("/api/v1/market-prices/latest");
+    assert.equal(unsafeOrigin.status, 503);
+    assert.equal(
+      (await unsafeOrigin.json()).error.code,
+      "BACKEND_CONFIGURATION_INVALID",
+    );
+    assert.equal(upstreamRequests.length, requestsBeforeUnsafeOrigin);
+  } finally {
+    if (previousUrl === undefined) delete process.env.BACKEND_URL;
+    else process.env.BACKEND_URL = previousUrl;
+    if (previousKey === undefined) delete process.env.BACKEND_API_KEY;
+    else process.env.BACKEND_API_KEY = previousKey;
+    if (previousAllowInsecure === undefined) {
+      delete process.env.ALLOW_INSECURE_BACKEND_HTTP;
+    } else {
+      process.env.ALLOW_INSECURE_BACKEND_HTTP = previousAllowInsecure;
+    }
+    await new Promise((resolve, reject) => {
+      backend.close((error) => (error ? reject(error) : resolve()));
+    });
+  }
 });
 
 test("selected-cell download returns UTF-8 CSV with release provenance", async () => {

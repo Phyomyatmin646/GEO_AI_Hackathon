@@ -15,6 +15,12 @@ import { AppError } from '../errors.js';
 export type MarketRefreshResult = {
   status: 'succeeded' | 'partially_succeeded';
   inserted: number;
+  coverage: {
+    total_crops: number;
+    current_crops: CropKey[];
+    stale_crops: CropKey[];
+    missing_crops: CropKey[];
+  };
   sources: Array<{
     source: string;
     status: 'succeeded' | 'failed';
@@ -91,9 +97,11 @@ export class MarketPriceService {
         'No market-price source could be refreshed.',
       );
     }
+    const coverage = await this.canonicalCoverage();
     return {
       status: successes.length === sources.length ? 'succeeded' : 'partially_succeeded',
       inserted: successes.reduce((total, source) => total + source.inserted, 0),
+      coverage,
       sources,
     };
   }
@@ -155,6 +163,13 @@ export class MarketPriceService {
 
   private latestForCrop(crop: CropKey, rows: MarketPrice[]) {
     const selected = [...rows].sort((left, right) => {
+      const leftStale = this.isStale(left);
+      const rightStale = this.isStale(right);
+      if (leftStale !== rightStale) return leftStale ? 1 : -1;
+      if (leftStale && rightStale) {
+        const dateDifference = right.source_date.localeCompare(left.source_date);
+        if (dateDifference !== 0) return dateDifference;
+      }
       const priorityDifference = sourcePriority(left.source_name) - sourcePriority(right.source_name);
       if (priorityDifference !== 0) return priorityDifference;
       const dateDifference = right.source_date.localeCompare(left.source_date);
@@ -162,10 +177,6 @@ export class MarketPriceService {
       return right.fetched_at.localeCompare(left.fetched_at);
     })[0];
     if (!selected) return { crop, status: 'no_current_data' as const };
-    const ageDays = Math.floor(
-      (this.now().getTime() - new Date(`${selected.source_date}T00:00:00.000Z`).getTime()) /
-        (24 * 60 * 60_000),
-    );
     return {
       crop,
       status: 'available' as const,
@@ -182,12 +193,43 @@ export class MarketPriceService {
       source_date: selected.source_date,
       source_url: selected.source_url,
       fetched_at: selected.fetched_at,
-      is_stale: ageDays > 7,
+      is_stale: this.isStale(selected),
       is_season_specific:
         crop === 'monsoon_rice' || crop === 'dry_season_rice'
           ? rawSeasonSpecific(selected.raw_payload) ?? false
           : null,
     };
+  }
+
+  private async canonicalCoverage(): Promise<MarketRefreshResult['coverage']> {
+    const rows = await this.store.listMarketPrices({ limit: 2_000, offset: 0 });
+    const currentCrops: CropKey[] = [];
+    const staleCrops: CropKey[] = [];
+    const missingCrops: CropKey[] = [];
+    for (const crop of CROP_KEYS) {
+      const cropRows = rows.filter((row) => row.crop_key === crop);
+      if (cropRows.length === 0) {
+        missingCrops.push(crop);
+        continue;
+      }
+      const hasCurrentRow = cropRows.some((row) => !this.isStale(row));
+      if (hasCurrentRow) currentCrops.push(crop);
+      else staleCrops.push(crop);
+    }
+    return {
+      total_crops: CROP_KEYS.length,
+      current_crops: currentCrops,
+      stale_crops: staleCrops,
+      missing_crops: missingCrops,
+    };
+  }
+
+  private isStale(row: MarketPrice): boolean {
+    const ageDays = Math.floor(
+      (this.now().getTime() - new Date(`${row.source_date}T00:00:00.000Z`).getTime()) /
+        (24 * 60 * 60_000),
+    );
+    return ageDays < -1 || ageDays > 7;
   }
 }
 

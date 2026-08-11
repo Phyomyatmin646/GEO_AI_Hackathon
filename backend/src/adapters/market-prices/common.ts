@@ -80,6 +80,7 @@ export function marketInputs(
     isProcessedMarketProduct(commodityName) ||
     isMissingText(currency) ||
     isMissingText(unit) ||
+    !isPlausibleMarketSourceDate(row.sourceDate, fetchedAt) ||
     !Number.isFinite(row.quantity) ||
     row.quantity <= 0 ||
     (priceMin === null && priceMax === null) ||
@@ -92,7 +93,7 @@ export function marketInputs(
   const cropKeys = mapCommodityToCropKeys(commodityName);
   const storageKeys: Array<CropKey | null> =
     cropKeys.length > 0 ? cropKeys : options.includeUnmapped ? [null] : [];
-  const riceFamily = /\b(rice|paddy)\b|စပါး|ဆန်/i.test(commodityName);
+  const riceFamily = isRiceCommodityName(commodityName);
   return storageKeys.map((cropKey) => ({
     crop_key: cropKey,
     commodity_name_raw: commodityName,
@@ -120,7 +121,11 @@ export function marketInputs(
 export function mapCommodityToCropKeys(rawName: string): CropKey[] {
   const name = cleanText(rawName).toLowerCase();
   if (!name || isProcessedMarketProduct(name)) return [];
-  if (/\b(rice|paddy)\b/.test(name) || /စပါး|ဆန်/.test(name)) {
+  // These live DOA commodities contain a canonical Burmese crop token but are
+  // different crops: black pepper is not chili, and pann hnan is niger seed,
+  // not sesame.
+  if (/ငရုတ်\s*ကောင်း|ပန်း\s*နှမ်း/.test(name)) return [];
+  if (isRiceCommodityName(name)) {
     if (/\b(dry|summer)\b|နွေ/.test(name)) return ['dry_season_rice'];
     if (/\b(rainy|monsoon)\b|မိုး/.test(name)) return ['monsoon_rice'];
     return ['monsoon_rice', 'dry_season_rice'];
@@ -139,13 +144,36 @@ export function mapCommodityToCropKeys(rawName: string): CropKey[] {
   if (/mangosteen|မင်းကွတ်/.test(name)) return ['mangosteen'];
   if (/\bmango\b|သရက်/.test(name)) return ['mango'];
   if (/durian|ဒူးရင်း/.test(name)) return ['durian'];
-  if (/longan|လောင်ဂန်|တညင်း/.test(name)) return ['longan'];
+  if (/longan|လောင်ဂန်/.test(name)) return ['longan'];
   return [];
 }
 
 export function isProcessedMarketProduct(rawName: string): boolean {
   const name = cleanText(rawName).toLowerCase();
-  return /\b(oil|flour|powder|juice|jaggery)\b/.test(name);
+  return (
+    /\b(oil|flour|powder|juice|jaggery)\b/.test(name) ||
+    /ဆီ(?!ထွက်)|မှုန့်|ဖျော်ရည်|သကာ|ထန်းလျက်/.test(name)
+  );
+}
+
+function isRiceCommodityName(rawName: string): boolean {
+  const name = cleanText(rawName).toLowerCase();
+  return (
+    /\b(rice|paddy)\b/.test(name) ||
+    /စပါး/.test(name) ||
+    /(?:^|[\s(၊,;:\-–—])ဆန်(?:$|[\s()၊,;:\-–—])/.test(name)
+  );
+}
+
+function isPlausibleMarketSourceDate(sourceDate: string, fetchedAt: string): boolean {
+  if (!/^20\d{2}-\d{2}-\d{2}$/.test(sourceDate)) return false;
+  const source = Date.parse(`${sourceDate}T00:00:00.000Z`);
+  const fetched = Date.parse(fetchedAt);
+  if (!Number.isFinite(source) || !Number.isFinite(fetched)) return false;
+  if (new Date(source).toISOString().slice(0, 10) !== sourceDate) return false;
+  const fetchedUtcDate = new Date(fetched).toISOString().slice(0, 10);
+  const fetchedDay = Date.parse(`${fetchedUtcDate}T00:00:00.000Z`);
+  return source - fetchedDay <= 24 * 60 * 60_000;
 }
 
 export function cleanText(value: string): string {

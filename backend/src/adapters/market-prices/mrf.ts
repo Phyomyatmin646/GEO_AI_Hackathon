@@ -33,6 +33,15 @@ export function parseMrfMarketPrices(
   sourceUrl: string,
 ): MarketPriceInput[] {
   const $ = load(html);
+  const reportListing = findMrfReportListing($, sourceUrl);
+  if ($('table').length === 0 && reportListing.hasPdfReport) {
+    if (!reportListing.latest) {
+      throw new Error('MRF page is PDF-only and its latest report period could not be validated');
+    }
+    throw new Error(
+      `MRF latest report (${reportListing.latest.sourceDate}) is PDF-only; no machine-readable HTML price table was published`,
+    );
+  }
   const sourceDate = parseSourceDate($('main, article, body').first().text());
   if (!sourceDate) throw new Error('MRF source date was not found');
   const output: MarketPriceInput[] = [];
@@ -88,4 +97,101 @@ export function parseMrfMarketPrices(
       });
   });
   return output;
+}
+
+type MrfReport = {
+  documentUrl: string;
+  sourceDate: string;
+};
+
+type MrfReportListing = {
+  hasPdfReport: boolean;
+  latest?: MrfReport;
+};
+
+const MRF_REPORT_LABEL = /\bReference\s+Domestic\s+and\s+FOB\s+Rice\s+Prices\b/i;
+const ENGLISH_MONTH =
+  '(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)';
+const MRF_REPORT_PERIOD = new RegExp(
+  `\\b(20\\d{2})\\s+${ENGLISH_MONTH}\\s+(\\d{1,2})\\s+(?:to|[-\u2013\u2014])\\s+(?:${ENGLISH_MONTH}\\s+)?(\\d{1,2})\\b`,
+  'i',
+);
+const MONTH_NUMBERS: Readonly<Record<string, number>> = {
+  jan: 1,
+  feb: 2,
+  mar: 3,
+  apr: 4,
+  may: 5,
+  jun: 6,
+  jul: 7,
+  aug: 8,
+  sep: 9,
+  oct: 10,
+  nov: 11,
+  dec: 12,
+};
+
+function findMrfReportListing(
+  $: ReturnType<typeof load>,
+  sourceUrl: string,
+): MrfReportListing {
+  const reports: MrfReport[] = [];
+  let hasPdfReport = false;
+  $('a[href]').each((_linkIndex, link) => {
+    const label = cleanText($(link).text() || $(link).attr('title') || '');
+    if (!MRF_REPORT_LABEL.test(label)) return;
+    const href = $(link).attr('href');
+    if (!href) return;
+    let documentUrl: URL;
+    try {
+      documentUrl = new URL(href, sourceUrl);
+    } catch {
+      return;
+    }
+    if (
+      (documentUrl.protocol !== 'https:' && documentUrl.protocol !== 'http:') ||
+      !documentUrl.pathname.toLowerCase().endsWith('.pdf')
+    ) {
+      return;
+    }
+    hasPdfReport = true;
+    const sourceDate = parseMrfReportPeriodEnd(label);
+    if (sourceDate) reports.push({ documentUrl: documentUrl.toString(), sourceDate });
+  });
+  const latest = reports.sort(
+    (left, right) =>
+      right.sourceDate.localeCompare(left.sourceDate) ||
+      left.documentUrl.localeCompare(right.documentUrl),
+  )[0];
+  return { hasPdfReport, ...(latest ? { latest } : {}) };
+}
+
+function parseMrfReportPeriodEnd(value: string): string | undefined {
+  const match = cleanText(value).match(MRF_REPORT_PERIOD);
+  if (!match) return undefined;
+  const year = Number(match[1]);
+  const startMonth = monthNumber(match[2]);
+  const startDay = Number(match[3]);
+  const endMonth = monthNumber(match[4] ?? match[2]);
+  const endDay = Number(match[5]);
+  if (!startMonth || !endMonth) return undefined;
+
+  const startDate = isoDate(year, startMonth, startDay);
+  const endYear = endMonth < startMonth ? year + 1 : year;
+  const endDate = isoDate(endYear, endMonth, endDay);
+  if (!startDate || !endDate) return undefined;
+  const spanDays = (Date.parse(endDate) - Date.parse(startDate)) / 86_400_000;
+  return spanDays >= 0 && spanDays <= 13 ? endDate : undefined;
+}
+
+function monthNumber(value: string | undefined): number | undefined {
+  if (!value) return undefined;
+  return MONTH_NUMBERS[value.slice(0, 3).toLowerCase()];
+}
+
+function isoDate(year: number, month: number, day: number): string | undefined {
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+    ? date.toISOString().slice(0, 10)
+    : undefined;
 }

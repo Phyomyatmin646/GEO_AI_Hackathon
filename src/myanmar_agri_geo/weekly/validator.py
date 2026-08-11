@@ -163,7 +163,11 @@ def validate_region_csv(
 
     missing_columns = [name for name in REQUIRED_RAW_COLUMNS if name not in raw.columns]
     if missing_columns:
-        raise WeeklyValidationError(f"raw weekly CSV is missing columns: {missing_columns}")
+        for col in missing_columns:
+            if col in ("chirps_precipitation_mm", "mean_temperature_c", "solar_radiation_mj_m2_day"):
+                raw[col] = "" # feature builder uses _finite_float which handles empty string as fallback
+            else:
+                raise WeeklyValidationError(f"raw weekly CSV is missing core columns: {missing_columns}")
 
     report.input_rows = len(raw)
     duplicate_mask = raw.duplicated(["grid_id", "week_start"], keep=False)
