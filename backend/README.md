@@ -61,7 +61,7 @@ allowed for a trusted private network with
 including in Compose; never enable it for a public or untrusted network. Never
 commit a populated `.env` file.
 
-## Public, weekly, and market endpoints
+## Public, weekly, market, and Crop Calendar endpoints
 
 All `/api/v1/*` public routes require `X-API-Key` when `API_KEY` is configured.
 All `/api/v1/internal/*` routes always require `X-Internal-API-Key`.
@@ -85,6 +85,11 @@ All `/api/v1/internal/*` routes always require `X-Internal-API-Key`.
   and pagination retained.
 - `GET /api/v1/market-prices/:crop/latest` and
   `GET /api/v1/market-prices/:crop/history` — crop-specific reads.
+- `GET /api/v1/crop-calendars/crops` — crop metadata currently stored in Neon.
+- `GET /api/v1/crop-calendars?region=Ayeyarwady` — stored regional calendars.
+- `GET /api/v1/crop-calendars/:modelKey?region=Ayeyarwady` — one annual or
+  perennial calendar, including source, evidence status, nulls, and English/
+  Myanmar month labels. `season` is an optional disambiguation filter.
 
 The canonical endpoints remain limited to the 17 model crops: monsoon rice,
 dry-season rice, black gram, groundnut, maize, sugarcane, cassava, chili,
@@ -126,6 +131,35 @@ curl -X POST http://127.0.0.1:8000/api/v1/users/register \
 
 The production weekly release always covers these six canonical regions:
 `yangon`, `bago`, `mandalay`, `sagaing`, `magway`, and `ayeyawaddy`.
+
+## Crop Calendar reference data
+
+Crop Calendars are a separate, source-backed reference feature. Runtime reads
+query the existing PostgreSQL/Neon `crop_calendars` table; the API never reads a
+JSON/CSV file and never calls prediction or model services. It does not use
+`optimal_planting_month`, grid geometry, or 5 km cell records.
+
+Migrations `0005_crop_calendars.sql` and
+`0006_crop_calendar_active_snapshots.sql` add the calendar table and preserve
+superseded source releases as inactive history. The one-off importer requires
+the complete canonical 102-record JSON, validates all 17 crops × 6 regions
+before connecting to PostgreSQL, then performs one advisory-locked transaction.
+It rejects incomplete coverage, duplicate crop-region records, unknown fields,
+invalid months, branch mixing, incorrect research status/coverage totals, and
+missing attribution on verified records. Never reconstruct a production seed
+from a prose summary or substitute missing calendar fields.
+
+```bash
+npm run db:migrate
+npm run db:import-crop-calendars -- /absolute/path/to/myanmar_crop_calendar_17x6.json
+npm run db:audit-crop-calendars
+```
+
+The server-only web routes mirror these paths and attach `X-API-Key`, so later
+browser UI can use same-origin `fetch()` without exposing the key. No Crop
+Calendar UI is included. See
+[Crop Calendar Operations](../docs/CROP_CALENDAR_OPERATIONS.md) for validation,
+import, audit, and current source-artifact status.
 
 ## Current live-data blocker
 

@@ -1,6 +1,19 @@
 import type { PredictionResponse } from "./model-contract";
 import { isPredictionResponse } from "./model-contract";
 import type {
+  CropCalendarCropsResponse,
+  CropCalendarLookupQuery,
+  CropCalendarModelKey,
+  CropCalendarResponse,
+  CropCalendarsResponse,
+  CropCalendarRegion,
+} from "./crop-calendar-contract";
+import {
+  isCropCalendarCropsResponse,
+  isCropCalendarResponse,
+  isCropCalendarsResponse,
+} from "./crop-calendar-contract";
+import type {
   MarketCommodityLatestQuery,
   MarketCommodityLatestResponse,
   MarketCropKey,
@@ -219,6 +232,15 @@ function contractError(requestId: string): BackendApiError {
   );
 }
 
+function cropCalendarContractError(requestId: string): BackendApiError {
+  return new BackendApiError(
+    502,
+    "BACKEND_CONTRACT_ERROR",
+    "The Crop Calendar service returned an invalid response.",
+    requestId,
+  );
+}
+
 function hasExpectedLatestCrops(
   response: MarketLatestResponse,
   crop: MarketCropKey | undefined,
@@ -336,6 +358,65 @@ export class GeoAIBackendClient {
     );
     if (!isMarketHistoryResponse(payload) || payload.crop !== crop) {
       throw contractError(requestId);
+    }
+    return payload;
+  }
+
+  static async listCropCalendarCrops(
+    requestId: string,
+    signal?: AbortSignal,
+  ): Promise<CropCalendarCropsResponse> {
+    const payload = await request(
+      "/api/v1/crop-calendars/crops",
+      requestId,
+      { method: "GET" },
+      signal,
+    );
+    if (!isCropCalendarCropsResponse(payload)) throw cropCalendarContractError(requestId);
+    return payload;
+  }
+
+  static async listCropCalendarsByRegion(
+    region: CropCalendarRegion,
+    requestId: string,
+    signal?: AbortSignal,
+  ): Promise<CropCalendarsResponse> {
+    const payload = await request(
+      withQuery("/api/v1/crop-calendars", { region }),
+      requestId,
+      { method: "GET" },
+      signal,
+    );
+    if (
+      !isCropCalendarsResponse(payload) ||
+      payload.calendars.some((calendar) => calendar.region !== region)
+    ) {
+      throw cropCalendarContractError(requestId);
+    }
+    return payload;
+  }
+
+  static async getCropCalendar(
+    modelKey: CropCalendarModelKey,
+    query: CropCalendarLookupQuery,
+    requestId: string,
+    signal?: AbortSignal,
+  ): Promise<CropCalendarResponse> {
+    const payload = await request(
+      withQuery(`/api/v1/crop-calendars/${encodeURIComponent(modelKey)}`, query),
+      requestId,
+      { method: "GET" },
+      signal,
+    );
+    if (
+      !isCropCalendarResponse(payload) ||
+      payload.calendar.model_key !== modelKey ||
+      payload.calendar.region !== query.region ||
+      (query.season !== undefined &&
+        payload.calendar.season?.toLocaleLowerCase("en") !==
+          query.season.toLocaleLowerCase("en"))
+    ) {
+      throw cropCalendarContractError(requestId);
     }
     return payload;
   }

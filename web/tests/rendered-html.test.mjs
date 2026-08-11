@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import test from "node:test";
 import { csvValue } from "../app/lib/csv-value.ts";
 import { en } from "../app/lib/dictionaries.ts";
+import { CROP_CALENDAR_MODEL_KEYS } from "../app/lib/crop-calendar-contract.ts";
 import { MARKET_CROP_KEYS } from "../app/lib/market-contract.ts";
 import {
   localizeBilingualLabel,
@@ -434,6 +435,166 @@ test("market-price BFF mirrors the typed backend API without exposing its key", 
     } else {
       process.env.ALLOW_INSECURE_BACKEND_HTTP = previousAllowInsecure;
     }
+    await new Promise((resolve, reject) => {
+      backend.close((error) => (error ? reject(error) : resolve()));
+    });
+  }
+});
+
+test("Crop Calendar BFF exposes typed database responses without exposing its key", async () => {
+  const upstreamRequests = [];
+  const calendar = {
+    model_key: "crop_suitability_black_gram",
+    crop_name_en: "Black Gram",
+    crop_name_mm: "မတ်ပဲ",
+    crop_type: "annual",
+    region: "Ayeyarwady",
+    township: null,
+    season: "winter/post-monsoon",
+    planting: {
+      start_month: 10,
+      end_month: 10,
+      start_label_en: "October",
+      start_label_mm: "အောက်တိုဘာ",
+      end_label_en: "October",
+      end_label_mm: "အောက်တိုဘာ",
+      label_en: "October",
+      label_mm: "အောက်တိုဘာ",
+      is_complete: true,
+    },
+    harvest: {
+      start_month: 3,
+      end_month: 4,
+      start_label_en: "March",
+      start_label_mm: "မတ်",
+      end_label_en: "April",
+      end_label_mm: "ဧပြီ",
+      label_en: "March – April",
+      label_mm: "မတ် – ဧပြီ",
+      is_complete: true,
+    },
+    growing_duration: null,
+    establishment: null,
+    first_harvest: null,
+    harvest_season: null,
+    verification: {
+      status: "verified",
+      confidence: null,
+      label_en: "Source-backed regional calendar",
+      label_mm: "ဒေသအလိုက် အရင်းအမြစ်အထောက်အထားရှိသော ပြက္ခဒိန်",
+    },
+    evidence_type: "research_report",
+    geographic_specificity: "regional",
+    source: {
+      code: "S2",
+      organization: "IFPRI/CGIAR",
+      title: "Myanmar pulse calendar",
+      url: "https://example.test/source",
+      publication_year: 2023,
+    },
+    notes: { en: null, mm: null, data_quality: null },
+    last_verified_date: null,
+    last_updated: "2026-08-10",
+    dataset_version: `sha256:${"a".repeat(64)}`,
+  };
+  const backend = createServer((incoming, outgoing) => {
+    upstreamRequests.push({
+      method: incoming.method,
+      url: incoming.url,
+      apiKey: incoming.headers["x-api-key"],
+      requestId: incoming.headers["x-request-id"],
+    });
+    const requestUrl = new URL(incoming.url ?? "/", "http://backend.test");
+    const requestId = String(incoming.headers["x-request-id"] ?? "missing");
+    let payload;
+    if (requestUrl.pathname === "/api/v1/crop-calendars/crops") {
+      payload = requestId === "bad-calendar-contract"
+        ? { crops: [{ model_key: "not-a-crop" }] }
+        : {
+            crops: [{
+              model_key: calendar.model_key,
+              crop_name_en: calendar.crop_name_en,
+              crop_name_mm: calendar.crop_name_mm,
+              crop_type: calendar.crop_type,
+            }],
+          };
+    } else if (requestUrl.pathname === "/api/v1/crop-calendars") {
+      payload = { calendars: [calendar] };
+    } else if (
+      requestUrl.pathname === "/api/v1/crop-calendars/crop_suitability_black_gram"
+    ) {
+      payload = { calendar };
+    } else {
+      outgoing.writeHead(404, { "content-type": "application/json" });
+      outgoing.end(JSON.stringify({ error: { code: "NOT_FOUND", message: "Not found" } }));
+      return;
+    }
+    outgoing.writeHead(200, {
+      "content-type": "application/json",
+      "x-request-id": requestId,
+    });
+    outgoing.end(JSON.stringify(payload));
+  });
+  await new Promise((resolve, reject) => {
+    backend.once("error", reject);
+    backend.listen(0, "127.0.0.1", resolve);
+  });
+  const address = backend.address();
+  assert.ok(address && typeof address !== "string");
+  const previousUrl = process.env.BACKEND_URL;
+  const previousKey = process.env.BACKEND_API_KEY;
+  process.env.BACKEND_URL = `http://127.0.0.1:${address.port}`;
+  process.env.BACKEND_API_KEY = "server-only-calendar-key";
+
+  try {
+    const headers = { "x-request-id": "calendar-bff-test" };
+    const responses = await Promise.all([
+      request("/api/v1/crop-calendars/crops", { headers }),
+      request("/api/v1/crop-calendars?region=ayeyawaddy", { headers }),
+      request(
+        "/api/v1/crop-calendars/crop_suitability_black_gram?region=Ayeyarwady&season=winter%2Fpost-monsoon",
+        { headers },
+      ),
+    ]);
+    for (const response of responses) {
+      assert.equal(response.status, 200);
+      assert.equal(response.headers.get("cache-control"), "no-store");
+      assert.doesNotMatch(await response.text(), /server-only-calendar-key/);
+    }
+    assert.deepEqual(
+      upstreamRequests.map(({ method, url }) => ({ method, url })).sort((left, right) =>
+        String(left.url).localeCompare(String(right.url)),
+      ),
+      [
+        { method: "GET", url: "/api/v1/crop-calendars?region=Ayeyarwady" },
+        {
+          method: "GET",
+          url: "/api/v1/crop-calendars/crop_suitability_black_gram?region=Ayeyarwady&season=winter%2Fpost-monsoon",
+        },
+        { method: "GET", url: "/api/v1/crop-calendars/crops" },
+      ],
+    );
+    assert.ok(upstreamRequests.every(({ apiKey }) => apiKey === "server-only-calendar-key"));
+
+    const beforeInvalid = upstreamRequests.length;
+    const invalid = await request(
+      "/api/v1/crop-calendars/crop_suitability_unknown?region=Bago",
+    );
+    assert.equal(invalid.status, 400);
+    assert.equal((await invalid.json()).error.code, "VALIDATION_ERROR");
+    assert.equal(upstreamRequests.length, beforeInvalid);
+
+    const badContract = await request("/api/v1/crop-calendars/crops", {
+      headers: { "x-request-id": "bad-calendar-contract" },
+    });
+    assert.equal(badContract.status, 502);
+    assert.equal((await badContract.json()).error.code, "BACKEND_CONTRACT_ERROR");
+    assert.ok(CROP_CALENDAR_MODEL_KEYS.includes(calendar.model_key));
+  } finally {
+    if (previousUrl === undefined) delete process.env.BACKEND_URL;
+    else process.env.BACKEND_URL = previousUrl;
+    if (previousKey === undefined) delete process.env.BACKEND_API_KEY;
+    else process.env.BACKEND_API_KEY = previousKey;
     await new Promise((resolve, reject) => {
       backend.close((error) => (error ? reject(error) : resolve()));
     });

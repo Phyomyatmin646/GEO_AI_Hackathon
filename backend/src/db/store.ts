@@ -2,6 +2,10 @@ import { Pool, type PoolClient, type QueryResultRow } from 'pg';
 
 import type { CropKey, WeeklyRegion } from '../contracts/weekly.js';
 import { MARKET_MAPPING_VERSION } from '../market-mapping-version.js';
+import type {
+  CropCalendarModelKey,
+  CropCalendarRegion,
+} from '../schemas/crop-calendars.js';
 import type { RegisteredUser, UserRegistrationInput } from '../schemas/users.js';
 
 export class UserRegistrationConflictError extends Error {
@@ -107,6 +111,56 @@ export type MarketCommodityPriceFilters = {
   offset: number;
 };
 
+export type CropCalendarVerificationStatus =
+  | 'verified'
+  | 'needs_verification'
+  | 'insufficient_evidence'
+  | 'not_applicable'
+  | 'not_recommended';
+
+export type CropCalendarCropSummary = {
+  model_key: CropCalendarModelKey;
+  crop_name_en: string;
+  crop_name_mm: string;
+  crop_type: 'annual' | 'perennial';
+};
+
+export type CropCalendar = CropCalendarCropSummary & {
+  id: string;
+  region: CropCalendarRegion;
+  township: string | null;
+  season: string | null;
+  planting_start_month: number | null;
+  planting_end_month: number | null;
+  harvest_start_month: number | null;
+  harvest_end_month: number | null;
+  growing_duration_min_days: number | null;
+  growing_duration_max_days: number | null;
+  establishment_start_month: number | null;
+  establishment_end_month: number | null;
+  years_to_first_harvest_min: number | null;
+  years_to_first_harvest_max: number | null;
+  harvest_season_start_month: number | null;
+  harvest_season_end_month: number | null;
+  notes_en: string | null;
+  notes_mm: string | null;
+  source_code: string | null;
+  source_name: string | null;
+  source_title: string | null;
+  source_url: string | null;
+  publication_year: number | null;
+  evidence_type: string | null;
+  geographic_specificity: string | null;
+  verification_status: CropCalendarVerificationStatus;
+  confidence: number | null;
+  last_verified_date: string | null;
+  last_updated: string;
+  dataset_version: string;
+  data_quality_note: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export interface AppStore {
   ping(): Promise<void>;
   close(): Promise<void>;
@@ -154,6 +208,13 @@ export interface AppStore {
   listMarketPrices(filters: MarketPriceFilters): Promise<MarketPrice[]>;
   listMarketPriceHistory(crop: CropKey, limit: number, offset: number): Promise<MarketPrice[]>;
   listMarketCommodityPrices(filters: MarketCommodityPriceFilters): Promise<MarketPrice[]>;
+  listCropCalendarCrops(): Promise<CropCalendarCropSummary[]>;
+  listCropCalendarsByRegion(region: CropCalendarRegion): Promise<CropCalendar[]>;
+  getCropCalendar(input: {
+    modelKey: CropCalendarModelKey;
+    region: CropCalendarRegion;
+    season?: string;
+  }): Promise<CropCalendar | undefined>;
 }
 
 type StoreOptions = {
@@ -600,6 +661,50 @@ export class PostgresStore implements AppStore {
     );
     return result.rows.map(mapMarketPrice);
   }
+
+  async listCropCalendarCrops(): Promise<CropCalendarCropSummary[]> {
+    const result = await this.pool.query<QueryResultRow>(
+      `SELECT DISTINCT ON (model_key)
+         model_key, crop_name_en, crop_name_mm, crop_type
+       FROM crop_calendars
+       WHERE is_active
+       ORDER BY model_key, last_updated DESC, updated_at DESC, id`,
+    );
+    return result.rows.map(mapCropCalendarCropSummary);
+  }
+
+  async listCropCalendarsByRegion(region: CropCalendarRegion): Promise<CropCalendar[]> {
+    const result = await this.pool.query<QueryResultRow>(
+      `SELECT * FROM crop_calendars
+       WHERE is_active AND region = $1 AND township IS NULL
+       ORDER BY model_key, season NULLS FIRST, last_updated DESC, id`,
+      [region],
+    );
+    return result.rows.map(mapCropCalendar);
+  }
+
+  async getCropCalendar(input: {
+    modelKey: CropCalendarModelKey;
+    region: CropCalendarRegion;
+    season?: string;
+  }): Promise<CropCalendar | undefined> {
+    const season = input.season ?? null;
+    const result = await this.pool.query<QueryResultRow>(
+      `SELECT * FROM crop_calendars
+       WHERE is_active
+         AND model_key = $1
+         AND region = $2
+         AND township IS NULL
+         AND ($3::text IS NULL OR LOWER(season) = LOWER($3))
+       ORDER BY
+         last_updated DESC,
+         updated_at DESC,
+         id
+       LIMIT 1`,
+      [input.modelKey, input.region, season],
+    );
+    return result.rows[0] ? mapCropCalendar(result.rows[0]) : undefined;
+  }
 }
 
 const RECORD_REGION_AUDIT_SQL = `WITH updated AS (
@@ -715,6 +820,74 @@ function mapMarketPrice(row: QueryResultRow): MarketPrice {
     raw_payload: row.raw_payload,
     created_at: iso(row.created_at),
   };
+}
+
+function mapCropCalendarCropSummary(row: QueryResultRow): CropCalendarCropSummary {
+  return {
+    model_key: row.model_key as CropCalendarModelKey,
+    crop_name_en: String(row.crop_name_en),
+    crop_name_mm: String(row.crop_name_mm),
+    crop_type: row.crop_type as 'annual' | 'perennial',
+  };
+}
+
+function mapCropCalendar(row: QueryResultRow): CropCalendar {
+  return {
+    id: String(row.id),
+    ...mapCropCalendarCropSummary(row),
+    region: row.region as CropCalendarRegion,
+    township: nullableString(row.township),
+    season: nullableString(row.season),
+    planting_start_month: nullableNumber(row.planting_start_month),
+    planting_end_month: nullableNumber(row.planting_end_month),
+    harvest_start_month: nullableNumber(row.harvest_start_month),
+    harvest_end_month: nullableNumber(row.harvest_end_month),
+    growing_duration_min_days: nullableNumber(row.growing_duration_min_days),
+    growing_duration_max_days: nullableNumber(row.growing_duration_max_days),
+    establishment_start_month: nullableNumber(row.establishment_start_month),
+    establishment_end_month: nullableNumber(row.establishment_end_month),
+    years_to_first_harvest_min: nullableNumber(row.years_to_first_harvest_min),
+    years_to_first_harvest_max: nullableNumber(row.years_to_first_harvest_max),
+    harvest_season_start_month: nullableNumber(row.harvest_season_start_month),
+    harvest_season_end_month: nullableNumber(row.harvest_season_end_month),
+    notes_en: nullableString(row.notes_en),
+    notes_mm: nullableString(row.notes_mm),
+    source_code: nullableString(row.source_code),
+    source_name: nullableString(row.source_name),
+    source_title: nullableString(row.source_title),
+    source_url: nullableString(row.source_url),
+    publication_year: nullableNumber(row.publication_year),
+    evidence_type: nullableString(row.evidence_type),
+    geographic_specificity: nullableString(row.geographic_specificity),
+    verification_status: row.verification_status as CropCalendarVerificationStatus,
+    confidence: nullableNumber(row.confidence),
+    last_verified_date: nullableDateText(row.last_verified_date),
+    last_updated: postgresDateText(row.last_updated),
+    dataset_version: String(row.dataset_version),
+    data_quality_note: nullableString(row.data_quality_note),
+    created_at: iso(row.created_at),
+    updated_at: iso(row.updated_at),
+  };
+}
+
+function nullableString(value: unknown): string | null {
+  return value === null || value === undefined ? null : String(value);
+}
+
+function nullableNumber(value: unknown): number | null {
+  return value === null || value === undefined ? null : Number(value);
+}
+
+export function postgresDateText(value: unknown): string {
+  if (!(value instanceof Date)) return String(value);
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function nullableDateText(value: unknown): string | null {
+  return value === null || value === undefined ? null : postgresDateText(value);
 }
 
 function mapRegisteredUser(row: QueryResultRow): RegisteredUser {
