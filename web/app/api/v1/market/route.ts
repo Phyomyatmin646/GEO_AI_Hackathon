@@ -1,48 +1,65 @@
-import { NextRequest, NextResponse } from "next/server";
+import { GeoAIBackendClient } from "../../../lib/api-client";
+import { proxyMarketGet } from "../../../lib/market-bff";
+import {
+  parseMarketCommodityLatestQuery,
+  type MarketCommodityLatestResponse,
+} from "../../../lib/market-contract";
 
-const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8000";
-const BACKEND_API_KEY = process.env.BACKEND_API_KEY ?? "";
+type MarketPageCommodity = {
+  id: string;
+  name: string;
+  location: string | null;
+  marketplace: string | null;
+  minPrice: number | null;
+  maxPrice: number | null;
+  currency: string | null;
+  quantity: number | null;
+  unit: string | null;
+  priceDate: string | null;
+  source: string | null;
+};
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const params = new URLSearchParams();
+type MarketPagePayload = {
+  label: string;
+  recordedAt: string;
+  commodities: MarketPageCommodity[];
+};
 
-  const source = searchParams.get("source");
-  const region = searchParams.get("region");
-  const limit = searchParams.get("limit");
-  const offset = searchParams.get("offset");
-
-  if (source) params.set("source", source);
-  if (region) params.set("region", region);
-  if (limit) params.set("limit", limit);
-  if (offset) params.set("offset", offset);
-
-  const qs = params.toString();
-  const url = `${BACKEND_URL}/api/v1/market-prices/commodities/latest${qs ? `?${qs}` : ""}`;
-
-  try {
-    const res = await fetch(url, {
-      headers: { "x-api-key": BACKEND_API_KEY },
-      next: { revalidate: 300 },
-    });
-
-    if (!res.ok) {
-      return NextResponse.json(
-        { error: "Market price data unavailable", status: res.status },
-        { status: res.status },
-      );
-    }
-
-    const data = await res.json();
-    return NextResponse.json(data, {
-      headers: {
-        "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
-      },
-    });
-  } catch {
-    return NextResponse.json(
-      { error: "Failed to connect to market price service" },
-      { status: 503 },
+export async function GET(request: Request) {
+  return proxyMarketGet(request, async (requestId): Promise<MarketPagePayload> => {
+    const payload = await GeoAIBackendClient.getLatestMarketCommodities(
+      parseMarketCommodityLatestQuery(new URL(request.url).searchParams),
+      requestId,
+      request.signal,
     );
-  }
+    return marketPagePayload(payload);
+  });
+}
+
+function marketPagePayload(payload: MarketCommodityLatestResponse): MarketPagePayload {
+  return {
+    label: payload.label,
+    recordedAt: payload.source_date
+      ? `${payload.source_date}T00:00:00.000Z`
+      : payload.fetched_at,
+    commodities: payload.commodities.map((commodity, index) => ({
+      id: `market-${commodity.source_date}-${index}`,
+      name: commodity.commodity_name_raw,
+      location: commodity.region,
+      marketplace: commodity.marketplace,
+      minPrice: finiteNumber(commodity.price_min),
+      maxPrice: finiteNumber(commodity.price_max),
+      currency: commodity.currency,
+      quantity: finiteNumber(commodity.quantity),
+      unit: commodity.unit,
+      priceDate: commodity.source_date,
+      source: commodity.source,
+    })),
+  };
+}
+
+function finiteNumber(value: string | null): number | null {
+  if (value === null) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
