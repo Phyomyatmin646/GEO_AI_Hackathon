@@ -4,6 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useLanguage } from "../lib/i18n";
 import { HarvestIcon } from "../components/HarvestIcon";
+import {
+  formatMarketDate,
+  formatMarketNumber,
+  localizeMarketValue,
+} from "../lib/market-localization";
 
 type CommodityPrice = {
   id: string;
@@ -25,8 +30,6 @@ type MarketPayload = {
   commodities: CommodityPrice[];
 };
 
-const ICON_COLS = ["No.", "Name", "Location", "Marketplace", "Min", "Max", "Currency", "Quantity", "Unit"] as const;
-
 export default function MarketPage() {
   const { lang, setLang, t } = useLanguage();
   const [data, setData] = useState<MarketPayload | null>(null);
@@ -35,8 +38,6 @@ export default function MarketPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    setLoading(true);
-    setError(false);
     fetch("/api/v1/market")
       .then((res) => {
         if (!res.ok) throw new Error("market fetch failed");
@@ -104,20 +105,16 @@ export default function MarketPage() {
           },
         };
 
-  const priceDate = data?.recordedAt
-    ? new Intl.DateTimeFormat(lang === "my" ? "my-MM" : "en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      }).format(new Date(data.recordedAt))
-    : null;
+  const priceDate = data?.recordedAt ? formatMarketDate(data.recordedAt, lang) : null;
 
-  const filtered = (data?.commodities ?? []).filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()),
-  );
+  const normalizedSearch = search.trim().toLocaleLowerCase();
+  const filtered = (data?.commodities ?? []).filter((commodity) => {
+    const localizedName = localizeMarketValue("commodities", commodity.name, "my") ?? "";
+    return `${commodity.name} ${localizedName}`.toLocaleLowerCase().includes(normalizedSearch);
+  });
 
   const fmt = (v: number | null) =>
-    v !== null ? v.toLocaleString() : "—";
+    v !== null ? formatMarketNumber(v, lang) : "—";
 
   return (
     <main className="market-page">
@@ -223,15 +220,17 @@ export default function MarketPage() {
                 <tbody>
                   {filtered.map((row, i) => (
                     <tr key={row.id}>
-                      <td className="market-row-num">{i + 1}</td>
-                      <td className="market-name">{row.name}</td>
-                      <td>{row.location ?? "—"}</td>
-                      <td>{row.marketplace ?? "—"}</td>
+                      <td className="market-row-num">{formatMarketNumber(i + 1, lang)}</td>
+                      <td className="market-name">
+                        {localizeMarketValue("commodities", row.name, lang)}
+                      </td>
+                      <td>{localizeMarketValue("locations", row.location, lang) ?? "—"}</td>
+                      <td>{localizeMarketValue("marketplaces", row.marketplace, lang) ?? "—"}</td>
                       <td className="market-num">{fmt(row.minPrice)}</td>
                       <td className="market-num">{fmt(row.maxPrice)}</td>
-                      <td>{row.currency ?? "MMK"}</td>
+                      <td>{localizeMarketValue("currencies", row.currency ?? "MMK", lang)}</td>
                       <td className="market-num">{fmt(row.quantity)}</td>
-                      <td>{row.unit ?? "—"}</td>
+                      <td>{localizeMarketValue("units", row.unit, lang) ?? "—"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -244,7 +243,7 @@ export default function MarketPage() {
         {data && !loading && !error && (
           <p className="market-source-note">
             {lang === "my"
-              ? `Wisarra မှ ရယူသော ဈေးနှုန်းများ · စုစုပေါင်း ${filtered.length.toLocaleString()} မျိုး`
+              ? `Wisarra မှ ရယူသော ဈေးနှုန်းများ · စုစုပေါင်း ${formatMarketNumber(filtered.length, lang)} မျိုး`
               : `Prices sourced from Wisarra · ${filtered.length.toLocaleString()} commodities`}
           </p>
         )}

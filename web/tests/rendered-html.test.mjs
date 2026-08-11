@@ -5,6 +5,12 @@ import { csvValue } from "../app/lib/csv-value.ts";
 import { en } from "../app/lib/dictionaries.ts";
 import { MARKET_CROP_KEYS } from "../app/lib/market-contract.ts";
 import {
+  formatMarketDate,
+  formatMarketNumber,
+  localizeMarketValue,
+  marketMyanmarDictionaryCounts,
+} from "../app/lib/market-localization.ts";
+import {
   localizeBilingualLabel,
   localizeBilingualNarrative,
   localizeFactor,
@@ -746,4 +752,24 @@ test("locale helpers select one language without changing numeric evidence", () 
     ),
     "Provisional rule score.",
   );
+});
+
+test("market dictionary uses established Myanmar commodity and trade terms", () => {
+  assert.deepEqual(marketMyanmarDictionaryCounts(), {
+    commodities: 139,
+    locations: 8,
+    marketplaces: 19,
+    currencies: 2,
+    units: 7,
+  });
+  assert.equal(localizeMarketValue("commodities", "Blackgram", "my"), "မတ်ပဲ");
+  assert.equal(localizeMarketValue("commodities", "Mung Bean", "my"), "ပဲတီစိမ်း");
+  assert.equal(localizeMarketValue("commodities", "Pigeon Pea (New)", "my"), "ပဲစင်းငုံ (အသစ်)");
+  assert.equal(localizeMarketValue("commodities", "Lablab Bean", "my"), "ပဲကြီး");
+  assert.equal(localizeMarketValue("commodities", "Niger Flower (New)", "my"), "ပန်းနှမ်း (အသစ်)");
+  assert.equal(localizeMarketValue("marketplaces", "Thiri Mingalar Zay", "my"), "သီရိမင်္ဂလာဈေး");
+  assert.equal(localizeMarketValue("units", "viss", "my"), "ပိဿာ");
+  assert.equal(localizeMarketValue("commodities", "Avocado", "en"), "Avocado");
+  assert.equal(formatMarketNumber(1234567, "my"), "၁,၂၃၄,၅၆၇");
+  assert.equal(formatMarketDate("2026-08-11T00:00:00.000Z", "my"), "၂၀၂၆ ခုနှစ် ဩဂုတ်လ ၁၁ ရက်");
 });
