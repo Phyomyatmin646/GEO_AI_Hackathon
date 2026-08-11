@@ -292,12 +292,13 @@ test("market-price BFF mirrors the typed backend API without exposing its key", 
         crops: requestId === "bad-contract" ? MARKET_CROP_KEYS.slice(0, -1) : MARKET_CROP_KEYS,
       };
     } else if (requestUrl.pathname === "/api/v1/market-prices/commodities/latest") {
-      const servesMarketPage = requestUrl.search === "";
+      const servesMarketPage = requestUrl.searchParams.get("limit") === "500";
+      const sourceDate = "Mon Aug 10 2026 00:00:00 GMT+0000 (Coordinated Universal Time)";
       payload = {
         label: "Latest available market commodity prices",
         fetched_at: "2026-08-11T00:00:00.000Z",
         source: "Wisarra",
-        source_date: servesMarketPage ? "2026-08-10" : null,
+        source_date: servesMarketPage ? sourceDate : null,
         commodities: servesMarketPage
           ? [{
               commodity_name_raw: "Maize (Yellow)",
@@ -310,7 +311,7 @@ test("market-price BFF mirrors the typed backend API without exposing its key", 
               quantity: "1.000000",
               unit: "viss",
               source: "Wisarra",
-              source_date: "2026-08-10",
+              source_date: sourceDate,
               source_url: "https://wisarra.com/en/market-price",
               fetched_at: "2026-08-11T00:00:00.000Z",
               model_crop_keys: ["maize"],
@@ -318,7 +319,7 @@ test("market-price BFF mirrors the typed backend API without exposing its key", 
             }]
           : [],
         pagination: {
-          limit: servesMarketPage ? 100 : 2,
+          limit: servesMarketPage ? 500 : 2,
           offset: servesMarketPage ? 0 : 1,
           returned: servesMarketPage ? 1 : 0,
           total: servesMarketPage ? 1 : 0,
@@ -422,7 +423,7 @@ test("market-price BFF mirrors the typed backend API without exposing its key", 
     assert.doesNotMatch(JSON.stringify(marketPagePayload), /server-only-market-key/);
     assert.deepEqual(upstreamRequests.at(-1), {
       method: "GET",
-      url: "/api/v1/market-prices/commodities/latest",
+      url: "/api/v1/market-prices/commodities/latest?limit=500",
       apiKey: "server-only-market-key",
       requestId,
     });
