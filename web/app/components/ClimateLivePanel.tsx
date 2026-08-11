@@ -1,141 +1,40 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-
+import { numericPrediction, type HomeLiveState, type HomeWeeklyCell } from "../lib/home-data";
 import { useLanguage } from "../lib/i18n";
 import type { GridCell } from "../lib/pilot-data";
 
 type Props = {
-  cell: Pick<GridCell, "id" | "latitude" | "longitude" | "month">;
+  cell: Pick<GridCell, "id" | "month">;
+  live: HomeLiveState;
+  liveCell?: HomeWeeklyCell;
 };
 
 type ClimateRow = {
   icon: string;
   labelMy: string;
   labelEn: string;
-  value: number | null;
+  target: string;
   unit: string;
   max: number;
   color: string;
 };
 
-type RawPredictions = Record<string, { value: unknown } | undefined>;
+const ROWS: ClimateRow[] = [
+  { icon: "🌧️", labelMy: "မိုးရေချိန်", labelEn: "Rainfall", target: "current_month_precipitation_mm", unit: "mm", max: 500, color: "#3B82F6" },
+  { icon: "🌡️", labelMy: "ပျမ်းမျှ အပူချိန်", labelEn: "Mean Temperature", target: "current_month_mean_temperature_c", unit: "°C", max: 40, color: "#F59E0B" },
+  { icon: "☀️", labelMy: "နေရောင်ခြည် စွမ်းအင်", labelEn: "Solar Radiation", target: "current_month_solar_rad_mj_m2_day", unit: "MJ/m²/day", max: 25, color: "#F97316" },
+  { icon: "💧", labelMy: "မျက်နှာပြင် ရေပမာဏ", labelEn: "Surface Water Occ.", target: "surface_water_occurrence", unit: "%", max: 100, color: "#06B6D4" },
+];
 
-export function ClimateLivePanel({ cell }: Props) {
-  const [rows, setRows] = useState<ClimateRow[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const seqRef = useRef(0);
+export function ClimateLivePanel({ cell, live, liveCell }: Props) {
   const { lang } = useLanguage();
-
-  useEffect(() => {
-    const seq = ++seqRef.current;
-    const ctrl = new AbortController();
-
-    setLoading(true);
-    setError("");
-    setRows(null);
-
-    (async () => {
-      try {
-        const res = await fetch("/api/v1/predictions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            lat: cell.latitude,
-            lon: cell.longitude,
-            observation_month: cell.month,
-            targets: [
-              "current_month_precipitation_mm",
-              "current_month_mean_temperature_c",
-              "current_month_solar_rad_mj_m2_day",
-              "surface_water_occurrence",
-            ],
-          }),
-          signal: ctrl.signal,
-          cache: "no-store",
-        });
-
-        if (!res.ok) throw new Error("api-error");
-        const payload = (await res.json()) as {
-          predictions?: RawPredictions;
-        };
-        if (seq !== seqRef.current) return;
-
-        const p = payload.predictions ?? {};
-        const num = (key: string): number | null => {
-          const v = p[key]?.value;
-          return typeof v === "number" && isFinite(v) ? v : null;
-        };
-
-        setRows([
-          {
-            icon: "🌧️",
-            labelMy: "မိုးရေချိန်",
-            labelEn: "Rainfall",
-            value: num("current_month_precipitation_mm"),
-            unit: "mm",
-            max: 500,
-            color: "#3B82F6",
-          },
-          {
-            icon: "🌡️",
-            labelMy: "ပျမ်းမျှ အပူချိန်",
-            labelEn: "Mean Temperature",
-            value: num("current_month_mean_temperature_c"),
-            unit: "°C",
-            max: 40,
-            color: "#F59E0B",
-          },
-          {
-            icon: "☀️",
-            labelMy: "နေရောင်ခြည် စွမ်းအင်",
-            labelEn: "Solar Radiation",
-            value: num("current_month_solar_rad_mj_m2_day"),
-            unit: "MJ/m²/day",
-            max: 25,
-            color: "#F97316",
-          },
-          {
-            icon: "💧",
-            labelMy: "မျက်နှာပြင် ရေပမာဏ",
-            labelEn: "Surface Water Occ.",
-            value: num("surface_water_occurrence"),
-            unit: "%",
-            max: 100,
-            color: "#06B6D4",
-          },
-        ]);
-      } catch (e) {
-        if (ctrl.signal.aborted || seq !== seqRef.current) return;
-        setError(
-          lang === "my"
-            ? "ရာသီဥတုဒေတာ ရယူမရနိုင်ပါ"
-            : "Climate data unavailable",
-        );
-      } finally {
-        if (!ctrl.signal.aborted && seq === seqRef.current) setLoading(false);
-      }
-    })();
-
-    return () => {
-      ctrl.abort();
-    };
-  }, [cell.id, cell.latitude, cell.longitude, cell.month, lang]);
-
-  if (loading) {
-    return (
-      <div className="climate-live-loading">
-        <span className="climate-spinner" />
-        {lang === "my" ? "ERA5 · CHIRPS ဒေတာ ဆွဲယူနေသည်…" : "Fetching ERA5 · CHIRPS data…"}
-      </div>
-    );
-  }
-
-  if (error || !rows) {
+  if (live.mode !== "weekly" || !liveCell) {
     return (
       <div className="climate-live-error">
-        {error || (lang === "my" ? "ဒေတာ ရရှိမှာ မရှိပါ" : "No data available")}
+        {lang === "my"
+          ? "Weekly ERA5 · CHIRPS model တန်ဖိုးများ မရသေးပါ။ Historical pilot တန်ဖိုးများကို အပေါ်တွင်ပြထားသည်။"
+          : "Weekly ERA5 · CHIRPS model values are unavailable. Historical pilot values remain visible above."}
       </div>
     );
   }
@@ -144,30 +43,23 @@ export function ClimateLivePanel({ cell }: Props) {
     <div className="climate-live-panel">
       <div className="climate-live-badge">
         <span className="live-dot" />
-        {lang === "my" ? "Live Model · ERA5 / CHIRPS" : "Live Model · ERA5 / CHIRPS"}
-        <span className="climate-month-tag">{cell.month}</span>
+        {lang === "my" ? "Latest weekly model · ERA5 / CHIRPS" : "Latest weekly model · ERA5 / CHIRPS"}
+        <span className="climate-month-tag">{live.weekStart ?? cell.month}</span>
       </div>
 
-      {rows.map((row) => {
-        const pct =
-          row.value !== null
-            ? Math.min(100, Math.max(0, (row.value / row.max) * 100))
-            : 0;
+      {ROWS.map((row) => {
+        const value = numericPrediction(liveCell, row.target);
+        const pct = value === null ? 0 : Math.min(100, Math.max(0, (value / row.max) * 100));
         return (
-          <div key={row.labelEn} className="climate-live-row">
+          <div key={row.target} className="climate-live-row">
             <span className="climate-icon">{row.icon}</span>
             <div className="climate-bar-group">
               <div className="climate-bar-label">
                 <span>{lang === "my" ? row.labelMy : row.labelEn}</span>
-                <strong>
-                  {row.value !== null ? `${row.value.toFixed(1)} ${row.unit}` : "—"}
-                </strong>
+                <strong>{value === null ? "—" : `${value.toFixed(1)} ${row.unit}`}</strong>
               </div>
               <div className="climate-bar-track">
-                <div
-                  className="climate-bar-fill"
-                  style={{ width: `${pct}%`, background: row.color }}
-                />
+                <div className="climate-bar-fill" style={{ width: `${pct}%`, background: row.color }} />
               </div>
             </div>
           </div>
@@ -176,8 +68,8 @@ export function ClimateLivePanel({ cell }: Props) {
 
       <p className="climate-live-note">
         {lang === "my"
-          ? `${cell.month} အတွက် AI Model မှ ERA5 / CHIRPS ဒေတာနှင့် တွက်ချက်ထုတ်ပြန်သည်`
-          : `AI model inference for ${cell.month} using ERA5 / CHIRPS inputs`}
+          ? `${live.weekStart} မှ ${live.weekEnd} အထိ သိမ်းထားသော weekly model result`
+          : `Persisted weekly model result for ${live.weekStart} to ${live.weekEnd}`}
       </p>
     </div>
   );
