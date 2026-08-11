@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.test.json",
     "test": "vitest run",
     "lint": "eslint .",
+    "test:chatbot": "tsx scripts/test_chatbot.ts",
     "validate": "npm run lint && npm run typecheck && npm test"
   },
   "dependencies": {

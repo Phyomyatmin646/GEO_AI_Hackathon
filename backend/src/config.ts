@@ -128,6 +128,12 @@ const EnvironmentSchema = z
       .max(10 * 1024 * 1024)
       .default(64 * 1024),
     ENABLE_ASYNC_JOBS: booleanEnvironmentValue(false),
+
+    GEMINI_API_KEY: z.string().min(16).optional(),
+    GEMINI_MODEL: z.string().min(1).default('gemini-2.5-flash'),
+    GEMINI_API_URL: z.url().default('https://generativelanguage.googleapis.com'),
+    CHATBOT_REQUEST_TIMEOUT_MS: z.coerce.number().int().min(100).max(120_000).default(30_000),
+    CHATBOT_SEARCH_GROUNDING_ENABLED: booleanEnvironmentValue(true),
   })
   .superRefine((environment, context) => {
     const modelServerApiKey =
@@ -210,6 +216,11 @@ export type AppConfig = {
   rateLimitWindowMs: number;
   bodyLimitBytes: number;
   asyncJobsEnabled: boolean;
+  geminiApiKey?: string;
+  geminiModel: string;
+  geminiApiUrl: string;
+  chatbotRequestTimeoutMs: number;
+  chatbotSearchGroundingEnabled: boolean;
 };
 
 const PLACEHOLDER_SECRET_PATTERNS = [
@@ -315,5 +326,10 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
     rateLimitWindowMs: parsed.data.RATE_LIMIT_WINDOW_MS,
     bodyLimitBytes: parsed.data.BODY_LIMIT_BYTES,
     asyncJobsEnabled: parsed.data.ENABLE_ASYNC_JOBS,
+    geminiApiKey: parsed.data.GEMINI_API_KEY,
+    geminiModel: parsed.data.GEMINI_MODEL,
+    geminiApiUrl: new URL(parsed.data.GEMINI_API_URL).origin,
+    chatbotRequestTimeoutMs: parsed.data.CHATBOT_REQUEST_TIMEOUT_MS,
+    chatbotSearchGroundingEnabled: parsed.data.CHATBOT_SEARCH_GROUNDING_ENABLED,
   };
 }
