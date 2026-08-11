@@ -12,6 +12,7 @@ import type { AppConfig } from './config.js';
 import { PostgresStore, type AppStore } from './db/store.js';
 import { AppError, RequestValidationError } from './errors.js';
 import chatbotRoutes from './routes/chatbot.js';
+import cropCalendarRoutes from './routes/crop-calendars.js';
 import dailyCompatibilityRoutes from './routes/daily.js';
 import healthRoutes from './routes/health.js';
 import internalRoutes from './routes/internal.js';
@@ -31,6 +32,7 @@ import {
   type ModelServerGateway,
 } from './services/model-server-client.js';
 import { MarketPriceService } from './services/market-price-service.js';
+import { CropCalendarService } from './services/crop-calendar-service.js';
 import { WeeklyOrchestrator } from './services/weekly-orchestrator.js';
 
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
@@ -41,6 +43,7 @@ export type BuildAppOptions = {
   store?: AppStore;
   marketPriceService?: MarketPriceService;
   chatbotService?: ChatbotServiceGateway;
+  cropCalendarService?: CropCalendarService;
   logger?: FastifyServerOptions['logger'];
 };
 
@@ -101,6 +104,8 @@ export async function buildApp(options: BuildAppOptions) {
           config.marketPriceRequestTimeoutMs,
         )
       : undefined);
+  const cropCalendarService =
+    options.cropCalendarService ?? (store ? new CropCalendarService(store) : undefined);
 
   await server.register(cors, {
     origin: config.corsOrigins,
@@ -226,6 +231,11 @@ export async function buildApp(options: BuildAppOptions) {
     service: marketPriceService,
     rateLimit: apiRateLimit,
     prefix: '/api/v1/market-prices',
+  });
+  await server.register(cropCalendarRoutes, {
+    service: cropCalendarService,
+    rateLimit: apiRateLimit,
+    prefix: '/api/v1/crop-calendars',
   });
   await server.register(dailyCompatibilityRoutes, {
     store,

@@ -6,6 +6,7 @@ data/raw/
 data/output/
 data/weekly/
 *.csv
+*.env.example
 *.csv.gz
 *.parquet
 *.tsbuildinfo
