@@ -15,6 +15,8 @@ import {
 import { UserRegistrationConflictError } from '../src/db/store.js';
 import type {
   AppStore,
+  CropCalendar,
+  CropCalendarCropSummary,
   MarketCommodityPriceFilters,
   MarketPrice,
   MarketPriceFilters,
@@ -24,6 +26,10 @@ import type {
   RegionAudit,
   WeeklyRegionPrediction,
 } from '../src/db/store.js';
+import type {
+  CropCalendarModelKey,
+  CropCalendarRegion,
+} from '../src/schemas/crop-calendars.js';
 import type {
   BatchInferResponse,
   BatchPrediction,
@@ -319,6 +325,7 @@ export class MemoryStore implements AppStore {
   readonly runs = new Map<string, PipelineRun>();
   readonly predictions: WeeklyRegionPrediction[] = [];
   readonly marketPrices: MarketPrice[] = [];
+  readonly cropCalendars: CropCalendar[] = [];
   readonly users: RegisteredUser[] = [];
   cleanupCalls = 0;
   pingError?: Error;
@@ -638,6 +645,42 @@ export class MemoryStore implements AppStore {
       )
       .slice(filters.offset, filters.offset + filters.limit)
       .map((price) => structuredClone(price));
+  }
+
+  async listCropCalendarCrops(): Promise<CropCalendarCropSummary[]> {
+    const crops = new Map<CropCalendarModelKey, CropCalendarCropSummary>();
+    for (const record of this.cropCalendars) {
+      crops.set(record.model_key, {
+        model_key: record.model_key,
+        crop_name_en: record.crop_name_en,
+        crop_name_mm: record.crop_name_mm,
+        crop_type: record.crop_type,
+      });
+    }
+    return [...crops.values()].map((crop) => structuredClone(crop));
+  }
+
+  async listCropCalendarsByRegion(region: CropCalendarRegion): Promise<CropCalendar[]> {
+    return this.cropCalendars
+      .filter((record) => record.region === region && record.township === null)
+      .map((record) => structuredClone(record));
+  }
+
+  async getCropCalendar(input: {
+    modelKey: CropCalendarModelKey;
+    region: CropCalendarRegion;
+    season?: string;
+  }): Promise<CropCalendar | undefined> {
+    const candidates = this.cropCalendars
+      .filter((record) => record.model_key === input.modelKey && record.region === input.region)
+      .filter((record) => record.township === null)
+      .filter(
+        (record) =>
+          input.season === undefined ||
+          record.season?.toLocaleLowerCase('en') === input.season.toLocaleLowerCase('en'),
+      );
+    const record = candidates[0];
+    return record ? structuredClone(record) : undefined;
   }
 
   seedSucceededRun(input: {
