@@ -1,0 +1,43 @@
+{
+  "parameters": {
+    "method": "POST",
+    "url": "https://smspoh.com/api/v2/send",
+    "sendHeaders": true,
+    "headerParameters": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "value": "Bearer k078E8_itsxvmA34Ncd233prUy0TA2ZK"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ]
+    },
+    "sendBody": true,
+    "specifyBody": "keypair",
+    "bodyParameters": {
+      "parameters": [
+        {
+          "name": "to",
+          "value": "={{ $('Webhook').item.json.body.recipient }}"
+        },
+        {
+          "name": "message",
+          "value": "={{ $json.final_message }}"
+        },
+        {
+          "name": "sender",
+          "value": "SMSPoh Demo"
+        }
+      ]
+    },
+    "options": {}
+  },
+  "id": "smspoh-node",
+  "name": "SMSPoh (SMS) Fixed",
+  "type": "n8n-nodes-base.httpRequest",
+  "typeVersion": 4.1,
+  "position": [1100, 150]
+}

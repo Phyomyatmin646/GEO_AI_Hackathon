@@ -73,6 +73,7 @@ services:
       GEMINI_API_URL: ${GEMINI_API_URL:-https://generativelanguage.googleapis.com}
       CHATBOT_REQUEST_TIMEOUT_MS: ${CHATBOT_REQUEST_TIMEOUT_MS:-30000}
       CHATBOT_SEARCH_GROUNDING_ENABLED: ${CHATBOT_SEARCH_GROUNDING_ENABLED:-true}
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-}
     volumes:
       - ./data/weekly:/data/weekly:ro
     extra_hosts:
