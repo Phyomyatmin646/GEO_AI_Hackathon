@@ -26,6 +26,11 @@ type CategoryDefinition = {
   matches: (target: string) => boolean;
 };
 
+function predictionHasValue(prediction: HomePrediction | undefined): boolean {
+  if (!prediction || prediction.value === null) return false;
+  return typeof prediction.value !== "number" || Number.isFinite(prediction.value);
+}
+
 const PRODUCTION_TARGETS = new Set([
   "crop_yield_t_ha",
   "crop_health_score",
@@ -226,11 +231,19 @@ export function NeonWeeklyPredictions({ cell, live, liveCell }: Props) {
     return { categorized, other };
   }, [entries]);
   const cellErrors = Object.entries(liveCell?.errors ?? {});
-  const catalogAvailableCount = CORE_MODEL_TARGETS.filter(
-    (target) => liveCell?.predictions[target] !== undefined,
+  const catalogValueCount = CORE_MODEL_TARGETS.filter(
+    (target) => predictionHasValue(liveCell?.predictions[target]),
   ).length;
+  const catalogHealthyValueCount = CORE_MODEL_TARGETS.filter((target) => {
+    const prediction = liveCell?.predictions[target];
+    return predictionHasValue(prediction) && prediction?.validationStatus === "healthy";
+  }).length;
+  const catalogFlaggedValueCount = CORE_MODEL_TARGETS.filter((target) => {
+    const prediction = liveCell?.predictions[target];
+    return predictionHasValue(prediction) && prediction?.validationStatus === "flagged";
+  }).length;
   const missingCatalogTargets = CORE_MODEL_TARGETS.filter(
-    (target) => liveCell?.predictions[target] === undefined,
+    (target) => !predictionHasValue(liveCell?.predictions[target]),
   );
   const hasData = live.mode === "weekly" && Boolean(liveCell) && entries.length > 0;
   const weekLabel = live.weekStart && live.weekEnd
@@ -306,8 +319,8 @@ export function NeonWeeklyPredictions({ cell, live, liveCell }: Props) {
         <span className={`neon-data-count ${hasData ? "has-data" : "is-empty"}`}>
           {hasData
             ? (lang === "my"
-                ? `${catalogAvailableCount} / ${CORE_MODEL_TARGETS.length} ရရှိ`
-                : `${catalogAvailableCount} / ${CORE_MODEL_TARGETS.length} available`)
+                ? `${catalogHealthyValueCount} / ${CORE_MODEL_TARGETS.length} healthy`
+                : `${catalogHealthyValueCount} / ${CORE_MODEL_TARGETS.length} healthy`)
             : (lang === "my" ? "ဒေတာမရှိ" : "No data")}
         </span>
         <HarvestIcon name="chevron" size={17} />
@@ -332,8 +345,11 @@ export function NeonWeeklyPredictions({ cell, live, liveCell }: Props) {
 
         <div className="neon-availability-summary" role="status">
           <strong>{lang === "my"
-            ? `Catalog target ${CORE_MODEL_TARGETS.length} ခုအနက် ${catalogAvailableCount} ခု ရရှိထားသည်`
-            : `${catalogAvailableCount} available of ${CORE_MODEL_TARGETS.length} catalog targets`}</strong>
+            ? `Catalog target ${CORE_MODEL_TARGETS.length} ခုအနက် healthy တန်ဖိုး ${catalogHealthyValueCount} ခုရှိသည်`
+            : `${catalogHealthyValueCount} healthy values of ${CORE_MODEL_TARGETS.length} catalog targets`}</strong>
+          <span>{lang === "my"
+            ? `တန်ဖိုးရှိ ${catalogValueCount} · flagged ${catalogFlaggedValueCount} · မရရှိ ${missingCatalogTargets.length}`
+            : `Values present ${catalogValueCount} · flagged ${catalogFlaggedValueCount} · unavailable ${missingCatalogTargets.length}`}</span>
           <span>{lang === "my"
             ? `Declared ${live.telemetry.declaredCellCount ?? "—"} · decoded ${live.telemetry.decodedCellCount} · matched ${live.telemetry.matchedCellCount} · dropped ${live.telemetry.droppedCellCount}`
             : `Declared ${live.telemetry.declaredCellCount ?? "—"} · decoded ${live.telemetry.decodedCellCount} · matched ${live.telemetry.matchedCellCount} · dropped ${live.telemetry.droppedCellCount}`}</span>

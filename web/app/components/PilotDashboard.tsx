@@ -39,6 +39,7 @@ import { CORE_MODEL_TARGETS, cropModelTarget } from "../lib/model-contract";
 import { HarvestIcon } from "./HarvestIcon";
 import { SiteNavigation } from "./SiteNavigation";
 import { NeonWeeklyPredictions } from "./NeonWeeklyPredictions";
+import { CropCalendarModal, RegionalCropCalendarPanel } from "./CropCalendarModal";
 
 const CLIMATE_FEATURE_IDS = new Set([
   "rainfall_normal_1991_2020_mm",
@@ -73,6 +74,13 @@ const INPUT_SOURCE_IDS = new Set([
   "jrc_surface_water",
 ]);
 
+type SuitabilityTier = "poor" | "moderate" | "good" | "excellent";
+type DashboardRecommendation = Omit<Recommendation, "score"> & {
+  score: number | null;
+  suitabilityTier: SuitabilityTier | null;
+  validationStatus: string | null;
+};
+
 function formatFeatureValue(
   value: string | number | boolean | null,
   unit: string,
@@ -100,10 +108,19 @@ function truthfulCropNarrative(value: string, weekly: boolean) {
   return value.replace(/^AI Model\s*·/iu, "Historical rule-based ·");
 }
 
+function suitabilityTierLabel(tier: SuitabilityTier | null, lang: "en" | "my"): string | null {
+  if (!tier) return null;
+  const labels = lang === "my"
+    ? { poor: "မသင့်တော်", moderate: "အသင့်အတင့်", good: "ကောင်း", excellent: "အထူးကောင်း" }
+    : { poor: "Poor", moderate: "Moderate", good: "Good", excellent: "Excellent" };
+  return labels[tier];
+}
+
 export function PilotDashboard() {
   const [payload, setPayload] = useState<HomePayload | null>(null);
   const [selectedId, setSelectedId] = useState("");
   const [activeCropId, setActiveCropId] = useState("");
+  const [calendarCropId, setCalendarCropId] = useState<string | null>(null);
   const [region, setRegion] = useState("ayeyawaddy");
   const [period, setPeriod] = useState<HomePeriod>("latest");
   const [reviewNote, setReviewNote] = useState("");
@@ -120,6 +137,7 @@ export function PilotDashboard() {
   );
   const cropName = (crop: { nameMm: string; nameEn: string }) =>
     lang === "my" ? crop.nameMm : crop.nameEn;
+  const closeCropCalendar = useCallback(() => setCalendarCropId(null), []);
 
   const loadPilot = useCallback(async (
     selectedRegion: string,
@@ -222,9 +240,16 @@ export function PilotDashboard() {
     [payload],
   );
   const selectedWeeklyCell = selectedCell ? weeklyCells.get(selectedCell.id) : undefined;
-  const displayRecommendations = useMemo<Recommendation[]>(() => {
+  const displayRecommendations = useMemo<DashboardRecommendation[]>(() => {
     if (!selectedCell || !payload) return [];
-    if (payload.live.mode !== "weekly") return selectedCell.recommendations;
+    if (payload.live.mode !== "weekly") {
+      return selectedCell.recommendations.map((item) => ({
+        ...item,
+        suitabilityTier: null,
+        validationStatus: null,
+      }));
+    }
+    if (!payload.live.cropPredictionsAvailable) return [];
     return weeklyCropRecommendations(selectedWeeklyCell).map((item) => {
       const historical = selectedCell.recommendations.find((crop) => crop.id === item.cropId);
       return {
@@ -237,6 +262,8 @@ export function PilotDashboard() {
         positiveFactors: [],
         limitingFactors: item.prediction.warnings,
         missingFeatures: [],
+        suitabilityTier: item.suitabilityTier,
+        validationStatus: item.prediction.validationStatus,
       };
     });
   }, [payload, selectedCell, selectedWeeklyCell]);
@@ -265,11 +292,13 @@ export function PilotDashboard() {
   function selectCell(cellId: string) {
     setSelectedId(cellId);
     setActiveCropId("");
+    setCalendarCropId(null);
     setReviewSaved(false);
   }
 
   function selectCrop(cropId: string) {
     setActiveCropId(cropId);
+    if (cropModelTarget(cropId)) setCalendarCropId(cropId);
     setReviewSaved(false);
   }
 
@@ -310,13 +339,19 @@ export function PilotDashboard() {
   }[selectedCell.uncertainty];
   const recommendationStatusLabel = isAbstained
     ? t.dashboard.statusInsufficient
-    : t.dashboard.statusScored;
+    : isWeekly
+      ? (activeCrop?.validationStatus === "flagged"
+          ? (lang === "my" ? "flagged စမ်းသပ်ရလဒ်" : "flagged experimental")
+          : (lang === "my" ? "စမ်းသပ်ရလဒ်" : "experimental"))
+      : t.dashboard.statusScored;
   const selectedCropTarget = cropModelTarget(selectedCropId);
-  const selectedCropLabel = activeCrop
-    ? cropName(activeCrop)
-    : selectedCropTarget
-      ? (t.modelEvidence.targetLabels[selectedCropTarget] ?? selectedCropId)
-      : selectedCropId;
+  const selectedCropLabel = isWeekly && selectedCropTarget
+    ? (t.modelEvidence.targetLabels[selectedCropTarget] ?? selectedCropId)
+    : activeCrop
+      ? cropName(activeCrop)
+      : selectedCropTarget
+        ? (t.modelEvidence.targetLabels[selectedCropTarget] ?? selectedCropId)
+        : selectedCropId;
   const weeklyFeatureTargets: Record<string, string> = {
     monthly_rainfall_mm: "current_month_precipitation_mm",
     mean_temperature_c: "current_month_mean_temperature_c",
@@ -522,7 +557,10 @@ export function PilotDashboard() {
                 <span className="sr-only">{t.dashboard.regionFilterAria}</span>
                 <select
                   value={region}
-                  onChange={(event) => setRegion(event.target.value)}
+                  onChange={(event) => {
+                    setRegion(event.target.value);
+                    closeCropCalendar();
+                  }}
                   aria-label={t.dashboard.regionFilterAria}
                 >
                   <option value="ayeyawaddy">{t.dashboard.regionAyeyawaddy}</option>
@@ -539,7 +577,10 @@ export function PilotDashboard() {
                 <span className="sr-only">{lang === "my" ? "ဒေတာကာလ" : "Data period"}</span>
                 <select
                   value={period}
-                  onChange={(event) => setPeriod(event.target.value as HomePeriod)}
+                  onChange={(event) => {
+                    setPeriod(event.target.value as HomePeriod);
+                    closeCropCalendar();
+                  }}
                   aria-label={lang === "my" ? "ဒေတာကာလ" : "Data period"}
                 >
                   <option value="latest">
@@ -579,11 +620,14 @@ export function PilotDashboard() {
               <div className="harvest-insight-copy">
                 <strong>
                   {isWeekly
-                    ? (lang === "my" ? "Weekly model အကြံပြုသီးနှံ" : "Weekly model recommendation")
+                    ? (lang === "my" ? "ရွေးချယ်ထားသော weekly သီးနှံအထောက်အထား" : "Selected weekly crop evidence")
                     : (lang === "my" ? "Historical rule-based သီးနှံ" : "Historical rule-based crop")}: {selectedCropLabel}
                 </strong>
                 <p>
-                  {localizeBilingualNarrative(truthfulCropNarrative(activeCrop.why, isWeekly), lang)} · {Math.round(activeCrop.confidence * 100)}% {t.dashboard.ruleConfidence}
+                  {localizeBilingualNarrative(truthfulCropNarrative(activeCrop.why, isWeekly), lang)}
+                  {isWeekly
+                    ? ` · ${suitabilityTierLabel(activeCrop.suitabilityTier, lang) ?? "—"}${activeCrop.confidence > 0 ? ` · ${Math.round(activeCrop.confidence * 100)}% ${lang === "my" ? "tree-vote agreement (မချိန်ညှိထား)" : "tree-vote agreement (uncalibrated)"}` : ""}`
+                    : ` · ${Math.round(activeCrop.confidence * 100)}% ${t.dashboard.ruleConfidence}`}
                 </p>
                 <div className="factor-list">
                   {activeCrop.positiveFactors.slice(0, 2).map((factor) => (
@@ -658,7 +702,10 @@ export function PilotDashboard() {
               {t.dashboard.geoAiPilot} ·
               <select
                 value={region}
-                onChange={(e) => setRegion(e.target.value)}
+                onChange={(event) => {
+                  setRegion(event.target.value);
+                  closeCropCalendar();
+                }}
                 className="bg-gray-100 border rounded px-2 py-1 text-sm font-semibold text-slate-800"
                 aria-label={t.dashboard.regionFilterAria}
               >
@@ -766,9 +813,15 @@ export function PilotDashboard() {
             <div className="harvest-cell-summary">
               <section className="harvest-score-card" aria-label={t.dashboard.evidenceStatus}>
                 <span>{isWeekly
-                  ? (lang === "my" ? "Weekly model သီးနှံအမှတ်" : "Weekly model crop score")
+                  ? (lang === "my" ? "Weekly model သင့်တော်မှုအဆင့်" : "Weekly model suitability tier")
                   : (lang === "my" ? "Historical rule အမှတ်" : "Historical rule score")}</span>
-                <strong>{activeCrop ? activeCrop.score.toFixed(1) : "—"}<small>/100</small></strong>
+                <strong>
+                  {activeCrop
+                    ? (activeCrop.score !== null
+                        ? <>{activeCrop.score.toFixed(1)}<small>/100</small></>
+                        : suitabilityTierLabel(activeCrop.suitabilityTier, lang) ?? "—")
+                    : "—"}
+                </strong>
                 <p>{activeCrop
                   ? selectedCropLabel
                   : weeklyUnavailable
@@ -777,7 +830,7 @@ export function PilotDashboard() {
                 <small>
                   {activeCrop
                     ? (isWeekly
-                        ? `${lang === "my" ? "Model confidence" : "Model confidence"} ${activeCrop.confidence > 0 ? `${Math.round(activeCrop.confidence * 100)}%` : "—"}`
+                        ? `${activeCrop.validationStatus === "flagged" ? (lang === "my" ? "Flagged စမ်းသပ်ရလဒ်" : "Flagged experimental output") : (lang === "my" ? "စမ်းသပ်ရလဒ်" : "Experimental output")}${activeCrop.confidence > 0 ? ` · ${Math.round(activeCrop.confidence * 100)}% ${lang === "my" ? "tree-vote agreement (မချိန်ညှိထား)" : "tree-vote agreement (uncalibrated)"}` : ""}`
                         : `${t.dashboard.ruleConfidence} ${Math.round(activeCrop.confidence * 100)}% · ${t.dashboard.notModelAccuracy}`)
                     : (weeklyUnavailable
                         ? (lang === "my" ? "Production policy အရ fail-closed" : "Fail-closed by production policy")
@@ -849,13 +902,16 @@ export function PilotDashboard() {
                 </div>
               </div>
             ) : weeklyUnavailable ? (
-              <LiveCropRecommendationPanel
-                cell={selectedCell}
-                live={payload.live}
-                liveCell={selectedWeeklyCell}
-                activeCropId={selectedCropId}
-                onSelectCrop={selectCrop}
-              />
+              <>
+                <LiveCropRecommendationPanel
+                  cell={selectedCell}
+                  live={payload.live}
+                  liveCell={selectedWeeklyCell}
+                  activeCropId={selectedCropId}
+                  onSelectCrop={selectCrop}
+                />
+                <RegionalCropCalendarPanel region={payload.meta.region} onSelectCrop={selectCrop} />
+              </>
             ) : (
               <>
                 <LiveCropRecommendationPanel
@@ -877,16 +933,22 @@ export function PilotDashboard() {
                     >
                       <span className="crop-card-top">
                         <span className="crop-name">
-                          {cropName(crop)}
+                          {isWeekly && cropModelTarget(crop.id)
+                            ? t.modelEvidence.targetLabels[cropModelTarget(crop.id)!]
+                            : cropName(crop)}
                         </span>
-                        <span className="crop-score">{crop.score.toFixed(1)}</span>
+                        <span className="crop-score">
+                          {crop.score !== null ? crop.score.toFixed(1) : suitabilityTierLabel(crop.suitabilityTier, lang)}
+                        </span>
                       </span>
-                      <span className="score-track">
-                        <span className="score-fill" style={{ width: `${crop.score}%` }} />
-                      </span>
+                      {crop.score !== null && (
+                        <span className="score-track">
+                          <span className="score-fill" style={{ width: `${crop.score}%` }} />
+                        </span>
+                      )}
                       <span className="confidence-line">
                         {isWeekly
-                          ? `${lang === "my" ? "Weekly model score" : "Weekly model score"} · ${crop.confidence > 0 ? `${Math.round(crop.confidence * 100)}%` : "confidence —"}`
+                          ? `${lang === "my" ? "Weekly suitability tier" : "Weekly suitability tier"} · ${crop.validationStatus ?? "unknown"}${crop.confidence > 0 ? ` · ${Math.round(crop.confidence * 100)}% ${lang === "my" ? "tree-vote" : "tree vote"}` : ""}`
                           : `${t.dashboard.ruleConfidence} ${Math.round(crop.confidence * 100)}% · ${t.dashboard.notModelAccuracy}`}
                       </span>
                     </button>
@@ -1189,6 +1251,11 @@ export function PilotDashboard() {
           </span>
         </footer>
       </div>
+      <CropCalendarModal
+        cropId={calendarCropId}
+        region={payload.meta.region}
+        onClose={closeCropCalendar}
+      />
     </main>
   );
 }

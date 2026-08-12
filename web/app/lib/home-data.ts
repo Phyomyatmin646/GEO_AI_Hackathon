@@ -94,9 +94,18 @@ export type HomePayload = PilotBundle & {
 
 export type HomeCropRecommendation = {
   cropId: string;
-  score: number;
+  score: number | null;
+  suitabilityTier: "poor" | "moderate" | "good" | "excellent" | null;
+  sortOrder: number;
   prediction: HomePrediction;
 };
+
+const SUITABILITY_ORDER = {
+  poor: 1,
+  moderate: 2,
+  good: 3,
+  excellent: 4,
+} as const;
 
 export function homeWeeklyCellMap(
   live: HomeLiveState,
@@ -133,15 +142,20 @@ export function weeklyCropRecommendations(
     .flatMap(([target, prediction]) => {
       if (!target.startsWith("crop_suitability_")) return [];
       const score = predictionScore(cell, target);
-      return score === null
-        ? []
-        : [{
-            cropId: target.slice("crop_suitability_".length),
-            score,
-            prediction,
-          }];
+      const tierValue = String(prediction.label ?? prediction.value ?? "").trim().toLowerCase();
+      const suitabilityTier = tierValue in SUITABILITY_ORDER
+        ? tierValue as keyof typeof SUITABILITY_ORDER
+        : null;
+      if (score === null && suitabilityTier === null) return [];
+      return [{
+        cropId: target.slice("crop_suitability_".length),
+        score,
+        suitabilityTier,
+        sortOrder: score ?? SUITABILITY_ORDER[suitabilityTier!],
+        prediction,
+      }];
     })
-    .sort((left, right) => right.score - left.score);
+    .sort((left, right) => right.sortOrder - left.sortOrder || left.cropId.localeCompare(right.cropId));
 }
 
 export function homeMapScore(cell: HomeWeeklyCell | undefined): {
@@ -150,7 +164,9 @@ export function homeMapScore(cell: HomeWeeklyCell | undefined): {
   kind: "crop" | "health";
 } | null {
   const crop = weeklyCropRecommendations(cell)[0];
-  if (crop) return { score: crop.score, label: crop.cropId, kind: "crop" };
+  if (crop?.score !== null && crop?.score !== undefined) {
+    return { score: crop.score, label: crop.cropId, kind: "crop" };
+  }
   const health = predictionScore(cell, "crop_health_score");
   return health === null
     ? null

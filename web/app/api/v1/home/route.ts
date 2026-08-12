@@ -20,6 +20,8 @@ const DEFAULT_BACKEND_URL = "http://127.0.0.1:8000";
 const HOME_BACKEND_TIMEOUT_MS = 30_000;
 const LATEST_RESPONSE_MAX_BYTES = 1024 * 1024;
 const REGIONAL_RESPONSE_MAX_BYTES = 64 * 1024 * 1024;
+const WEEKLY_CACHE_FRESH_MS = 15 * 60_000;
+const WEEKLY_CACHE_MAX_ENTRIES = 12;
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
 const TARGET_PATTERN = /^[a-z][a-z0-9_]{0,119}$/;
 const ERROR_CODE_PATTERN = /^[A-Z0-9_]{1,80}$/;
@@ -61,6 +63,20 @@ type UpstreamJson = {
   bytes: number;
   latencyMs: number;
 };
+
+type LoadedWeeklyState = {
+  live: HomeLiveState;
+  activeUntil: number;
+};
+
+type WeeklyCacheEntry = LoadedWeeklyState & {
+  cachedAt: number;
+};
+
+type WeeklyCacheStatus = "bypass" | "miss" | "hit" | "stale";
+
+const weeklyStateCache = new Map<string, WeeklyCacheEntry>();
+const weeklyStateLoads = new Map<string, Promise<LoadedWeeklyState>>();
 
 class BodyTooLargeError extends Error {}
 
@@ -650,7 +666,7 @@ async function loadWeeklyState(
   allowedGridIds: Set<string>,
   signal: AbortSignal,
   requestId: string,
-): Promise<HomeLiveState> {
+): Promise<LoadedWeeklyState> {
   const telemetry = emptyTelemetry();
   let origin: string;
   let headers: HeadersInit;
@@ -816,29 +832,128 @@ async function loadWeeklyState(
   );
 
   return {
-    mode: "weekly",
-    requestedPeriod: "latest",
-    region,
-    weekStart: detail.weekStart,
-    weekEnd: detail.weekEnd,
-    observationDate: observationDate(detail.weekEnd),
-    generatedAt,
-    modelCatalogVersion: detail.modelCatalogVersion,
-    schemaVersion: detail.schemaVersion,
-    sourceSha256: detail.sourceSha256,
-    predictionSha256: detail.predictionSha256,
-    cropPredictionsAvailable:
-      modelPolicy?.crop_predictions_available === true && hasCropPredictions,
-    allowFlaggedModels: modelPolicy?.allow_flagged_models === true,
-    coverageRatio: coverage.ratio,
-    observationDays: coverage.observationDays,
-    expectedDays: coverage.expectedDays,
-    isPartialWeek: coverage.partial,
-    unavailableReason: null,
-    diagnostics: { requestId, failingStage: null, retryable: false },
-    telemetry,
-    cells,
+    activeUntil: Date.parse(detail.expiresAt),
+    live: {
+      mode: "weekly",
+      requestedPeriod: "latest",
+      region,
+      weekStart: detail.weekStart,
+      weekEnd: detail.weekEnd,
+      observationDate: observationDate(detail.weekEnd),
+      generatedAt,
+      modelCatalogVersion: detail.modelCatalogVersion,
+      schemaVersion: detail.schemaVersion,
+      sourceSha256: detail.sourceSha256,
+      predictionSha256: detail.predictionSha256,
+      cropPredictionsAvailable:
+        modelPolicy?.crop_predictions_available === true && hasCropPredictions,
+      allowFlaggedModels: modelPolicy?.allow_flagged_models === true,
+      coverageRatio: coverage.ratio,
+      observationDays: coverage.observationDays,
+      expectedDays: coverage.expectedDays,
+      isPartialWeek: coverage.partial,
+      unavailableReason: null,
+      diagnostics: { requestId, failingStage: null, retryable: false },
+      telemetry,
+      cells,
+    },
   };
+}
+
+function cachedLiveForRequest(
+  entry: WeeklyCacheEntry,
+  requestId: string,
+): HomeLiveState {
+  return {
+    ...entry.live,
+    diagnostics: {
+      ...entry.live.diagnostics,
+      requestId,
+    },
+    telemetry: { ...entry.live.telemetry },
+  };
+}
+
+function storeWeeklyCache(key: string, loaded: LoadedWeeklyState): WeeklyCacheEntry {
+  const entry = { ...loaded, cachedAt: Date.now() };
+  weeklyStateCache.delete(key);
+  weeklyStateCache.set(key, entry);
+  while (weeklyStateCache.size > WEEKLY_CACHE_MAX_ENTRIES) {
+    const oldestKey = weeklyStateCache.keys().next().value;
+    if (typeof oldestKey !== "string") break;
+    weeklyStateCache.delete(oldestKey);
+  }
+  return entry;
+}
+
+async function loadWeeklyStateWithCache(input: {
+  key: string;
+  region: string;
+  allowedGridIds: Set<string>;
+  requestId: string;
+  bypass: boolean;
+  signal: AbortSignal;
+}): Promise<{ live: HomeLiveState; cacheStatus: WeeklyCacheStatus }> {
+  if (input.bypass) {
+    const loaded = await loadWeeklyState(
+      input.region,
+      input.allowedGridIds,
+      input.signal,
+      input.requestId,
+    );
+    return { live: loaded.live, cacheStatus: "bypass" };
+  }
+
+  const now = Date.now();
+  const cached = weeklyStateCache.get(input.key);
+  if (
+    cached &&
+    cached.activeUntil > now &&
+    cached.cachedAt + WEEKLY_CACHE_FRESH_MS > now
+  ) {
+    return {
+      live: cachedLiveForRequest(cached, input.requestId),
+      cacheStatus: "hit",
+    };
+  }
+
+  let pending = weeklyStateLoads.get(input.key);
+  if (!pending) {
+    // A browser disconnect must not cancel the shared refresh for other viewers.
+    pending = loadWeeklyState(
+      input.region,
+      input.allowedGridIds,
+      new AbortController().signal,
+      input.requestId,
+    );
+    weeklyStateLoads.set(input.key, pending);
+  }
+
+  try {
+    const loaded = await pending;
+    const entry = storeWeeklyCache(input.key, loaded);
+    return {
+      live: cachedLiveForRequest(entry, input.requestId),
+      cacheStatus: "miss",
+    };
+  } catch (error) {
+    if (
+      cached &&
+      cached.activeUntil > Date.now() &&
+      error instanceof WeeklyLoadError &&
+      error.retryable
+    ) {
+      return {
+        live: cachedLiveForRequest(cached, input.requestId),
+        cacheStatus: "stale",
+      };
+    }
+    throw error;
+  } finally {
+    if (weeklyStateLoads.get(input.key) === pending) {
+      weeklyStateLoads.delete(input.key);
+    }
+  }
 }
 
 export async function GET(request: Request) {
@@ -856,19 +971,26 @@ export async function GET(request: Request) {
     const region = resolvePilotRegion(rawRegion);
     const bundle = await loadPilotBundle(region);
     let live = historicalState(rawPeriod, region, null);
+    let weeklyCacheStatus: WeeklyCacheStatus | null = null;
     if (rawPeriod === "latest") {
       try {
-        live = await loadWeeklyState(
-          region,
-          new Set(bundle.cells.map((cell) => cell.id)),
-          request.signal,
-          (() => {
-            const supplied = request.headers.get("x-request-id");
-            return supplied && REQUEST_ID_PATTERN.test(supplied)
-              ? supplied
-              : crypto.randomUUID();
-          })(),
+        const suppliedRequestId = request.headers.get("x-request-id");
+        const hasSuppliedRequestId = Boolean(
+          suppliedRequestId && REQUEST_ID_PATTERN.test(suppliedRequestId),
         );
+        const requestId = hasSuppliedRequestId
+          ? suppliedRequestId as string
+          : crypto.randomUUID();
+        const result = await loadWeeklyStateWithCache({
+          key: `${process.env.BACKEND_URL?.trim() || DEFAULT_BACKEND_URL}|${region}|${bundle.meta.releaseId}`,
+          region,
+          allowedGridIds: new Set(bundle.cells.map((cell) => cell.id)),
+          requestId,
+          bypass: hasSuppliedRequestId,
+          signal: request.signal,
+        });
+        live = result.live;
+        weeklyCacheStatus = result.cacheStatus;
       } catch (error) {
         const failure = error instanceof WeeklyLoadError
           ? error
@@ -902,6 +1024,7 @@ export async function GET(request: Request) {
     if (live.diagnostics.failingStage) {
       headers["X-Home-Weekly-Failure-Stage"] = live.diagnostics.failingStage;
     }
+    if (weeklyCacheStatus) headers["X-Home-Weekly-Cache"] = weeklyCacheStatus;
     return NextResponse.json({ ...bundle, live }, { headers });
   } catch (error) {
     if (error instanceof PilotRegionError) {

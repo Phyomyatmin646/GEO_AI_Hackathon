@@ -4,6 +4,7 @@ import test from "node:test";
 import { csvValue } from "../app/lib/csv-value.ts";
 import { en } from "../app/lib/dictionaries.ts";
 import { CROP_CALENDAR_MODEL_KEYS } from "../app/lib/crop-calendar-contract.ts";
+import { weeklyCropRecommendations } from "../app/lib/home-data.ts";
 import { MARKET_CROP_KEYS } from "../app/lib/market-contract.ts";
 import { CORE_MODEL_TARGETS } from "../app/lib/model-contract.ts";
 import {
@@ -104,6 +105,49 @@ function weeklyPrediction(target, index) {
     warnings: index === 0 ? ["Experimental surrogate output."] : [],
   };
 }
+
+test("weekly crop recommendations preserve suitability tiers without inventing numeric scores", () => {
+  const recommendations = weeklyCropRecommendations({
+    gridId: "mm_test",
+    latitude: 16,
+    longitude: 96,
+    errors: {},
+    predictions: {
+      crop_suitability_monsoon_rice: {
+        value: "excellent",
+        label: "excellent",
+        unit: "suitability_class",
+        taskType: "classification",
+        confidence: 0.98,
+        confidenceKind: "random_forest_vote_share_uncalibrated",
+        probabilities: null,
+        validationStatus: "flagged",
+        modelVersion: "test",
+        warnings: [],
+      },
+      crop_suitability_maize: {
+        value: "good",
+        label: "good",
+        unit: "suitability_class",
+        taskType: "classification",
+        confidence: 0.91,
+        confidenceKind: "random_forest_vote_share_uncalibrated",
+        probabilities: null,
+        validationStatus: "flagged",
+        modelVersion: "test",
+        warnings: [],
+      },
+    },
+  });
+
+  assert.deepEqual(
+    recommendations.map(({ cropId, score, suitabilityTier }) => ({ cropId, score, suitabilityTier })),
+    [
+      { cropId: "monsoon_rice", score: null, suitabilityTier: "excellent" },
+      { cropId: "maize", score: null, suitabilityTier: "good" },
+    ],
+  );
+});
 
 function weeklyFixture({
   region = "yangon",
@@ -363,6 +407,45 @@ test("home BFF performs two bounded regional calls and preserves exact grid pred
     "home-active-11",
     "home-full-40",
     "home-full-40",
+  ]);
+});
+
+test("home BFF reuses one validated active regional payload across browser reloads", async () => {
+  const seedResponse = await request("/api/v1/cells?region=yangon&limit=1");
+  const seed = await seedResponse.json();
+  const gridId = seed.cells[0].id;
+  const upstreamRequests = [];
+
+  await withMockBackend((incoming, outgoing) => {
+    const requestId = String(incoming.headers["x-request-id"] ?? "missing");
+    const fixture = weeklyFixture({ gridIds: [gridId] });
+    upstreamRequests.push(incoming.url);
+    outgoing.writeHead(200, {
+      "content-type": "application/json",
+      "x-request-id": requestId,
+    });
+    outgoing.end(JSON.stringify(
+      incoming.url === "/api/v1/weekly/latest" ? fixture.latest : fixture.detail,
+    ));
+  }, async () => {
+    const first = await request("/api/v1/home?region=yangon&period=latest");
+    assert.equal(first.status, 200);
+    assert.equal(first.headers.get("x-home-data-mode"), "weekly");
+    assert.equal(first.headers.get("x-home-weekly-cache"), "miss");
+    const firstPayload = await first.json();
+    assert.equal(firstPayload.live.cells[0].gridId, gridId);
+
+    const second = await request("/api/v1/home?region=yangon&period=latest");
+    assert.equal(second.status, 200);
+    assert.equal(second.headers.get("x-home-data-mode"), "weekly");
+    assert.equal(second.headers.get("x-home-weekly-cache"), "hit");
+    const secondPayload = await second.json();
+    assert.equal(secondPayload.live.cells[0].predictions.crop_health_score.value, 0.25);
+  });
+
+  assert.deepEqual(upstreamRequests, [
+    "/api/v1/weekly/latest",
+    "/api/v1/weekly/2026-08-10/yangon",
   ]);
 });
 
@@ -994,6 +1077,17 @@ test("market-price BFF mirrors the typed backend API without exposing its key", 
       requestId,
     });
 
+    const requestsBeforeCachedPage = upstreamRequests.length;
+    const uncachedMarketPage = await request("/api/v1/market");
+    assert.equal(uncachedMarketPage.status, 200);
+    assert.equal(uncachedMarketPage.headers.get("x-market-cache"), "miss");
+    await uncachedMarketPage.arrayBuffer();
+    const cachedMarketPage = await request("/api/v1/market");
+    assert.equal(cachedMarketPage.status, 200);
+    assert.equal(cachedMarketPage.headers.get("x-market-cache"), "hit");
+    await cachedMarketPage.arrayBuffer();
+    assert.equal(upstreamRequests.length, requestsBeforeCachedPage + 1);
+
     const requestsBeforeInvalidQuery = upstreamRequests.length;
     const invalidQuery = await request("/api/v1/market-prices/latest?crop=maize&crop=tomato");
     assert.equal(invalidQuery.status, 400);
@@ -1053,7 +1147,7 @@ test("market-price BFF mirrors the typed backend API without exposing its key", 
   }
 });
 
-test("Crop Calendar BFF exposes typed database responses without exposing its key", async () => {
+test("Crop Calendar BFF exposes typed backend responses without exposing its key", async () => {
   const upstreamRequests = [];
   const calendar = {
     model_key: "crop_suitability_black_gram",
@@ -1211,6 +1305,21 @@ test("Crop Calendar BFF exposes typed database responses without exposing its ke
       backend.close((error) => (error ? reject(error) : resolve()));
     });
   }
+});
+
+test("Crop Calendar page renders local-data controls and bilingual evidence copy", async () => {
+  const response = await request("/crop-calendar", {
+    headers: { accept: "text/html" },
+  });
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
+  assert.match(html, /မြန်မာ သီးနှံစိုက်ပျိုးပြက္ခဒိန်/);
+  assert.match(html, /Project-local ရည်ညွှန်းဒေတာ/);
+  assert.match(html, /Ayeyarwady/);
+  assert.match(html, /အတည်ပြုရန်လိုအပ်/);
+  assert.match(html, /သီးနှံအမျိုးအစား/);
 });
 
 test("selected-cell download returns UTF-8 CSV with release provenance", async () => {

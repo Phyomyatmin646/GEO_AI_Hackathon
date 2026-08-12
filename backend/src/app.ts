@@ -33,6 +33,7 @@ import {
 } from './services/model-server-client.js';
 import { MarketPriceService } from './services/market-price-service.js';
 import { CropCalendarService } from './services/crop-calendar-service.js';
+import { loadLocalCropCalendarService } from './services/local-crop-calendar-repository.js';
 import { WeeklyOrchestrator } from './services/weekly-orchestrator.js';
 
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
@@ -105,7 +106,12 @@ export async function buildApp(options: BuildAppOptions) {
         )
       : undefined);
   const cropCalendarService =
-    options.cropCalendarService ?? (store ? new CropCalendarService(store) : undefined);
+    options.cropCalendarService ??
+    (config.cropCalendarCsvPath
+      ? await loadLocalCropCalendarService(config.cropCalendarCsvPath)
+      : store
+        ? new CropCalendarService(store)
+        : undefined);
 
   await server.register(cors, {
     origin: config.corsOrigins,

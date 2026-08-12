@@ -1,5 +1,4 @@
 import type {
-  AppStore,
   CropCalendar,
   CropCalendarCropSummary,
 } from '../db/store.js';
@@ -8,6 +7,16 @@ import {
   type CropCalendarModelKey,
   type CropCalendarRegion,
 } from '../schemas/crop-calendars.js';
+
+export interface CropCalendarRepository {
+  listCropCalendarCrops(): Promise<CropCalendarCropSummary[]>;
+  listCropCalendarsByRegion(region: CropCalendarRegion): Promise<CropCalendar[]>;
+  getCropCalendar(input: {
+    modelKey: CropCalendarModelKey;
+    region: CropCalendarRegion;
+    season?: string;
+  }): Promise<CropCalendar | undefined>;
+}
 
 const MONTHS_EN = [
   'January',
@@ -52,7 +61,7 @@ type MonthWindow = {
 };
 
 export class CropCalendarService {
-  constructor(private readonly store: AppStore) {}
+  constructor(private readonly store: CropCalendarRepository) {}
 
   async crops(): Promise<{ crops: CropCalendarCropSummary[] }> {
     const crops = await this.store.listCropCalendarCrops();

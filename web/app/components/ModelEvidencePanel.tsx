@@ -32,6 +32,11 @@ function formatPrediction(prediction: HomePrediction, language: "en" | "my"): st
   return `${value}${unit ? ` ${unit}` : ""}`;
 }
 
+function predictionHasValue(prediction: HomePrediction | null): boolean {
+  if (!prediction || prediction.value === null) return false;
+  return typeof prediction.value !== "number" || Number.isFinite(prediction.value);
+}
+
 export function ModelEvidencePanel({ cell, live, liveCell, cropId }: Props) {
   const { lang, t } = useLanguage();
   const cropTarget = cropModelTarget(cropId);
@@ -46,7 +51,13 @@ export function ModelEvidencePanel({ cell, live, liveCell, cropId }: Props) {
       return 0;
     });
   }, [cropTarget, liveCell]);
-  const availableCount = entries.filter(([, prediction]) => prediction !== null).length;
+  const valueCount = entries.filter(([, prediction]) => predictionHasValue(prediction)).length;
+  const healthyValueCount = entries.filter(([, prediction]) =>
+    predictionHasValue(prediction) && prediction?.validationStatus === "healthy"
+  ).length;
+  const flaggedValueCount = entries.filter(([, prediction]) =>
+    predictionHasValue(prediction) && prediction?.validationStatus === "flagged"
+  ).length;
   const unavailable = live.mode !== "weekly" || !liveCell;
 
   return (
@@ -80,8 +91,8 @@ export function ModelEvidencePanel({ cell, live, liveCell, cropId }: Props) {
         </strong>
         <span>
           {lang === "my"
-            ? `${CORE_MODEL_TARGETS.length} ခုအနက် ${availableCount} ခု ရရှိထားသည်`
-            : `${availableCount} available of ${CORE_MODEL_TARGETS.length} catalog targets`}
+            ? `healthy ${healthyValueCount} · တန်ဖိုးရှိ ${valueCount} · flagged ${flaggedValueCount}`
+            : `${healthyValueCount} healthy · ${valueCount} values present · ${flaggedValueCount} flagged`}
         </span>
       </div>
 
