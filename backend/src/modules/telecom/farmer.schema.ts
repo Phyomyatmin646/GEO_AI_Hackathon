@@ -53,8 +53,14 @@ export const FarmerRegistrationRequestSchema = z
     email: EmailSchema,
     location: z.object({
       region: z.string().trim().min(2),
-      township: z.string().trim().min(2).optional(),
-      village: z.string().trim().min(2).optional(),
+      township: z.preprocess(
+        (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+        z.string().trim().min(2).optional(),
+      ),
+      village: z.preprocess(
+        (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+        z.string().trim().min(2).optional(),
+      ),
       grid_id: z.string().trim().min(2),
     }),
     main_crops: z.array(z.string()).min(1),
