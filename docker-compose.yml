@@ -68,6 +68,11 @@ services:
       MARKET_PRICE_CSO_URL: ${MARKET_PRICE_CSO_URL:-https://monpifer.gov.mm/en/basic-page/planning/central-statistical-organization-cso/20961}
       MARKET_PRICE_WISARRA_URL: ${MARKET_PRICE_WISARRA_URL:-https://wisarra.com/en/market-price}
       ENABLE_ASYNC_JOBS: "false"
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
+      GEMINI_API_URL: ${GEMINI_API_URL:-https://generativelanguage.googleapis.com}
+      CHATBOT_REQUEST_TIMEOUT_MS: ${CHATBOT_REQUEST_TIMEOUT_MS:-30000}
+      CHATBOT_SEARCH_GROUNDING_ENABLED: ${CHATBOT_SEARCH_GROUNDING_ENABLED:-true}
     volumes:
       - ./data/weekly:/data/weekly:ro
     extra_hosts:
