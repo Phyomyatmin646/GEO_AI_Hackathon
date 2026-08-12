@@ -6,6 +6,7 @@ export async function POST(request: Request) {
   
   try {
     const body = await request.json();
+    console.log("Sending to backend:", `${backendOrigin}/api/v1/farmers/register`);
     const response = await fetch(`${backendOrigin}/api/v1/farmers/register`, {
       method: "POST",
       headers: {
@@ -15,11 +16,20 @@ export async function POST(request: Request) {
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
+    const text = await response.text();
+    console.log("Backend response:", response.status, text);
+    
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch(e) {
+      data = { message: text };
+    }
     return NextResponse.json(data, { status: response.status });
   } catch (error: any) {
+    console.error("Fetch error:", error.message);
     return NextResponse.json(
-      { error: { message: "Internal proxy error" } },
+      { error: { message: `Internal proxy error: ${error.message}` } },
       { status: 500 }
     );
   }
