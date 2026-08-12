@@ -14,7 +14,7 @@ function booleanEnvironmentValue(defaultValue: boolean) {
     .transform((value) => value === 'true' || value === '1');
 }
 
-const OptionalTimeout = z.coerce.number().int().min(100).max(120_000).optional();
+const OptionalTimeout = z.coerce.number().int().min(100).max(3_600_000).optional();
 
 const EnvironmentSchema = z
   .object({

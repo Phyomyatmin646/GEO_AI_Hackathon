@@ -43,7 +43,7 @@ export class WeeklyOrchestrator {
     private readonly modelServer: ModelServerGateway,
     private readonly store: AppStore,
     private readonly now: () => Date = () => new Date(),
-  ) {}
+  ) { }
 
   async run(request: WeeklyIngestRequest, requestId: string): Promise<WeeklyRunResult> {
     if (request.schema_checksum !== this.config.modelExpectedInputSchemaSha256) {
@@ -157,8 +157,8 @@ export class WeeklyOrchestrator {
     return {
       run_id: run.id,
       status: run.status,
-      week_start: typeof run.week_start === 'string' ? run.week_start : (run.week_start as any).toISOString().substring(0, 10),
-      week_end: typeof run.week_end === 'string' ? run.week_end : (run.week_end as any).toISOString().substring(0, 10),
+      week_start: typeof run.week_start === 'string' ? run.week_start : `${(run.week_start as any).getFullYear()}-${String((run.week_start as any).getMonth() + 1).padStart(2, '0')}-${String((run.week_start as any).getDate()).padStart(2, '0')}`,
+      week_end: typeof run.week_end === 'string' ? run.week_end : `${(run.week_end as any).getFullYear()}-${String((run.week_end as any).getMonth() + 1).padStart(2, '0')}-${String((run.week_end as any).getDate()).padStart(2, '0')}`,
       model_catalog_version: run.model_catalog_version,
       schema_version: run.schema_version,
       flagged_models_enabled: this.config.allowFlaggedModels,
@@ -219,6 +219,8 @@ export class WeeklyOrchestrator {
         });
       }
       batchIndex += 1;
+      // Ping DB every batch to keep connection alive through Docker NAT (5-min idle drop)
+      await this.store.ping().catch(() => { });
     }
 
     if (targetErrors > 0) {
@@ -342,18 +344,18 @@ export class WeeklyOrchestrator {
       const audit = run.region_results[region];
       return audit
         ? [{
-            region,
-            status: audit.status,
-            cell_count: audit.cell_count,
-            ...(audit.error ? { error: audit.error } : {}),
-          }]
+          region,
+          status: audit.status,
+          cell_count: audit.cell_count,
+          ...(audit.error ? { error: audit.error } : {}),
+        }]
         : [];
     });
     return {
       run_id: run.id,
       status: run.status,
-      week_start: typeof run.week_start === 'string' ? run.week_start : (run.week_start as any).toISOString().substring(0, 10),
-      week_end: typeof run.week_end === 'string' ? run.week_end : (run.week_end as any).toISOString().substring(0, 10),
+      week_start: typeof run.week_start === 'string' ? run.week_start : `${(run.week_start as any).getFullYear()}-${String((run.week_start as any).getMonth() + 1).padStart(2, '0')}-${String((run.week_start as any).getDate()).padStart(2, '0')}`,
+      week_end: typeof run.week_end === 'string' ? run.week_end : `${(run.week_end as any).getFullYear()}-${String((run.week_end as any).getMonth() + 1).padStart(2, '0')}-${String((run.week_end as any).getDate()).padStart(2, '0')}`,
       model_catalog_version: run.model_catalog_version,
       schema_version: run.schema_version,
       flagged_models_enabled: this.config.allowFlaggedModels,
