@@ -51,12 +51,18 @@ The default export architecture is optimized for pilot work:
 
 ## Real Myanmar data status
 
-The current workspace contains QA-approved January 2018 releases for
-Ayeyawaddy, Bago (East and West combined), Magway, Mandalay, and Sagaing:
-**9,971 distinct 5 km cells in total**. Each region has a primary CSV, CSV.gz,
+The current workspace contains QA-approved data for the following regions, with predictive modeling (40 models) generated for every single 5km grid cell:
+- **Sagaing**: 3,766 cells
+- **Magway**: 1,781 cells
+- **Bago**: 1,549 cells (East and West combined)
+- **Mandalay**: 1,531 cells
+- **Ayeyawaddy**: 1,344 cells
+- **Yangon**: 382 cells (New!)
+
+**Total: 10,353 distinct 5 km cells**. Each region has a primary CSV, CSV.gz,
 Parquet, QA report, source manifest, and full deterministic web bundle. The
 environmental feature rows are real source-derived evidence; their crop
-rankings remain provisional rules.
+rankings and 40 ML predictions remain provisional rules until fully validated with ground-truth data.
 
 All five releases contain **zero observed crop labels** and therefore do not
 claim trained-model accuracy. Monthly weather fields are present. Optional
@@ -373,7 +379,15 @@ public-warning authority.
 
 - **Flood Impact Analysis**: `flood_impact_join.py` and `flood_impact_labels.py` combine grid features with flood risk data to assess potential impact on specific crops.
 - **Daily Monitoring**: `daily_gee_monitor.py` tracks near-real-time weather parameters (like CHIRPS precipitation) via Google Earth Engine to detect anomalies.
-- **SMS Broadcasting**: `early_warning_sms.py` integrates with **SMSPoh** (and optionally EasySendSMS) to send customized, localized alerts directly to registered farmers in affected regions.
+- **Farmer Registration System**: A Next.js frontend and Node.js/PostgreSQL backend module allowing farmers to register their 5km Grid ID, phone number, and channel preferences for receiving geo-targeted alerts.
+- **Automated Routing (n8n)**: An integrated n8n workflow (`n8n-workflows/weather-alert-workflow.json`) acts as an orchestration engine. When a weather alert is triggered, it fetches real-time market prices from the backend API, formats a localized Burmese alert, and routes the message automatically to **SMSPoh V3 API** (for SMS) and SMTP (for Email) based on the farmer's preferences in the PostgreSQL database.
+
+## Crop Calendar & Market Price Integration
+
+The platform provides scheduled crop calendar generation and real-time market price integration:
+
+- **Weekly Crop Predictions**: An orchestrator (`backend/src/services/weekly-orchestrator.ts`) uses `node-cron` to trigger Python ML inference (`run_weekly_predictions.py`). It updates crop suitability scores every Monday for all 5km grids based on the latest satellite and climate conditions, acting as a dynamic Crop Calendar.
+- **Market Price API**: The backend (`/api/v1/market-prices/commodities/latest`) fetches and caches real-time agricultural commodity prices. These prices are dynamically injected into farmer SMS/Email alerts via the n8n workflow.
 
 Trigger the SMS broadcast pipeline manually or via cron:
 
@@ -410,7 +424,13 @@ crop-stage event time series beyond accepting those dates in the label contract.
 
 မြန်မာနိုင်ငံသည် စိုက်ပျိုးရေးကို အဓိကထားသော နိုင်ငံဖြစ်သော်လည်း၊ နေရာဒေသအလိုက် မြေဆီလွှာအခြေအနေ၊ ရာသီဥတု ပြောင်းလဲမှု၊ သီးနှံစိုက်ပျိုးရန် သင့်တော်မှု အချက်အလက်များ (Data) မှာ အလွန် ရှားပါးနေဆဲ ဖြစ်ပါသည်။ ထို့ကြောင့် ဤပရောဂျက်ကို အောက်ပါ ရည်ရွယ်ချက်များဖြင့် တည်ဆောက်ခဲ့ခြင်း ဖြစ်ပါသည် -
 1. **Machine Learning Model များအတွက် Data တည်ဆောက်ခြင်း:** AI/ML မော်ဒယ် ၄၀ ခုကို လေ့ကျင့်ရာတွင် လိုအပ်သည့် အရည်အသွေးမြင့်မားသော မြေပြင်နှင့် ဂြိုဟ်တု ဒေတာ (Training Datasets) များကို 5-fold Cross-Validation စနစ်ဖြင့် တိကျစွာ ဖန်တီးပေးရန်။
-2. **5km အကွက်ငယ်လေးများအဖြစ် ပိုင်းခြားတွက်ချက်ခြင်း:** တစ်နိုင်ငံလုံးကို ၅ ကီလိုမီတာ (5km) အကျယ်အဝန်းရှိသော Grid အကွက်ငယ်လေးများအဖြစ် (EPSG:6933 Equal-area Projection) ပိုင်းခြားပြီး ၂၀၁၈ ခုနှစ်မှစ၍ ယနေ့အထိ လစဉ် အချက်အလက်များကို တိကျစွာ မှတ်တမ်းတင်ရန်။
+2. **5km အကွက်ငယ်လေးများအဖြစ် ပိုင်းခြားတွက်ချက်ခြင်း:** တစ်နိုင်ငံလုံးကို ၅ ကီလိုမီတာ (5km) အကျယ်အဝန်းရှိသော Grid အကွက်ငယ်လေးများအဖြစ် (EPSG:6933 Equal-area Projection) ပိုင်းခြားပြီး ၂၀၁၈ ခုနှစ်မှစ၍ ယနေ့အထိ လစဉ် အချက်အလက်များကို တိကျစွာ မှတ်တမ်းတင်ရန်။ လက်ရှိတွင် အောက်ပါတိုင်းဒေသကြီးများရှိ Grid အကွက်ပေါင်း **၁၀,၃၅၃** ကွက် အထိ အောင်မြင်စွာ တွက်ချက်ထားပြီး၊ အကွက်တစ်ကွက်ချင်းစီအတွက် အထက်ဖော်ပြပါ **မော်ဒယ် (၄၀) ခုလုံး၏ ခန့်မှန်းချက်များ (Predictions) ကို အတိအကျ တွက်ချက်ပေးထားပါသည်** -
+   - **စစ်ကိုင်းတိုင်း:** ၃,၇၆၆ ကွက်
+   - **မကွေးတိုင်း:** ၁,၇၈၁ ကွက်
+   - **ပဲခူးတိုင်း:** ၁,၅၄၉ ကွက် (အရှေ့/အနောက်)
+   - **မန္တလေးတိုင်း:** ၁,၅၃၁ ကွက်
+   - **ဧရာဝတီတိုင်း:** ၁,၃၄၄ ကွက်
+   - **ရန်ကုန်တိုင်း:** ၃၈၂ ကွက် (အသစ်ထပ်တိုး!)
 3. **ရာသီဥတုဘေးအန္တရာယ် ကြိုတင်သတိပေးခြင်း:** တောင်သူများအနေဖြင့် ရေကြီးမှု၊ လေပြင်းတိုက်မှု စသည့် သဘာဝဘေးအန္တရာယ်များကို ကြိုတင်သိရှိနိုင်ရန် ဂြိုဟ်တုအချက်အလက်များနှင့် မိုးလေဝသခန့်မှန်းချက်များကို အလိုအလျောက်ချိတ်ဆက်ပြီး Early Warning SMS များ အချိန်မီ ပေးပို့ရန်။
 
 ## ၂။ တွက်ချက်ပေးနေသော Machine Learning မော်ဒယ် (၄၀) မျိုး (40 ML Targets)
@@ -518,12 +538,16 @@ System ကြီးတစ်ခုလုံး အလုပ်လုပ်ပု
 * **GeoPandas Spatial Join (`flood_impact_labels.py`):**
   SMS မှရရှိလာသော မြေပြင်တည်နေရာသည် ဂြိုဟ်တုမှ တွက်ချက်ထားသော ရေကြီးသည့် 5km အကွက် (Grid) နှင့် ထပ်တူကျမှု ရှိ/မရှိ (Spatial Join) တွက်ချက်ပြီး၊ မှန်ကန်ပါက Verified (အတည်ပြု) စာရင်းအဖြစ် သတ်မှတ်ပါသည်။
 
-### အပိုင်း (၄): [အသစ်] အလိုအလျောက် ကြိုတင်သတိပေး SMS စနစ် (Early Warning Broadcaster Module)
-ရေကြီးမှုနှင့် မုန်တိုင်းအန္တရာယ်ကို အချိန်မီ သတိပေးနိုင်သော စနစ်ဖြစ်ပါသည်။ 
-1. **မိုးလေဝသ ခန့်မှန်းချက်:** Open-Meteo API မှ လာမည့် ၃ ရက်စာ မိုးရေချိန်နှင့် လေတိုက်နှုန်း။
-2. **ဂြိုဟ်တု စောင့်ကြည့်မှု:** GEE Monitor မှ လက်ရှိ ရေကြီးနေမှု အခြေအနေ (Sentinel-1)။
-3. **DMH Priority:** မိုး/ဇလ ၏ တရားဝင် သတိပေးချက်။
-အထက်ပါ အချက်အလက်များအပေါ် မူတည်ပြီး `NORMAL`, `WATCH`, `WARNING`, `EMERGENCY` အန္တရာယ်အဆင့် သတ်မှတ်ကာ တောင်သူများထံသို့ အချိန်မီ SMS သတိပေးချက်များ ပေးပို့ပေးပါသည်။
+### အပိုင်း (၄): [အသစ်] အလိုအလျောက် ကြိုတင်သတိပေး SMS စနစ် (Early Warning Broadcaster & n8n Workflow)
+ရေကြီးမှု၊ မုန်တိုင်းအန္တရာယ်နှင့် စပါးဈေးနှုန်းများကို အချိန်မီ သတိပေးနိုင်သော စနစ်ဖြစ်ပါသည်။ 
+1. **Farmer Registration (တောင်သူ မှတ်ပုံတင်စနစ်):** Next.js Website နှင့် PostgreSQL ကို အသုံးပြု၍ တောင်သူများ၏ ဖုန်းနံပါတ်၊ အီးမေးလ်နှင့် ၎င်းတို့၏ Grid ID တို့ကို စနစ်တကျ သိမ်းဆည်းထားပါသည်။ (Grid တစ်ခုတည်းအောက်တွင် လူအများအပြား မှတ်ပုံတင်နိုင်ပါသည်)
+2. **မိုးလေဝသနှင့် ဈေးကွက် (Weather & Market):** Open-Meteo API မှ ရာသီဥတုအခြေအနေနှင့် Backend မှ နေ့စဉ် စပါးဈေးနှုန်းများကို ချိတ်ဆက်ရယူပါသည်။
+3. **n8n Automation Workflow:** ရာသီဥတု သတိပေးချက် Trigger ဖြစ်ပေါ်လာချိန်တွင် n8n Webhook မှတဆင့် (၁) Backend မှ စပါးဈေးနှုန်းကို လှမ်းယူကာ၊ (၂) မြန်မာစာ (Unicode) ဖြင့် သတင်းစကားကို Format လုပ်ပြီး၊ (၃) SMSPoh V3 API မှတစ်ဆင့် SMS (သို့မဟုတ်) Email သို့ အလိုအလျောက် တပြိုင်နက်တည်း ပေးပို့ပေးပါသည်။ (n8n-workflows/weather-alert-workflow.json တွင် အသင့်သုံးနိုင်ပါသည်)
+
+### အပိုင်း (၅): သီးနှံစိုက်ပျိုးချိန် ပြက္ခဒိန် နှင့် ဈေးကွက် (Crop Calendar & Market Integration)
+တောင်သူများအတွက် အချိန်ကိုက် စိုက်ပျိုးနိုင်ရန်နှင့် ဈေးကွက်ပေါက်ဈေး သိရှိနိုင်ရန် အောက်ပါစနစ်များကို တည်ဆောက်ထားပါသည် -
+1. **အလိုအလျောက် သီးနှံပြက္ခဒိန် (Weekly Orchestrator):** Node-cron ကို အသုံးပြု၍ အပတ်စဉ် တနင်္လာနေ့တိုင်း `run_weekly_predictions.py` ကို အလိုအလျောက် Run ပေးပြီး၊ နောက်ဆုံးရ ဂြိုဟ်တုနှင့် ရာသီဥတု အချက်အလက်များအပေါ် မူတည်၍ 5km Grid များအားလုံး၏ သီးနှံသင့်တော်မှု ရမှတ်များ (Crop Scores) ကို Update ပြုလုပ်ပေးပါသည်။ ၎င်းသည် တောင်သူများအတွက် တက်ကြွသော (Dynamic) သီးနှံပြက္ခဒိန် အဖြစ် အလုပ်လုပ်ပါသည်။
+2. **ဈေးကွက် ပေါက်ဈေး (Market Price API):** Backend တွင် စပါး၊ ပဲ၊ ပြောင်း စသည့် သီးနှံများ၏ နေ့စဉ် ပေါက်ဈေးများကို လှမ်းယူပေးသော API (`/api/v1/market-prices/commodities/latest`) ပါဝင်ပြီး၊ အဆိုပါ ဈေးနှုန်းများကို n8n Workflow မှတစ်ဆင့် တောင်သူများထံသို့ အလိုအလျောက် SMS/Email ဖြင့် သတင်းပေးပို့ရာတွင် တွဲဖက် အသုံးပြုပါသည်။
 
 ## ၅။ အသုံးပြုထားသော နည်းပညာများနှင့် Framework များ (Technologies Used)
 
