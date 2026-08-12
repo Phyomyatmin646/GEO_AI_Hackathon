@@ -2,7 +2,8 @@
   --register-gold: #f5a000;
   --register-ink: #0c2a23;
   min-height: 100svh;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   color: #171817;
   font-family: var(--font-geist-sans), var(--font-walone), sans-serif;
   background-color: #fffaf1;
@@ -17,6 +18,29 @@
   z-index: 40;
   top: 24px;
   right: 28px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.languageButton {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  color: #694b14;
+  background: rgba(255, 252, 245, 0.92);
+  border: 1px solid rgba(216, 151, 43, 0.3);
+  border-radius: 999px;
+  box-shadow: 0 5px 16px rgba(120, 82, 18, 0.08);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.languageButton:focus-visible {
+  outline: 3px solid rgba(245, 160, 0, 0.28);
+  outline-offset: 2px;
 }
 
 .brandLink {
@@ -129,6 +153,19 @@
   box-shadow: 0 0 0 4px rgba(245, 160, 0, 0.11);
 }
 
+.invalidControl {
+  color: #a24634;
+  border-color: rgba(162, 70, 52, 0.62);
+  box-shadow: 0 0 0 3px rgba(162, 70, 52, 0.08);
+}
+
+.fieldError {
+  margin-top: -5px;
+  color: #963f30;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
 .control input,
 .control select {
   min-width: 0;
@@ -185,6 +222,46 @@
 
 .submitButton:active {
   transform: translateY(0);
+}
+
+.submitButton:disabled {
+  cursor: wait;
+  filter: grayscale(0.1);
+  opacity: 0.7;
+  transform: none;
+}
+
+.formStatus {
+  display: grid;
+  gap: 5px;
+  margin-top: 18px;
+  padding: 13px 15px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.formStatus span,
+.formStatus small {
+  display: block;
+}
+
+.formStatus small {
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  opacity: 0.72;
+}
+
+.successStatus {
+  color: #175a3b;
+  background: #edf7ef;
+  border: 1px solid rgba(23, 98, 63, 0.2);
+}
+
+.errorStatus {
+  color: #8c3d30;
+  background: #fff2ee;
+  border: 1px solid rgba(162, 70, 52, 0.2);
 }
 
 .divider {
@@ -348,6 +425,12 @@
   .pageNav {
     top: 16px;
     right: 16px;
+  }
+
+  .languageButton {
+    min-height: 36px;
+    padding: 7px 10px;
+    font-size: 0.7rem;
   }
 
   .page {

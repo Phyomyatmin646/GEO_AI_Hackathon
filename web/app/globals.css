@@ -4907,6 +4907,37 @@ body:has(.faq-page) {
   color: #bbb;
 }
 
+.chatbot-error {
+  display: grid;
+  gap: 7px;
+  margin: 0 46px;
+  padding: 11px 12px;
+  color: #8b402e;
+  background: #fff2ec;
+  border: 1px solid rgba(162, 70, 52, 0.2);
+  border-radius: 11px;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.chatbot-error small {
+  overflow-wrap: anywhere;
+  color: #9b776e;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.58rem;
+}
+
+.chatbot-error button {
+  justify-self: start;
+  padding: 6px 10px;
+  color: #fff;
+  background: #a24634;
+  border: 0;
+  border-radius: 8px;
+  font-size: 0.67rem;
+  font-weight: 700;
+}
+
 /* Typing dots */
 .chatbot-typing {
   display: flex;
