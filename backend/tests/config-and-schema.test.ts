@@ -20,6 +20,11 @@ describe('configuration', () => {
     expect(config.rateLimitWindowMs).toBe(60_000);
   });
 
+  it('treats a blank optional database URL as unset outside production', () => {
+    const config = loadConfig({ NODE_ENV: 'test', DATABASE_URL: '   ' });
+    expect(config.databaseUrl).toBeUndefined();
+  });
+
   it('requires public, pipeline, model, and database credentials in production', () => {
     expect(() => loadConfig({ NODE_ENV: 'production' })).toThrow(/API_KEY/);
     expect(() => loadConfig({ NODE_ENV: 'production' })).toThrow(/INTERNAL_API_KEY/);

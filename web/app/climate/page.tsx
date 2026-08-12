@@ -15,6 +15,8 @@ import {
   YAxis,
 } from "recharts";
 import DataSourceNote from "../components/DataSourceNote";
+import { HarvestIcon } from "../components/HarvestIcon";
+import { SiteNavigation } from "../components/SiteNavigation";
 import { useLanguage } from "../lib/i18n";
 
 type ClimateSource = {
@@ -86,6 +88,8 @@ export default function ClimatePage() {
       title: "ဧရာဝတီဒေသ ရာသီဥတုအထောက်အထား",
       subtitle: "QA စစ်ပြီးသော 5 km grid data မှ နှစ်အလိုက် မိုးရေချိန်၊ အပူချိန်နှင့် မြေဆီလွှာအစိုဓာတ်",
       macro: "စီးပွားရေးနှင့် စိုက်ပျိုးရေး",
+      dashboard: "Dashboard",
+      country: "မြန်မာ",
       back: "← မြေပုံသို့ ပြန်သွားမည်",
       badge: "QA စစ်ပြီး real data",
       scope: "လွှမ်းခြုံမှု",
@@ -109,6 +113,8 @@ export default function ClimatePage() {
       title: "Ayeyawaddy climate evidence",
       subtitle: "Annual rainfall, temperature, and soil moisture aggregated from QA-passed 5 km grid observations",
       macro: "Economy & agriculture",
+      dashboard: "Dashboard",
+      country: "Myanmar",
       back: "← Back to map",
       badge: "QA-passed real data",
       scope: "Coverage",
@@ -130,8 +136,9 @@ export default function ClimatePage() {
 
   if (!data) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f7f6f2] p-8 text-center text-slate-600">
-        {error ? copy.loadError : copy.loading}
+      <div className="chart-page-state chart-page-state--climate">
+        <span className="chart-page-state__mark" aria-hidden="true" />
+        <p>{error ? copy.loadError : copy.loading}</p>
       </div>
     );
   }
@@ -141,52 +148,49 @@ export default function ClimatePage() {
   const coverage = `${data.scope.completeYears[0]}–${data.scope.completeYears[1]}`;
 
   return (
-    <main className="min-h-screen bg-[#f7f6f2] p-4 font-sans text-slate-800 sm:p-8">
-      <div className="mx-auto max-w-6xl">
-        <header className="mb-8 flex flex-wrap items-start justify-between gap-5">
-          <div>
-            <p className="mb-2 text-sm font-bold uppercase tracking-[0.18em] text-emerald-700">
-              {copy.eyebrow}
-            </p>
-            <h1 className="text-3xl font-bold tracking-tight text-emerald-950 sm:text-4xl">
-              {copy.title}
-            </h1>
-            <p className="mt-2 max-w-3xl text-slate-600">{copy.subtitle}</p>
-          </div>
-          <nav className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => setLang(lang === "en" ? "my" : "en")}
-              className="rounded bg-emerald-800 px-4 py-2 text-white shadow transition hover:bg-emerald-700"
-              aria-label={lang === "en" ? t.dashboard.languageSwitchToMyanmar : t.dashboard.languageSwitchToEnglish}
-            >
-              {lang === "en" ? "Myanmar" : "English"}
-            </button>
-            <Link
-              href="/macro"
-              className="rounded bg-emerald-50 px-4 py-2 font-medium text-emerald-800 hover:underline"
-            >
-              {copy.macro}
-            </Link>
-            <Link href="/" className="font-medium text-emerald-700 hover:underline">
-              {copy.back}
-            </Link>
+    <main className="chart-page chart-page--climate">
+      <header className="chart-topbar">
+        <Link href="/" className="chart-brand" aria-label={t.header.title}>
+          <span className="harvest-brand-logo chart-brand__logo" role="img" />
+        </Link>
+        <nav className="chart-topbar__nav" aria-label="Page navigation">
+          <button
+            type="button"
+            className="chart-language"
+            onClick={() => setLang(lang === "en" ? "my" : "en")}
+            aria-label={lang === "en" ? t.dashboard.languageSwitchToMyanmar : t.dashboard.languageSwitchToEnglish}
+          >
+            <HarvestIcon name="globe" size={18} />
+            <span>{lang === "en" ? "English" : "မြန်မာ"}</span>
+          </button>
+          <SiteNavigation />
+        </nav>
+      </header>
+
+      <div className="chart-page__canvas">
+        <header className="chart-hero">
+          <p className="chart-hero__eyebrow">{copy.eyebrow}</p>
+          <h1>{copy.title}</h1>
+          <p className="chart-hero__subtitle">{copy.subtitle}</p>
+          <nav className="chart-hero__actions" aria-label="Evidence navigation">
+            <span className="chart-tab chart-tab--active">{copy.country}</span>
+            <Link href="/macro" className="chart-tab">{copy.macro}</Link>
+            <Link href="/" className="chart-back-link">{copy.back}</Link>
           </nav>
         </header>
 
-        <section className="mb-8 grid gap-4 sm:grid-cols-[auto_1fr]">
-          <div className="inline-flex h-fit items-center rounded-full bg-emerald-700 px-4 py-2 text-sm font-bold text-white">
-            {copy.badge}
-          </div>
-          <div className="rounded-xl border border-emerald-100 bg-white px-5 py-4 shadow-sm">
-            <p className="font-semibold text-slate-800">{copy.scope}</p>
-            <p className="mt-1 text-sm text-slate-600">{copy.scopeText}</p>
+        <section className="chart-evidence-banner chart-evidence-banner--scope">
+          <span className="chart-evidence-banner__badge">{copy.badge}</span>
+          <div>
+            <strong>{copy.scope}</strong>
+            <p>{copy.scopeText}</p>
           </div>
         </section>
 
-        <div className="mb-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
-          <section className="rounded-2xl border border-emerald-100/70 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-xl font-semibold text-slate-800">{copy.rainfall}</h2>
-            <div className="h-72">
+        <div className="chart-grid">
+          <section className="chart-card">
+            <h2>{copy.rainfall}</h2>
+            <div className="chart-card__plot">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={data.values}
@@ -194,11 +198,11 @@ export default function ClimatePage() {
                 >
                   <defs>
                     <linearGradient id="officialRainfallFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.35} />
-                      <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#15945f" stopOpacity={0.24} />
+                      <stop offset="95%" stopColor="#15945f" stopOpacity={0.015} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#dfe5e2" />
                   <XAxis dataKey="year" />
                   <YAxis tickFormatter={(value) => `${Number(value).toLocaleString()} mm`} />
                   <Tooltip
@@ -211,8 +215,8 @@ export default function ClimatePage() {
                   <Area
                     type="monotone"
                     dataKey="annual_rainfall_mm"
-                    stroke="#0284c7"
-                    strokeWidth={2}
+                    stroke="#15945f"
+                    strokeWidth={3}
                     fill="url(#officialRainfallFill)"
                     name={copy.rainfallLegend}
                   />
@@ -233,15 +237,15 @@ export default function ClimatePage() {
             )}
           </section>
 
-          <section className="rounded-2xl border border-emerald-100/70 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-xl font-semibold text-slate-800">{copy.temperature}</h2>
-            <div className="h-72">
+          <section className="chart-card">
+            <h2>{copy.temperature}</h2>
+            <div className="chart-card__plot">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={data.values}
                   margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#e3e5e9" />
                   <XAxis dataKey="year" />
                   <YAxis domain={["dataMin - 0.5", "dataMax + 0.5"]} tickFormatter={(value) => `${value}°C`} />
                   <Tooltip
@@ -254,9 +258,9 @@ export default function ClimatePage() {
                   <Line
                     type="monotone"
                     dataKey="mean_temperature_c"
-                    stroke="#e11d48"
+                    stroke="#e79c00"
                     strokeWidth={3}
-                    dot={{ r: 4, fill: "#e11d48" }}
+                    dot={{ r: 4, fill: "#e79c00" }}
                     name={copy.temperatureLegend}
                   />
                 </LineChart>
@@ -275,70 +279,70 @@ export default function ClimatePage() {
               />
             )}
           </section>
+          <section className="chart-card chart-card--wide">
+            <h2>{copy.soilMoisture}</h2>
+            <div className="chart-card__plot chart-card__plot--wide">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={data.values}
+                  margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#dfe5e2" />
+                  <XAxis dataKey="year" />
+                  <YAxis domain={["dataMin - 0.02", "dataMax + 0.02"]} />
+                  <Tooltip
+                    formatter={(value) => [
+                      `${Number(value).toFixed(4)} m³/m³`,
+                      copy.soilMoistureLegend,
+                    ]}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="mean_soil_moisture_m3_m3"
+                    stroke="#15945f"
+                    strokeWidth={3}
+                    dot={{ r: 4, fill: "#15945f" }}
+                    name={copy.soilMoistureLegend}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            {era5 && (
+              <DataSourceNote
+                organization={era5.organization}
+                dataset={era5.dataset}
+                indicator="Volumetric soil water layer 1"
+                years={coverage}
+                unit="m³/m³"
+                citationUrl={era5.citationUrl}
+                detail={`${era5.nativeResolution}. ${data.scope.aggregation}`}
+                language={lang}
+              />
+            )}
+          </section>
         </div>
 
-        <section className="mb-8 rounded-2xl border border-emerald-100/70 bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-xl font-semibold text-slate-800">{copy.soilMoisture}</h2>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={data.values}
-                margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="year" />
-                <YAxis domain={["dataMin - 0.02", "dataMax + 0.02"]} />
-                <Tooltip
-                  formatter={(value) => [
-                    `${Number(value).toFixed(4)} m³/m³`,
-                    copy.soilMoistureLegend,
-                  ]}
-                />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="mean_soil_moisture_m3_m3"
-                  stroke="#7c3aed"
-                  strokeWidth={3}
-                  dot={{ r: 4, fill: "#7c3aed" }}
-                  name={copy.soilMoistureLegend}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+        <section className="chart-qa-card">
+          <div className="chart-qa-card__heading">
+            <span><HarvestIcon name="dataset" size={20} /></span>
+            <h2>{copy.qaTitle}</h2>
           </div>
-          {era5 && (
-            <DataSourceNote
-              organization={era5.organization}
-              dataset={era5.dataset}
-              indicator="Volumetric soil water layer 1"
-              years={coverage}
-              unit="m³/m³"
-              citationUrl={era5.citationUrl}
-              detail={`${era5.nativeResolution}. ${data.scope.aggregation}`}
-              language={lang}
-            />
-          )}
-        </section>
-
-        <section className="rounded-2xl border border-slate-200 bg-slate-900 p-6 text-slate-100 shadow-sm">
-          <h2 className="text-xl font-semibold">{copy.qaTitle}</h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div className="chart-qa-card__metrics">
             <div>
-              <p className="text-2xl font-bold">{data.qa.rowCount.toLocaleString()}</p>
-              <p className="text-sm text-slate-400">{copy.qaRows}</p>
+              <strong>{data.qa.rowCount.toLocaleString()}</strong>
+              <span>{copy.qaRows}</span>
             </div>
             <div>
-              <p className="text-2xl font-bold text-emerald-400">{data.qa.errorCount}</p>
-              <p className="text-sm text-slate-400">{copy.qaErrors}</p>
+              <strong className="is-success">{data.qa.errorCount}</strong>
+              <span>{copy.qaErrors}</span>
             </div>
             <div>
-              <p className="text-2xl font-bold text-amber-300">{data.qa.warningCount}</p>
-              <p className="text-sm text-slate-400">{copy.qaWarnings}</p>
+              <strong className="is-warning">{data.qa.warningCount}</strong>
+              <span>{copy.qaWarnings}</span>
             </div>
           </div>
-          <p className="mt-5 break-all font-mono text-[11px] text-slate-400">
-            CSV SHA-256: {data.qa.sourceCsvSha256}
-          </p>
+          <p className="chart-qa-card__hash">CSV SHA-256: {data.qa.sourceCsvSha256}</p>
         </section>
       </div>
     </main>

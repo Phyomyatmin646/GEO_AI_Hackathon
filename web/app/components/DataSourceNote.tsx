@@ -37,40 +37,40 @@ export default function DataSourceNote({
         unit: "Unit",
         updated: "Source updated",
         citation: "Open official dataset ↗",
-      };
+  };
 
   return (
-    <div className="mt-5 rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 text-xs leading-5 text-slate-600">
-      <dl className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
+    <div className="chart-source-note">
+      <dl className="chart-source-note__grid">
         <div>
-          <dt className="inline font-semibold text-slate-700">{labels.source}: </dt>
-          <dd className="inline">{organization} · {dataset}</dd>
+          <dt>{labels.source}: </dt>
+          <dd>{organization} · {dataset}</dd>
         </div>
         <div>
-          <dt className="inline font-semibold text-slate-700">{labels.indicator}: </dt>
-          <dd className="inline">{indicator}</dd>
+          <dt>{labels.indicator}: </dt>
+          <dd>{indicator}</dd>
         </div>
         <div>
-          <dt className="inline font-semibold text-slate-700">{labels.years}: </dt>
-          <dd className="inline">{years}</dd>
+          <dt>{labels.years}: </dt>
+          <dd>{years}</dd>
         </div>
         <div>
-          <dt className="inline font-semibold text-slate-700">{labels.unit}: </dt>
-          <dd className="inline">{unit}</dd>
+          <dt>{labels.unit}: </dt>
+          <dd>{unit}</dd>
         </div>
         {updated && (
           <div>
-            <dt className="inline font-semibold text-slate-700">{labels.updated}: </dt>
-            <dd className="inline">{updated}</dd>
+            <dt>{labels.updated}: </dt>
+            <dd>{updated}</dd>
           </div>
         )}
       </dl>
-      {detail && <p className="mt-2 text-slate-500">{detail}</p>}
+      {detail && <p className="chart-source-note__detail">{detail}</p>}
       <a
         href={citationUrl}
         target="_blank"
         rel="noreferrer"
-        className="mt-2 inline-flex font-semibold text-emerald-800 underline decoration-emerald-300 underline-offset-2 hover:text-emerald-600"
+        className="chart-source-note__link"
       >
         {labels.citation}
       </a>

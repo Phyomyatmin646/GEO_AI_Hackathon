@@ -3,6 +3,7 @@ type HarvestIconName =
   | "calendar"
   | "cells"
   | "chevron"
+  | "close"
   | "copy"
   | "dataset"
   | "download"
@@ -11,6 +12,7 @@ type HarvestIconName =
   | "info"
   | "lightbulb"
   | "link"
+  | "menu"
   | "layers"
   | "ph"
   | "pin"
@@ -69,6 +71,7 @@ export function HarvestIcon({ name, size = 20, strokeWidth = 1.8 }: Props) {
         </>
       )}
       {name === "chevron" && <path d="m8 10 4 4 4-4" />}
+      {name === "close" && <path d="M6 6l12 12M18 6 6 18" />}
       {name === "copy" && (
         <>
           <rect height="14" rx="2" width="11" x="8" y="7" />
@@ -123,6 +126,7 @@ export function HarvestIcon({ name, size = 20, strokeWidth = 1.8 }: Props) {
           <path d="m16.8 7.2 1.6-1.6a3.5 3.5 0 0 0-5-5l-3.1 3.1a3.5 3.5 0 0 0 0 5" transform="translate(-2 2)" />
         </>
       )}
+      {name === "menu" && <path d="M4 7h16M4 12h16M4 17h16" />}
       {name === "ph" && (
         <>
           <rect height="18" rx="5" width="18" x="3" y="3" />

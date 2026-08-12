@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useLanguage } from "../lib/i18n";
 import Link from "next/link";
 import { HarvestIcon } from "../components/HarvestIcon";
+import { SiteNavigation } from "../components/SiteNavigation";
 
 type FAQItem = {
   faq_id: string;
@@ -17,12 +18,15 @@ type FAQItem = {
   last_reviewed_at: string;
 };
 
+const ITEMS_PER_PAGE = 10;
+
 export default function FAQPage() {
   const { lang, setLang, t } = useLanguage();
   const [faqs, setFaqs] = useState<FAQItem[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -52,7 +56,6 @@ export default function FAQPage() {
       }
     }
 
-    // Add simple debounce
     const timeout = setTimeout(() => {
       fetchFaqs();
     }, 300);
@@ -70,6 +73,28 @@ export default function FAQPage() {
         : "အမေးများသော မေးခွန်းများ | စိုက်ပျိုးမိတ်ဆွေ";
   }, [lang]);
 
+  const totalPages = Math.ceil(faqs.length / ITEMS_PER_PAGE);
+
+  const pagedFaqs = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return faqs.slice(start, start + ITEMS_PER_PAGE);
+  }, [faqs, currentPage]);
+
+  // Build visible page numbers (show up to 5 page buttons around current)
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pages: (number | "...")[] = [];
+    const delta = 2;
+    const left = Math.max(2, currentPage - delta);
+    const right = Math.min(totalPages - 1, currentPage + delta);
+    pages.push(1);
+    if (left > 2) pages.push("...");
+    for (let i = left; i <= right; i++) pages.push(i);
+    if (right < totalPages - 1) pages.push("...");
+    pages.push(totalPages);
+    return pages;
+  }, [currentPage, totalPages]);
+
   const titleParts =
     lang === "my"
       ? ["အမေးများသော", "မေးခွန်းများ"]
@@ -78,24 +103,18 @@ export default function FAQPage() {
   return (
     <main className="app-shell faq-page">
       <header className="faq-topbar">
-        <div className="faq-brand">
+        <Link href="/" className="faq-brand" aria-label={lang === "my" ? "ပင်မစာမျက်နှာသို့" : "Go to home"}>
           <span
             aria-label={t.header.title}
             className="harvest-brand-logo faq-brand-logo"
             role="img"
           />
-        </div>
+        </Link>
         <div className="faq-topbar-actions">
-          <Link href="/" className="faq-dashboard-link">
-            {t.faq.backToDashboard}
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path d="M10 17l5-5-5-5M15 12H3" />
-              <path d="M14 4h5a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-5" />
-            </svg>
-          </Link>
           <button
             onClick={() => {
               setSearch("");
+              setCurrentPage(1);
               setLang(lang === "en" ? "my" : "en");
             }}
             className="faq-language-switch"
@@ -103,8 +122,8 @@ export default function FAQPage() {
           >
             <HarvestIcon name="globe" size={20} />
             {lang === "en" ? "Myanmar" : "English"}
-            <HarvestIcon name="chevron" size={17} />
           </button>
+          <SiteNavigation />
         </div>
       </header>
 
@@ -124,9 +143,13 @@ export default function FAQPage() {
           </svg>
           <input
             type="search"
+            aria-label={t.faq.searchPlaceholder}
             placeholder={t.faq.searchPlaceholder}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
           />
         </div>
 
@@ -140,7 +163,7 @@ export default function FAQPage() {
           ) : faqs.length === 0 ? (
             <div className="faq-state">{t.faq.noResults}</div>
           ) : (
-            faqs.map((faq) => (
+            pagedFaqs.map((faq) => (
               <article key={faq.faq_id} className="faq-card">
                 <span className="faq-category">
                   {faq.category === "General" ? t.faq.categoryGeneral : faq.category}
@@ -162,6 +185,62 @@ export default function FAQPage() {
             ))
           )}
         </div>
+
+        {!loading && !loadError && totalPages > 1 && (
+          <nav
+            className="faq-pagination"
+            aria-label={lang === "my" ? "စာမျက်နှာရွေးချယ်ရန်" : "Pagination"}
+          >
+            <span className="faq-pagination-info">
+              {lang === "my"
+                ? `${faqs.length} ခု | စာမျက်နှာ ${currentPage} / ${totalPages}`
+                : `${faqs.length} results · Page ${currentPage} of ${totalPages}`}
+            </span>
+            <div className="faq-pagination-controls">
+              <button
+                className="faq-page-btn faq-page-arrow"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                aria-label={lang === "my" ? "ယခင်စာမျက်နှာ" : "Previous page"}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+              </button>
+
+              {pageNumbers.map((pg, idx) =>
+                pg === "..." ? (
+                  <span key={`ellipsis-${idx}`} className="faq-page-ellipsis">…</span>
+                ) : (
+                  <button
+                    key={pg}
+                    className={`faq-page-btn${currentPage === pg ? " faq-page-active" : ""}`}
+                    onClick={() => setCurrentPage(pg as number)}
+                    aria-current={currentPage === pg ? "page" : undefined}
+                    aria-label={
+                      lang === "my"
+                        ? `စာမျက်နှာ ${pg} သို့ သွားရန်`
+                        : `Go to page ${pg}`
+                    }
+                  >
+                    {pg}
+                  </button>
+                )
+              )}
+
+              <button
+                className="faq-page-btn faq-page-arrow"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                aria-label={lang === "my" ? "နောက်စာမျက်နှာ" : "Next page"}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+            </div>
+          </nav>
+        )}
       </section>
     </main>
   );

@@ -27,7 +27,7 @@ const EnvironmentSchema = z
     API_KEY: z.string().min(16).optional(),
     INTERNAL_API_KEY: z.string().min(24).optional(),
     CORS_ORIGINS: z.string().default('http://localhost:3000'),
-    DATABASE_URL: z.string().min(1).optional(),
+    DATABASE_URL: OptionalDatabaseUrl,
 
     GEO_MODEL_SERVER_URL: z.url().optional(),
     MODEL_SERVER_URL: z.url().optional(),

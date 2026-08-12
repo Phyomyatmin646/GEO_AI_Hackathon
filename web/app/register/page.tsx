@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { HarvestIcon } from "../components/HarvestIcon";
+import { SiteNavigation } from "../components/SiteNavigation";
 import styles from "./register.module.css";
 
 export const metadata: Metadata = {
@@ -10,12 +12,17 @@ export const metadata: Metadata = {
 export default function RegisterPage() {
   return (
     <main className={styles.page}>
+      <div className={styles.pageNav}>
+        <SiteNavigation />
+      </div>
       <section className={styles.registerPanel} aria-labelledby="register-title">
-        <span
-          aria-label="စိုက်ပျိုးမိတ်ဆွေ — Myanmar Agriculture Intelligence"
-          className={styles.brandLogo}
-          role="img"
-        />
+        <Link href="/" className={styles.brandLink} aria-label="Go to home">
+          <span
+            aria-label="စိုက်ပျိုးမိတ်ဆွေ — Myanmar Agriculture Intelligence"
+            className={styles.brandLogo}
+            role="img"
+          />
+        </Link>
 
         <div className={styles.card}>
           <div className={styles.avatar} aria-hidden="true">

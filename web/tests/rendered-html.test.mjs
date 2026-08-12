@@ -6,6 +6,12 @@ import { en } from "../app/lib/dictionaries.ts";
 import { CROP_CALENDAR_MODEL_KEYS } from "../app/lib/crop-calendar-contract.ts";
 import { MARKET_CROP_KEYS } from "../app/lib/market-contract.ts";
 import {
+  formatMarketDate,
+  formatMarketNumber,
+  localizeMarketValue,
+  marketMyanmarDictionaryCounts,
+} from "../app/lib/market-localization.ts";
+import {
   localizeBilingualLabel,
   localizeBilingualNarrative,
   localizeFactor,
@@ -293,17 +299,37 @@ test("market-price BFF mirrors the typed backend API without exposing its key", 
         crops: requestId === "bad-contract" ? MARKET_CROP_KEYS.slice(0, -1) : MARKET_CROP_KEYS,
       };
     } else if (requestUrl.pathname === "/api/v1/market-prices/commodities/latest") {
+      const servesMarketPage = requestUrl.searchParams.get("limit") === "500";
+      const sourceDate = "Mon Aug 10 2026 00:00:00 GMT+0000 (Coordinated Universal Time)";
       payload = {
         label: "Latest available market commodity prices",
         fetched_at: "2026-08-11T00:00:00.000Z",
         source: "Wisarra",
-        source_date: null,
-        commodities: [],
+        source_date: servesMarketPage ? sourceDate : null,
+        commodities: servesMarketPage
+          ? [{
+              commodity_name_raw: "Maize (Yellow)",
+              variety: "Yellow",
+              region: "Shan",
+              marketplace: "Aungban",
+              price_min: "1200.000000",
+              price_max: "1350.000000",
+              currency: "MMK",
+              quantity: "1.000000",
+              unit: "viss",
+              source: "Wisarra",
+              source_date: sourceDate,
+              source_url: "https://wisarra.com/en/market-price",
+              fetched_at: "2026-08-11T00:00:00.000Z",
+              model_crop_keys: ["maize"],
+              is_model_crop: true,
+            }]
+          : [],
         pagination: {
-          limit: 2,
-          offset: 1,
-          returned: 0,
-          total: 0,
+          limit: servesMarketPage ? 500 : 2,
+          offset: servesMarketPage ? 0 : 1,
+          returned: servesMarketPage ? 1 : 0,
+          total: servesMarketPage ? 1 : 0,
           has_more: false,
           next_offset: null,
         },
@@ -381,6 +407,33 @@ test("market-price BFF mirrors the typed backend API without exposing its key", 
     );
     assert.ok(upstreamRequests.every(({ apiKey }) => apiKey === "server-only-market-key"));
     assert.ok(upstreamRequests.every(({ requestId: seenId }) => seenId === requestId));
+
+    const marketPage = await request("/api/v1/market", { headers: bffHeaders });
+    assert.equal(marketPage.status, 200);
+    assert.equal(marketPage.headers.get("cache-control"), "no-store");
+    assert.equal(marketPage.headers.get("x-request-id"), requestId);
+    const marketPagePayload = await marketPage.json();
+    assert.equal(marketPagePayload.recordedAt, "2026-08-10T00:00:00.000Z");
+    assert.deepEqual(marketPagePayload.commodities, [{
+      id: "market-2026-08-10-0",
+      name: "Maize (Yellow)",
+      location: "Shan",
+      marketplace: "Aungban",
+      minPrice: 1200,
+      maxPrice: 1350,
+      currency: "MMK",
+      quantity: 1,
+      unit: "viss",
+      priceDate: "2026-08-10",
+      source: "Wisarra",
+    }]);
+    assert.doesNotMatch(JSON.stringify(marketPagePayload), /server-only-market-key/);
+    assert.deepEqual(upstreamRequests.at(-1), {
+      method: "GET",
+      url: "/api/v1/market-prices/commodities/latest?limit=500",
+      apiKey: "server-only-market-key",
+      requestId,
+    });
 
     const requestsBeforeInvalidQuery = upstreamRequests.length;
     const invalidQuery = await request("/api/v1/market-prices/latest?crop=maize&crop=tomato");
@@ -860,4 +913,24 @@ test("locale helpers select one language without changing numeric evidence", () 
     ),
     "Provisional rule score.",
   );
+});
+
+test("market dictionary uses established Myanmar commodity and trade terms", () => {
+  assert.deepEqual(marketMyanmarDictionaryCounts(), {
+    commodities: 139,
+    locations: 8,
+    marketplaces: 19,
+    currencies: 2,
+    units: 7,
+  });
+  assert.equal(localizeMarketValue("commodities", "Blackgram", "my"), "မတ်ပဲ");
+  assert.equal(localizeMarketValue("commodities", "Mung Bean", "my"), "ပဲတီစိမ်း");
+  assert.equal(localizeMarketValue("commodities", "Pigeon Pea (New)", "my"), "ပဲစင်းငုံ (အသစ်)");
+  assert.equal(localizeMarketValue("commodities", "Lablab Bean", "my"), "ပဲကြီး");
+  assert.equal(localizeMarketValue("commodities", "Niger Flower (New)", "my"), "ပန်းနှမ်း (အသစ်)");
+  assert.equal(localizeMarketValue("marketplaces", "Thiri Mingalar Zay", "my"), "သီရိမင်္ဂလာဈေး");
+  assert.equal(localizeMarketValue("units", "viss", "my"), "ပိဿာ");
+  assert.equal(localizeMarketValue("commodities", "Avocado", "en"), "Avocado");
+  assert.equal(formatMarketNumber(1234567, "my"), "၁,၂၃၄,၅၆၇");
+  assert.equal(formatMarketDate("2026-08-11T00:00:00.000Z", "my"), "၂၀၂၆ ခုနှစ် ဩဂုတ်လ ၁၁ ရက်");
 });

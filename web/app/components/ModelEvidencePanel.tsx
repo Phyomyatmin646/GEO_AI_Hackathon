@@ -4,7 +4,7 @@ import { useMemo } from "react";
 
 import type { HomeLiveState, HomePrediction, HomeWeeklyCell } from "../lib/home-data";
 import { useLanguage } from "../lib/i18n";
-import { cropModelTarget } from "../lib/model-contract";
+import { CORE_MODEL_TARGETS, cropModelTarget } from "../lib/model-contract";
 import type { GridCell } from "../lib/pilot-data";
 
 type Props = {
@@ -36,14 +36,17 @@ export function ModelEvidencePanel({ cell, live, liveCell, cropId }: Props) {
   const { lang, t } = useLanguage();
   const cropTarget = cropModelTarget(cropId);
   const entries = useMemo(() => {
-    if (!liveCell) return [];
-    const values = Object.entries(liveCell.predictions);
+    const values = CORE_MODEL_TARGETS.map((target) => [
+      target,
+      liveCell?.predictions[target] ?? null,
+    ] as const);
     return values.sort(([left], [right]) => {
       if (left === cropTarget) return -1;
       if (right === cropTarget) return 1;
-      return left.localeCompare(right);
+      return 0;
     });
   }, [cropTarget, liveCell]);
+  const availableCount = entries.filter(([, prediction]) => prediction !== null).length;
   const unavailable = live.mode !== "weekly" || !liveCell;
 
   return (
@@ -58,7 +61,7 @@ export function ModelEvidencePanel({ cell, live, liveCell, cropId }: Props) {
         </span>
       </div>
 
-      {unavailable ? (
+      {unavailable && (
         <div className="model-error" role="status">
           <strong>{t.modelEvidence.failClosed}</strong>
           <p>
@@ -67,33 +70,54 @@ export function ModelEvidencePanel({ cell, live, liveCell, cropId }: Props) {
               : "No latest weekly model result is available. Historical pilot values are not presented as live model output."}
           </p>
         </div>
-      ) : (
-        <>
-          <div className="model-prediction-list">
-            <h4 className="importance-heading">
-              {lang === "my" ? "သိမ်းထားသော weekly predictions" : "Persisted weekly predictions"}
-            </h4>
-            {entries.map(([target, prediction]) => (
-              <div
-                className={`model-prediction-row ${prediction.validationStatus === "flagged" ? "flagged" : ""}`}
-                key={target}
-              >
-                <span>
-                  {t.modelEvidence.targetLabels[target as keyof typeof t.modelEvidence.targetLabels] ?? target}
-                  <small>
-                    {prediction.validationStatus ?? "stored"}
-                    {prediction.modelVersion ? ` · v${prediction.modelVersion}` : ""}
-                  </small>
-                </span>
-                <strong>{formatPrediction(prediction, lang)}</strong>
-                <em>
-                  {prediction.confidence === null
+      )}
+
+      <div className="model-prediction-summary">
+        <strong>
+          {lang === "my"
+            ? `Model output ${CORE_MODEL_TARGETS.length} ခု`
+            : `${CORE_MODEL_TARGETS.length} model outputs`}
+        </strong>
+        <span>
+          {lang === "my"
+            ? `${availableCount} ခု ရရှိထားသည်`
+            : `${availableCount} available for this run`}
+        </span>
+      </div>
+
+      <div className="model-prediction-list">
+        <h4 className="importance-heading">
+          {lang === "my" ? "Model output အားလုံး" : "All model outputs"}
+        </h4>
+        {entries.map(([target, prediction]) => {
+          const error = liveCell?.errors[target];
+          return (
+            <div
+              className={`model-prediction-row ${prediction?.validationStatus === "flagged" ? "flagged" : ""} ${prediction ? "" : "is-unavailable"}`}
+              key={target}
+            >
+              <span>
+                {t.modelEvidence.targetLabels[target] ?? target}
+                <small>
+                  {prediction
+                    ? `${prediction.validationStatus ?? "stored"}${prediction.modelVersion ? ` · v${prediction.modelVersion}` : ""}`
+                    : error ?? (lang === "my" ? "ဤ run တွင် တန်ဖိုးမရရှိပါ" : "No value returned for this run")}
+                </small>
+              </span>
+              <strong>{prediction ? formatPrediction(prediction, lang) : "—"}</strong>
+              <em>
+                {prediction
+                  ? prediction.confidence === null
                     ? t.modelEvidence.confidenceUnavailable
-                    : `${t.modelEvidence.confidence} ${Math.round(prediction.confidence * 100)}%`}
-                </em>
-              </div>
-            ))}
-          </div>
+                    : `${t.modelEvidence.confidence} ${Math.round(prediction.confidence * 100)}%`
+                  : lang === "my" ? "မရရှိပါ" : "Not available"}
+              </em>
+            </div>
+          );
+        })}
+      </div>
+
+      {liveCell && (
           <div className="model-provenance">
             <span>{live.weekStart} → {live.weekEnd}</span>
             <span>{live.isPartialWeek ? "Partial week" : "Full week"}</span>
@@ -102,13 +126,12 @@ export function ModelEvidencePanel({ cell, live, liveCell, cropId }: Props) {
               <span title={live.modelCatalogVersion}>Catalog: {live.modelCatalogVersion.slice(0, 10)}…</span>
             )}
           </div>
-          <p className="model-boundary">
-            {lang === "my"
-              ? "ဤတန်ဖိုးများသည် backend တွင် သိမ်းထားသော weekly run မှဖြစ်ပြီး browser မှ model ကို ထပ်မံမခေါ်ပါ။"
-              : "These values come from the persisted weekly run; the browser does not invoke the model again."}
-          </p>
-        </>
       )}
+      <p className="model-boundary">
+        {lang === "my"
+          ? "ရရှိသောတန်ဖိုးများသည် backend တွင် သိမ်းထားသော weekly run မှဖြစ်ပြီး မရှိသောတန်ဖိုးများကို browser မှ ခန့်မှန်းဖြည့်ထားခြင်းမရှိပါ။"
+          : "Available values come from the persisted weekly run; missing outputs are never estimated or filled in by the browser."}
+      </p>
     </section>
   );
 }

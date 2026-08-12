@@ -12,6 +12,23 @@
   background-size: cover;
 }
 
+.pageNav {
+  position: fixed;
+  z-index: 40;
+  top: 24px;
+  right: 28px;
+}
+
+.brandLink {
+  display: block;
+  border-radius: 16px;
+}
+
+.brandLink:focus-visible {
+  outline: 3px solid rgba(245, 160, 0, 0.32);
+  outline-offset: 5px;
+}
+
 .registerPanel {
   width: min(620px, calc(100% - 40px));
   margin-left: clamp(48px, 8.75vw, 168px);
@@ -328,6 +345,11 @@
 }
 
 @media (max-width: 640px) {
+  .pageNav {
+    top: 16px;
+    right: 16px;
+  }
+
   .page {
     overflow: visible;
   }
@@ -338,7 +360,8 @@
   }
 
   .brandLogo {
-    width: min(270px, 78vw);
+    width: min(220px, 62vw);
+    margin-left: 0;
   }
 
   .card {
