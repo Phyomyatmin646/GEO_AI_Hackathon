@@ -18,6 +18,7 @@ import DataSourceNote from "../components/DataSourceNote";
 import { HarvestIcon } from "../components/HarvestIcon";
 import { SiteNavigation } from "../components/SiteNavigation";
 import { useLanguage } from "../lib/i18n";
+import { LiveWeatherPanel } from "../components/LiveWeatherPanel";
 
 type ClimateSource = {
   id: string;
@@ -107,6 +108,9 @@ export default function ClimatePage() {
       qaWarnings: "QA warnings",
       loading: "Official climate data တင်နေသည်…",
       loadError: "Climate data ကို မတင်နိုင်ပါ။",
+      currentWeather: "လက်ရှိ မိုးလေဝသ",
+      activeAlerts: "သတိပေးချက်များ",
+      noAlerts: "ရွေးချယ်ထားသော ဒေသအတွက် ဆိုးရွားသော သတိပေးချက်များ မရှိသေးပါ။",
     }
     : {
       eyebrow: "Agriculture Companion · Real climate evidence",
@@ -132,6 +136,9 @@ export default function ClimatePage() {
       qaWarnings: "QA warnings",
       loading: "Loading official climate data…",
       loadError: "Climate data could not be loaded.",
+      currentWeather: "Current Weather",
+      activeAlerts: "Active Alerts",
+      noAlerts: "No severe active alerts in your selected region.",
     };
 
   if (!data) {
@@ -184,6 +191,18 @@ export default function ClimatePage() {
           <div>
             <strong>{copy.scope}</strong>
             <p>{copy.scopeText}</p>
+          </div>
+        </section>
+
+        <section style={{ marginTop: '20px' }}>
+          <h2>{copy.currentWeather}</h2>
+          <LiveWeatherPanel />
+        </section>
+
+        <section style={{ marginTop: '20px', marginBottom: '20px' }}>
+          <h2>{copy.activeAlerts}</h2>
+          <div style={{ padding: '20px', background: '#ffebee', color: '#c62828', borderRadius: '8px', marginTop: '10px' }}>
+            <p><strong>{copy.noAlerts}</strong></p>
           </div>
         </section>
 

@@ -16,7 +16,7 @@ export default function RegisterPage() {
     region: "",
     township: "",
     village: "",
-    grid_id: "MMR_GRID_001",
+    grid_id: "mm_1844_424",
     main_crops: ["crop_suitability_monsoon_rice"],
     preferred_language: "my",
     sms_consent: true,

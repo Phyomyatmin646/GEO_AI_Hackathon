@@ -289,21 +289,43 @@ export function PilotDashboard() {
     (crop) => crop.id === selectedCropId,
   );
 
-  function saveReview() {
+  async function saveReview() {
     if (!selectedCell || reviewNote.trim().length === 0) return;
     const key = `myay-review-${selectedCell.id}`;
-    localStorage.setItem(
-      key,
-      JSON.stringify({
-        cellId: selectedCell.id,
-        note: reviewNote.trim(),
-        savedAt: new Date().toISOString(),
-        source: "device_local_pilot_review",
-        entersTrainingData: false,
-      }),
-    );
-    setReviewNote(reviewNote.trim());
-    setReviewSaved(true);
+    
+    try {
+      const response = await fetch('/api/v1/telecom/reports', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          grid_id: selectedCell.id,
+          message_text: reviewNote.trim(),
+        }),
+      });
+
+      if (response.ok) {
+        localStorage.setItem(
+          key,
+          JSON.stringify({
+            cellId: selectedCell.id,
+            note: reviewNote.trim(),
+            savedAt: new Date().toISOString(),
+            source: "device_local_pilot_review",
+            entersTrainingData: false,
+          }),
+        );
+        setReviewNote(reviewNote.trim());
+        setReviewSaved(true);
+      } else {
+        console.error('Failed to submit report');
+        alert(lang === "my" ? "အစီရင်ခံစာ ပေးပို့ခြင်း မအောင်မြင်ပါ။" : "Failed to submit report.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert(lang === "my" ? "အစီရင်ခံစာ ပေးပို့ခြင်း မအောင်မြင်ပါ။" : "Failed to submit report.");
+    }
   }
 
   function selectCell(cellId: string) {
@@ -468,7 +490,7 @@ export function PilotDashboard() {
         viewInputs: "Input အားလုံး ကြည့်ရန်",
         review: "Pilot သုံးသပ်ချက်",
         reviewNotes: "သုံးသပ်ချက် မှတ်စု",
-        localReview: "ဤမှတ်စုကို ယခုစက်ထဲတွင်သာ သိမ်းပြီး backend သို့မပို့ပါ။ Training data ထဲသို့လည်း မဝင်ပါ။",
+        localReview: "ဤမှတ်စုကို မြန်မာနိုင်ငံ စိုက်ပျိုးရေးအရာရှိထံသို့ Email ဖြင့် တိုက်ရိုက် ပေးပို့မည်ဖြစ်ပါသည်။",
         showDetails: "ရင်းမြစ်အသေးစိတ် ပြရန်",
         hideDetails: "ရင်းမြစ်အသေးစိတ် ပိတ်ရန်",
       }
@@ -494,7 +516,7 @@ export function PilotDashboard() {
         viewInputs: "View All Inputs",
         review: "Pilot Review",
         reviewNotes: "Review Notes",
-        localReview: "This note is stored only on this device. It is not sent to the backend or added to training data.",
+        localReview: "This note will be directly emailed to the Myanmar Agriculture Officer.",
         showDetails: "Show source details",
         hideDetails: "Hide source details",
       };

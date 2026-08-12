@@ -3,6 +3,7 @@ import type { DispatchAlertRequest } from './telecom.schema.js';
 import type { TelecomRouter } from './telecom.router.js';
 import type { TelecomRepository } from './telecom.repository.js';
 import type { Pool } from 'pg';
+import { sendOfficerEmail } from './reports.js';
 
 const telecomRoutes: FastifyPluginAsync<{ pool: Pool; router: TelecomRouter; repo: TelecomRepository }> = async (
   fastify,
@@ -87,6 +88,37 @@ const telecomRoutes: FastifyPluginAsync<{ pool: Pool; router: TelecomRouter; rep
        ORDER BY r.id DESC LIMIT 50`
     );
     return reply.send(result.rows);
+  });
+
+  // Dashboard API: Submit a report from Pilot Review
+  fastify.post('/reports', async (request, reply) => {
+    const body = request.body as { grid_id: string; message_text: string; username?: string; phone_number?: string };
+    
+    const result = await opts.pool.query(
+      `INSERT INTO farmer_reports (grid_id, channel, report_type, message_text, verification_status)
+       VALUES ($1, 'web_dashboard', 'pilot_review', $2, 'pending') RETURNING *`,
+      [body.grid_id, body.message_text]
+    );
+    
+    // Trigger email to officer
+    await sendOfficerEmail({ ...result.rows[0], username: body.username, phone_number: body.phone_number });
+    
+    return reply.send({ success: true, report: result.rows[0] });
+  });
+
+  // API to trigger weather/disaster alert to farmers
+  fastify.post('/alert/weather', async (request, reply) => {
+    const body = request.body as { grid_id: string; alert_type: string; message: string };
+    
+    const result = await opts.router.dispatchAlert({
+      grid_id: body.grid_id,
+      alert_id: body.alert_type || 'weather_alert',
+      severity: 'high',
+      message_en: body.message,
+      message_my: body.message
+    });
+
+    return reply.send({ success: true, queued_messages: result.queuedCount });
   });
 };
 

@@ -1,0 +1,39 @@
+--- backend/src/modules/telecom/telecom.routes.ts
++++ backend/src/modules/telecom/telecom.routes.ts
+@@ -106,4 +106,32 @@
+     
+     return reply.send({ success: true, report: result.rows[0] });
+   });
++
++  // API to trigger weather/disaster alert to farmers
++  fastify.post('/alert/weather', async (request, reply) => {
++    const body = request.body as { grid_id: string; alert_type: string; message: string };
++    
++    // Find affected registered farmers
++    const farmersResult = await opts.pool.query(
++      `SELECT f.id, f.phone_number, f.email, p.sms_enabled, p.email_enabled 
++       FROM farmers f 
++       JOIN farmer_communication_preferences p ON f.id = p.farmer_id 
++       WHERE f.grid_id = $1 AND f.is_active = true`,
++      [body.grid_id]
++    );
++
++    let queuedCount = 0;
++
++    for (const farmer of farmersResult.rows) {
++      const promises = [];
++      
++      if (farmer.phone_number && farmer.sms_enabled) {
++        promises.push(opts.router.dispatchAlert({ farmer_id: farmer.id, channel: 'sms', message: body.message, priority: 'high' }));
++      }
++      if (farmer.email && farmer.email_enabled) {
++        promises.push(opts.router.dispatchAlert({ farmer_id: farmer.id, channel: 'email', message: body.message, priority: 'high' }));
++      }
++      
++      await Promise.all(promises);
++      queuedCount += promises.length;
++    }
++
++    return reply.send({ success: true, affected_farmers: farmersResult.rowCount, queued_messages: queuedCount });
++  });
+ };
