@@ -51,8 +51,8 @@ export default function RegisterPage() {
       email: formData.email || undefined,
       location: {
         region: formData.region,
-        township: formData.township,
-        village: formData.village,
+        township: formData.township?.trim() || undefined,
+        village: formData.village?.trim() || undefined,
         grid_id: formData.grid_id,
       },
       main_crops: formData.main_crops,
