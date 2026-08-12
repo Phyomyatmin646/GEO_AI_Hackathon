@@ -75,8 +75,8 @@ export class TelecomRepository {
 
       if (incrementAttempt) {
         await client.query(
-          `INSERT INTO message_attempts (message_id, attempt_number, status, error_message, created_at)
-           VALUES ($1, $2, $3, $4, NOW())`,
+          `INSERT INTO message_attempts (message_id, attempt_number, status, error_message, provider, attempted_at)
+           VALUES ($1, $2, $3, $4, 'n8n', NOW())`,
           [id, newAttemptCount, status, error_message || null]
         );
       }
