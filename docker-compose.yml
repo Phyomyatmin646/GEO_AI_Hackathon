@@ -3,6 +3,23 @@ name: myanmar-agriculture-intelligence
 # This Compose project deliberately does not contain the Python model server.
 # Start GEO_MODEL_SERVER separately on host port 8001, then start this project.
 services:
+  db:
+    image: postgres:15-alpine
+    ports:
+      - "127.0.0.1:5433:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: myanmar_agri
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d myanmar_agri"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   migrate:
     profiles: [ "ops" ]
     build:
@@ -29,7 +46,7 @@ services:
       LOG_LEVEL: ${BACKEND_LOG_LEVEL:-info}
       API_KEY: ${BACKEND_API_KEY:-dev-public-gateway-key-replace-before-production}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-weekly-ingest-key-replace-before-production}
-      CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:3000}
+      CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:3000,http://0.0.0.0:3000}
       DATABASE_URL: ${DATABASE_URL:-}
       GEO_MODEL_SERVER_URL: ${GEO_MODEL_SERVER_URL:-http://host.docker.internal:8001}
       GEO_MODEL_SERVER_API_KEY: ${GEO_MODEL_SERVER_API_KEY:-dev-internal-model-key-replace-before-production}
@@ -118,3 +135,6 @@ services:
       backend:
         condition: service_healthy
     init: true
+
+volumes:
+  postgres_data:

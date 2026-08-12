@@ -1015,6 +1015,22 @@ export async function GET(request: Request) {
       }
     }
 
+    // Strip geometry from the cells to make it lightweight
+    const strippedBundle = {
+      ...bundle,
+      cells: bundle.cells.map(({ polygon, ...cell }) => cell),
+    };
+
+    return NextResponse.json(
+      { ...strippedBundle, live },
+      {
+        headers: {
+          "Cache-Control": "no-store",
+          "X-Home-Data-Mode": live.mode,
+          "X-API-Version": "1",
+        },
+      },
+    );
     const headers: Record<string, string> = {
       "Cache-Control": "no-store",
       "X-Home-Data-Mode": live.mode,

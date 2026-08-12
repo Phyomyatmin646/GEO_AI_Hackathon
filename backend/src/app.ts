@@ -23,6 +23,13 @@ import pipelineRoutes from './routes/pipeline.js';
 import predictionRoutes from './routes/predictions.js';
 import userRoutes from './routes/users.js';
 import weeklyRoutes from './routes/weekly.js';
+import farmerRoutes from './modules/telecom/farmer.routes.js';
+import telecomRoutes from './modules/telecom/telecom.routes.js';
+import { TelecomRepository } from './modules/telecom/telecom.repository.js';
+import { FarmerRepository } from './modules/telecom/farmer.repository.js';
+import { TelecomRouter } from './modules/telecom/telecom.router.js';
+import { DeliveryWorker } from './modules/telecom/delivery-worker.js';
+import { MockSmsProvider, MockEmailProvider } from './modules/telecom/providers.js';
 import {
   GeminiChatbotService,
   type ChatbotServiceGateway,
@@ -112,6 +119,24 @@ export async function buildApp(options: BuildAppOptions) {
       : store
         ? new CropCalendarService(store)
         : undefined);
+
+  let deliveryWorker: DeliveryWorker | undefined;
+  let telecomRouter: TelecomRouter | undefined;
+  let telecomRepo: TelecomRepository | undefined;
+
+  if (store) {
+    const pool = (store as any).pool;
+    telecomRepo = new TelecomRepository(pool);
+    const farmerRepo = new FarmerRepository(pool);
+    telecomRouter = new TelecomRouter(telecomRepo, farmerRepo);
+    
+    deliveryWorker = new DeliveryWorker(
+      telecomRepo, 
+      new MockSmsProvider(), 
+      new MockEmailProvider()
+    );
+    deliveryWorker.start();
+  }
 
   await server.register(cors, {
     origin: config.corsOrigins,
@@ -228,6 +253,20 @@ export async function buildApp(options: BuildAppOptions) {
     rateLimit: apiRateLimit,
     prefix: '/api/v1/users',
   });
+  if (store) {
+    await server.register(farmerRoutes, {
+      pool: (store as any).pool,
+      prefix: '/api/v1/farmers',
+    });
+    if (telecomRouter && telecomRepo) {
+      await server.register(telecomRoutes, {
+        pool: (store as any).pool,
+        router: telecomRouter,
+        repo: telecomRepo,
+        prefix: '/api/v1/telecom',
+      });
+    }
+  }
   await server.register(jobRoutes, {
     enabled: config.asyncJobsEnabled,
     rateLimit: apiRateLimit,
@@ -292,6 +331,7 @@ export async function buildApp(options: BuildAppOptions) {
     cleanupTimer.unref();
   }
   server.addHook('onClose', async () => {
+    if (deliveryWorker) deliveryWorker.stop();
     if (cleanupTimer) clearInterval(cleanupTimer);
     if (ownsStore && store) await store.close();
   });
