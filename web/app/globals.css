@@ -5583,7 +5583,7 @@ body:has(.faq-page) {
   align-items: flex-end;
   gap: 10px;
 }
-.chatbot-msg-row--user { flex-direction: row-reverse; }
+.chatbot-msg-row--user { justify-content: flex-end; }
 
 .chatbot-msg-avatar {
   flex: 0 0 36px;
@@ -5644,6 +5644,66 @@ body:has(.faq-page) {
 .chatbot-bubble-line { margin: 0 0 4px; }
 .chatbot-bubble-line:last-child { margin-bottom: 0; }
 
+/* Markdown Styles inside chatbot bubbles */
+.chatbot-bubble--markdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.chatbot-bubble--markdown p {
+  margin: 0;
+  line-height: 1.5;
+}
+.chatbot-bubble--markdown strong {
+  font-weight: 600;
+}
+.chatbot-bubble--markdown em {
+  font-style: italic;
+}
+.chatbot-bubble--markdown ul, .chatbot-bubble--markdown ol {
+  margin: 0;
+  padding-left: 20px;
+}
+.chatbot-bubble--markdown li {
+  margin-bottom: 4px;
+}
+.chatbot-bubble--markdown h1, .chatbot-bubble--markdown h2, .chatbot-bubble--markdown h3, .chatbot-bubble--markdown h4 {
+  margin: 8px 0 4px 0;
+  font-weight: 600;
+  font-size: 1.1em;
+}
+.chatbot-bubble--markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 0.95em;
+}
+.chatbot-bubble--markdown th, .chatbot-bubble--markdown td {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 6px 8px;
+  text-align: left;
+}
+.chatbot-bubble--assistant.chatbot-bubble--markdown th, .chatbot-bubble--assistant.chatbot-bubble--markdown td {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+.chatbot-bubble--markdown th {
+  background: rgba(0, 0, 0, 0.05);
+  font-weight: 600;
+}
+.chatbot-bubble--markdown blockquote {
+  border-left: 3px solid rgba(0, 0, 0, 0.2);
+  margin: 0;
+  padding-left: 12px;
+  font-style: italic;
+  color: rgba(0, 0, 0, 0.7);
+}
+.chatbot-bubble--markdown code {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.9em;
+}
 .chatbot-msg-time {
   display: block;
   margin-top: 4px;

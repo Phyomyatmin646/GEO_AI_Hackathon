@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import { useLanguage } from "../lib/i18n";
 
@@ -187,15 +189,16 @@ export function ChatbotWidget() {
       fabRef.current?.focus();
     };
     const handleOutsideClick = (event: MouseEvent) => {
+      if (event.target instanceof Node && !document.contains(event.target)) return;
       if (event.target instanceof Element && event.target.closest(".chatbot-panel, .chatbot-fab, .chatbot-backdrop")) return;
       setOpen(false);
     };
     window.addEventListener("keydown", handleEscape);
-    document.addEventListener("click", handleOutsideClick);
+    document.addEventListener("mousedown", handleOutsideClick);
     return () => {
       document.body.style.overflow = "";
       window.removeEventListener("keydown", handleEscape);
-      document.removeEventListener("click", handleOutsideClick);
+      document.removeEventListener("mousedown", handleOutsideClick);
     };
   }, [open]);
 
@@ -366,10 +369,16 @@ export function ChatbotWidget() {
                   {message.role === "assistant" && <div className="chatbot-msg-avatar"><BotAvatar size={36} /></div>}
                   <div className="chatbot-msg-col">
                     {message.role === "assistant" && <span className="chatbot-msg-sender">{copy.title}</span>}
-                    <div className={`chatbot-bubble chatbot-bubble--${message.role}`}>
-                      {message.content.split("\n").map((line, index) => (
-                        <p key={`${message.id}-${index}`} className="chatbot-bubble-line">{line}</p>
-                      ))}
+                    <div className={`chatbot-bubble chatbot-bubble--${message.role} ${message.role === 'assistant' ? 'chatbot-bubble--markdown' : ''}`}>
+                      {message.role === "assistant" ? (
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {message.content}
+                        </ReactMarkdown>
+                      ) : (
+                        message.content.split("\n").map((line, index) => (
+                          <p key={`${message.id}-${index}`} className="chatbot-bubble-line">{line}</p>
+                        ))
+                      )}
                     </div>
                     <span className="chatbot-msg-time">{message.time}</span>
                   </div>
