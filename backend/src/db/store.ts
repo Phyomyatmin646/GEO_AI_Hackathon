@@ -231,8 +231,10 @@ export class PostgresStore implements AppStore {
       connectionString: databaseUrl,
       max: options.maximumConnections ?? 5,
       connectionTimeoutMillis: options.connectionTimeoutMs ?? 10_000,
-      idleTimeoutMillis: 30_000,
+      idleTimeoutMillis: 30_000,   // 30s — prevents Docker NAT 5-minute silent drop
       allowExitOnIdle: true,
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 30_000,
     });
   }
 
@@ -757,12 +759,19 @@ function nullableIso(value: unknown): string | null {
   return value === null ? null : iso(value);
 }
 
+function formatDateOnly(value: unknown): string {
+  if (value instanceof Date) {
+    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+  }
+  return String(value);
+}
+
 function mapPipelineRun(row: QueryResultRow): PipelineRun {
   return {
     id: String(row.id),
     cadence: 'weekly',
-    week_start: String(row.week_start),
-    week_end: String(row.week_end),
+    week_start: formatDateOnly(row.week_start),
+    week_end: formatDateOnly(row.week_end),
     status: row.status as PipelineRunStatus,
     schema_version: String(row.schema_version),
     model_catalog_version: String(row.model_catalog_version),
@@ -786,8 +795,8 @@ function mapWeeklyPrediction(row: QueryResultRow): WeeklyRegionPrediction {
     id: String(row.id),
     pipeline_run_id: String(row.pipeline_run_id),
     region: row.region as WeeklyRegion,
-    week_start: String(row.week_start),
-    week_end: String(row.week_end),
+    week_start: formatDateOnly(row.week_start),
+    week_end: formatDateOnly(row.week_end),
     payload: row.payload,
     cell_count: Number(row.cell_count),
     source_sha256: String(row.source_sha256),
