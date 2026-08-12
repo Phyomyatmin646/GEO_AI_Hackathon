@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
-// ── Types ─────────────────────────────────────────────────
+import { useLanguage } from "../lib/i18n";
+
 type Role = "user" | "assistant";
 
 type Message = {
@@ -12,9 +13,44 @@ type Message = {
   time: string;
 };
 
-// ── Helpers ───────────────────────────────────────────────
-function nowTime() {
-  return new Intl.DateTimeFormat("en-US", {
+type ChatError = {
+  message: string;
+  retryable: boolean;
+  requestId: string | null;
+  lastMessage: string;
+};
+
+type ChatSuccess = {
+  reply: string;
+  requestId: string;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseSuccess(value: unknown): ChatSuccess | null {
+  if (
+    !isRecord(value) ||
+    typeof value.reply !== "string" ||
+    value.reply.trim().length < 1 ||
+    value.reply.length > 20_000 ||
+    typeof value.requestId !== "string" ||
+    value.requestId.length < 1 ||
+    value.requestId.length > 128
+  ) {
+    return null;
+  }
+  return { reply: value.reply.trim(), requestId: value.requestId };
+}
+
+function errorCode(value: unknown): string | null {
+  if (!isRecord(value) || !isRecord(value.error)) return null;
+  return typeof value.error.code === "string" ? value.error.code : null;
+}
+
+function nowTime(language: "en" | "my") {
+  return new Intl.DateTimeFormat(language === "my" ? "my-MM" : "en-US", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
@@ -22,16 +58,15 @@ function nowTime() {
 }
 
 function uid() {
-  return Math.random().toString(36).slice(2, 9);
+  return crypto.randomUUID();
 }
 
-// ── Bot Avatar (actual chatbot mascot PNG) ───────────────
 function BotAvatar({ size = 40 }: { size?: number }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src="/design/chatbot-mascot.png"
-      alt="AI Assistant"
+      alt="GeoAI Assistant"
       width={size}
       height={size}
       style={{
@@ -46,26 +81,19 @@ function BotAvatar({ size = 40 }: { size?: number }) {
   );
 }
 
-// ── FAB Icon ──────────────────────────────────────────────
 function FabBotIcon() {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src="/design/chatbot-mascot.png"
-      alt="AI Assistant"
+      alt="GeoAI Assistant"
       width={80}
       height={80}
-      style={{
-        width: 80,
-        height: 80,
-        objectFit: "contain",
-        display: "block",
-      }}
+      style={{ width: 80, height: 80, objectFit: "contain", display: "block" }}
     />
   );
 }
 
-// ── User Avatar ───────────────────────────────────────────
 function UserAvatar() {
   return (
     <div className="chatbot-msg-avatar chatbot-msg-avatar--user">
@@ -77,197 +105,291 @@ function UserAvatar() {
   );
 }
 
-// ── Suggested prompts ─────────────────────────────────────
-const SUGGESTED = [
-  "What is this dataset about?",
-  "Explain the data sources",
-  "What do the QA results mean?",
-  "How was the QA score calculated?",
-];
-
-// ── Rule-based responses ──────────────────────────────────
-function localReply(text: string): string {
-  const q = text.toLowerCase();
-  if (q.includes("dataset") || q.includes("data"))
-    return "This dataset contains agricultural market and environmental data. It includes information about crops, market prices, soil conditions, weather, and more to support better farming decisions.";
-  if (q.includes("source"))
-    return "The data comes from multiple trusted sources, including:\n• Government agricultural reports\n• Market data from local and regional sources\n• Weather and climate data from meteorological services\n• Satellite and remote sensing data\n• Field survey and ground measurements";
-  if (q.includes("qa") && q.includes("mean"))
-    return "QA (Quality Assurance) results show how reliable and complete the data is. It includes checks like:\n• Row count validation – Ensures all records are in place\n• Column completeness – Checks if all fields have data\n• Data type validation – Confirms data follows the correct format\n• Value range validation – Makes sure values are within expected limits";
-  if (q.includes("score") || q.includes("calculat"))
-    return "The QA score is calculated based on all QA checks. Each check is scored, and the overall score reflects the data quality. A higher score means better data quality.";
-  if (q.includes("crop") || q.includes("rice"))
-    return "Our dataset covers major Myanmar crops including monsoon rice, dry-season rice, black gram, green gram, maize, groundnut, chili, sesame, sugarcane, and more. Each crop has market price data and growing condition assessments.";
-  if (q.includes("market") || q.includes("price"))
-    return "Market prices are sourced from Wisarra and updated regularly. You can view the latest prices on the Agricultural Market Prices page. Prices include min/max ranges per commodity for different regions and marketplaces.";
-  if (q.includes("climate") || q.includes("weather"))
-    return "Climate data includes monthly rainfall, mean temperature, solar radiation, and soil moisture. These factors are used by our AI model to assess crop suitability for each geographic cell.";
-  if (q.includes("hello") || q.includes("hi") || q.includes("help"))
-    return "Hello! I'm the Myanmar Agriculture Intelligence assistant. I can help you understand the dataset, data sources, QA reports, market prices, crop recommendations, and climate data. What would you like to know?";
-  return "I can help you with questions about this agricultural dataset — crop recommendations, market prices, QA reports, climate data, and data sources. Could you please be more specific about what you'd like to know?";
-}
-
-// ── Main Component ────────────────────────────────────────
 export function ChatbotWidget() {
+  const { lang } = useLanguage();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [isNew, setIsNew] = useState(true);
+  const [chatError, setChatError] = useState<ChatError | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fabRef = useRef<HTMLButtonElement>(null);
+  const activeRequest = useRef<AbortController | null>(null);
+
+  const copy = lang === "my"
+    ? {
+        title: "GeoAI အကူအညီ",
+        subtitle: "Backend နှင့်ချိတ်ဆက်ထားသော စိုက်ပျိုးရေးအကူအညီ",
+        close: "Chat ပိတ်ရန်",
+        newChat: "Chat အသစ်",
+        hello: "မင်္ဂလာပါ!",
+        welcome: "ယနေ့ ဘာကိုကူညီပေးရမလဲ?",
+        start: "မေးခွန်းမေးရန်…",
+        placeholder: "မေးလိုသောစာ ရိုက်ပါ…",
+        input: "Chat မေးခွန်း",
+        send: "မေးခွန်းပို့ရန်",
+        retry: "ပြန်စမ်းမည်",
+        retryable: "ဝန်ဆောင်မှုကို ယာယီမခေါ်နိုင်ပါ။ ပြန်စမ်းနိုင်သည်။",
+        unavailable: "GeoAI အကူအညီကို ယခုအသုံးမပြုနိုင်ပါ။",
+        rateLimited: "မေးခွန်းများလွန်းနေသည်။ ခဏစောင့်ပြီး ပြန်စမ်းပါ။",
+        timeout: "GeoAI အကူအညီသည် သတ်မှတ်ချိန်အတွင်း မတုံ့ပြန်ပါ။",
+        disclaimer: "GeoAI ဖြေကြားချက်များကို အရေးကြီးဆုံးဖြတ်ချက်မချမီ အတည်ပြုစစ်ဆေးပါ။",
+        suggestions: [
+          "ဒီ dataset အကြောင်း ရှင်းပြပါ",
+          "ဒေတာရင်းမြစ်တွေက ဘာတွေလဲ?",
+          "QA ရလဒ်က ဘာကိုဆိုလိုသလဲ?",
+          "သီးနှံခန့်မှန်းချက်ရဲ့ ကန့်သတ်ချက်က ဘာလဲ?",
+        ],
+      }
+    : {
+        title: "GeoAI Assistant",
+        subtitle: "Backend-connected help for agricultural data",
+        close: "Close chat",
+        newChat: "New chat",
+        hello: "Hello!",
+        welcome: "How can I help you today?",
+        start: "Ask a question…",
+        placeholder: "Type your message…",
+        input: "Chat message input",
+        send: "Send message",
+        retry: "Try again",
+        retryable: "The service could not respond. You can try again.",
+        unavailable: "The GeoAI assistant is currently unavailable.",
+        rateLimited: "The assistant is busy. Wait briefly and try again.",
+        timeout: "The GeoAI assistant did not respond in time.",
+        disclaimer: "Verify GeoAI responses before making important decisions.",
+        suggestions: [
+          "What is this dataset about?",
+          "Explain the data sources",
+          "What do the QA results mean?",
+          "What are the limits of crop predictions?",
+        ],
+      };
 
   useEffect(() => {
     if (open) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, open]);
+  }, [chatError, messages, open]);
 
   useEffect(() => {
-    if (open && !isNew) setTimeout(() => inputRef.current?.focus(), 100);
+    if (!open || isNew) return;
+    const focusTimer = window.setTimeout(() => inputRef.current?.focus(), 100);
+    return () => window.clearTimeout(focusTimer);
   }, [open, isNew]);
 
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-    } else {
+    if (!open) return;
+    document.body.style.overflow = "hidden";
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      fabRef.current?.focus();
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => {
       document.body.style.overflow = "";
-    }
-    return () => { document.body.style.overflow = ""; };
+      window.removeEventListener("keydown", handleEscape);
+    };
   }, [open]);
+
+  useEffect(() => () => activeRequest.current?.abort(), []);
 
   function startChat(prompt?: string) {
     setIsNew(false);
-    if (prompt) sendMessage(prompt);
-    else setTimeout(() => inputRef.current?.focus(), 120);
+    if (prompt) void sendMessage(prompt);
   }
 
   function newChat() {
+    activeRequest.current?.abort();
     setMessages([]);
     setIsNew(true);
     setInput("");
+    setChatError(null);
+    setLoading(false);
   }
 
-  async function sendMessage(text?: string) {
+  function mappedErrorMessage(code: string | null) {
+    if (code === "CHATBOT_RATE_LIMITED") return copy.rateLimited;
+    if (code === "CHATBOT_TIMEOUT") return copy.timeout;
+    return copy.unavailable;
+  }
+
+  async function sendMessage(text?: string, retrying = false) {
     const content = (text ?? input).trim();
-    if (!content || loading) return;
+    if (!content || loading || content.length > 4_000) return;
     setInput("");
+    setChatError(null);
 
-    const userMsg: Message = { id: uid(), role: "user", content, time: nowTime() };
-    setMessages((prev) => [...prev, userMsg]);
+    const history = retrying && messages.at(-1)?.role === "user"
+      ? messages.slice(0, -1)
+      : messages;
+    if (!retrying) {
+      const userMessage: Message = {
+        id: uid(),
+        role: "user",
+        content,
+        time: nowTime(lang),
+      };
+      setMessages((current) => [...current, userMessage]);
+    }
     setLoading(true);
+    activeRequest.current?.abort();
+    const controller = new AbortController();
+    activeRequest.current = controller;
 
-    setTimeout(() => {
-      const reply = localReply(content);
-      const botMsg: Message = { id: uid(), role: "assistant", content: reply, time: nowTime() };
-      setMessages((prev) => [...prev, botMsg]);
-      setLoading(false);
-    }, 750);
+    try {
+      const response = await fetch("/api/v1/chatbot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: content,
+          language: lang,
+          history: history.slice(-30).map((message) => ({
+            role: message.role,
+            content: message.content,
+          })),
+        }),
+        cache: "no-store",
+        signal: AbortSignal.any([
+          controller.signal,
+          AbortSignal.timeout(40_000),
+        ]),
+      });
+      const payload = await response.json().catch(() => null) as unknown;
+      if (!response.ok) {
+        const code = errorCode(payload);
+        setChatError({
+          message: mappedErrorMessage(code),
+          retryable: response.status === 429 || response.status >= 500,
+          requestId: response.headers.get("x-request-id"),
+          lastMessage: content,
+        });
+        return;
+      }
+      const success = parseSuccess(payload);
+      if (!success || success.requestId !== response.headers.get("x-request-id")) {
+        setChatError({
+          message: copy.unavailable,
+          retryable: true,
+          requestId: response.headers.get("x-request-id"),
+          lastMessage: content,
+        });
+        return;
+      }
+      const botMessage: Message = {
+        id: uid(),
+        role: "assistant",
+        content: success.reply,
+        time: nowTime(lang),
+      };
+      setMessages((current) => [...current, botMessage]);
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      const timedOut = error instanceof Error &&
+        (error.name === "AbortError" || error.name === "TimeoutError");
+      setChatError({
+        message: timedOut ? copy.timeout : copy.retryable,
+        retryable: true,
+        requestId: null,
+        lastMessage: content,
+      });
+    } finally {
+      if (activeRequest.current === controller) activeRequest.current = null;
+      if (!controller.signal.aborted) setLoading(false);
+    }
   }
 
-  function handleKey(e: React.KeyboardEvent) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
+  function handleKey(event: React.KeyboardEvent) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      void sendMessage();
     }
   }
 
   return (
     <>
-      {/* Backdrop — mobile */}
       {open && (
-        <div
-          className="chatbot-backdrop"
-          aria-hidden="true"
-          onClick={() => setOpen(false)}
-        />
+        <div className="chatbot-backdrop" aria-hidden="true" onClick={() => setOpen(false)} />
       )}
 
-      {/* ── Chat Panel ─────────────────────────────────── */}
       <div
         className={`chatbot-panel ${open ? "chatbot-panel--open" : ""}`}
         role="dialog"
-        aria-label="AI Assistant chat"
+        aria-label={copy.title}
         aria-modal="true"
       >
-        {/* Header */}
         <header className="chatbot-header">
-          <button
-            className="chatbot-header-back"
-            onClick={() => setOpen(false)}
-            aria-label="Close chat"
-          >
+          <button className="chatbot-header-back" onClick={() => setOpen(false)} aria-label={copy.close}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
               <path d="M19 12H5M12 5l-7 7 7 7" />
             </svg>
           </button>
           <div className="chatbot-header-info">
-            <span className="chatbot-header-title">AI Assistant</span>
-            <span className="chatbot-header-sub">Here to help with your agricultural data</span>
+            <span className="chatbot-header-title">{copy.title}</span>
+            <span className="chatbot-header-sub">{copy.subtitle}</span>
           </div>
           <div className="chatbot-header-actions">
-            <button className="chatbot-header-icon-btn" aria-label="Information">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7h.01" />
-              </svg>
-            </button>
             <button className="chatbot-new-chat-btn" onClick={newChat}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 5v14M5 12h14" />
               </svg>
-              New Chat
+              {copy.newChat}
             </button>
           </div>
         </header>
 
-        {/* Body */}
         <div className="chatbot-body">
           {isNew ? (
             <div className="chatbot-welcome">
-              <div className="chatbot-welcome-avatar">
-                <BotAvatar size={96} />
-              </div>
-              <h2 className="chatbot-welcome-title">Hello!</h2>
-              <p className="chatbot-welcome-sub">How can I help you today?</p>
+              <div className="chatbot-welcome-avatar"><BotAvatar size={96} /></div>
+              <h2 className="chatbot-welcome-title">{copy.hello}</h2>
+              <p className="chatbot-welcome-sub">{copy.welcome}</p>
               <div className="chatbot-suggestions">
-                {SUGGESTED.map((s) => (
-                  <button key={s} className="chatbot-suggestion-chip" onClick={() => startChat(s)}>
-                    {s}
+                {copy.suggestions.map((suggestion) => (
+                  <button key={suggestion} className="chatbot-suggestion-chip" onClick={() => startChat(suggestion)}>
+                    {suggestion}
                   </button>
                 ))}
               </div>
             </div>
           ) : (
-            <div className="chatbot-messages">
-              {messages.map((msg) => (
-                <div key={msg.id} className={`chatbot-msg-row chatbot-msg-row--${msg.role}`}>
-                  {msg.role === "assistant" && (
-                    <div className="chatbot-msg-avatar">
-                      <BotAvatar size={36} />
-                    </div>
-                  )}
+            <div className="chatbot-messages" aria-live="polite">
+              {messages.map((message) => (
+                <div key={message.id} className={`chatbot-msg-row chatbot-msg-row--${message.role}`}>
+                  {message.role === "assistant" && <div className="chatbot-msg-avatar"><BotAvatar size={36} /></div>}
                   <div className="chatbot-msg-col">
-                    {msg.role === "assistant" && (
-                      <span className="chatbot-msg-sender">AI Assistant</span>
-                    )}
-                    <div className={`chatbot-bubble chatbot-bubble--${msg.role}`}>
-                      {msg.content.split("\n").map((line, i) => (
-                        <p key={i} className="chatbot-bubble-line">{line}</p>
+                    {message.role === "assistant" && <span className="chatbot-msg-sender">{copy.title}</span>}
+                    <div className={`chatbot-bubble chatbot-bubble--${message.role}`}>
+                      {message.content.split("\n").map((line, index) => (
+                        <p key={`${message.id}-${index}`} className="chatbot-bubble-line">{line}</p>
                       ))}
                     </div>
-                    <span className="chatbot-msg-time">{msg.time}</span>
+                    <span className="chatbot-msg-time">{message.time}</span>
                   </div>
-                  {msg.role === "user" && <UserAvatar />}
+                  {message.role === "user" && <UserAvatar />}
                 </div>
               ))}
 
               {loading && (
-                <div className="chatbot-msg-row chatbot-msg-row--assistant">
+                <div className="chatbot-msg-row chatbot-msg-row--assistant" role="status">
                   <div className="chatbot-msg-avatar"><BotAvatar size={36} /></div>
                   <div className="chatbot-msg-col">
-                    <span className="chatbot-msg-sender">AI Assistant</span>
-                    <div className="chatbot-bubble chatbot-bubble--assistant chatbot-typing">
-                      <span /><span /><span />
-                    </div>
+                    <span className="chatbot-msg-sender">{copy.title}</span>
+                    <div className="chatbot-bubble chatbot-bubble--assistant chatbot-typing"><span /><span /><span /></div>
                   </div>
+                </div>
+              )}
+
+              {chatError && (
+                <div className="chatbot-error" role="alert">
+                  <strong>{chatError.message}</strong>
+                  {chatError.requestId && <small>Request ID: {chatError.requestId}</small>}
+                  {chatError.retryable && (
+                    <button type="button" onClick={() => void sendMessage(chatError.lastMessage, true)} disabled={loading}>
+                      {copy.retry}
+                    </button>
+                  )}
                 </div>
               )}
               <div ref={bottomRef} />
@@ -275,29 +397,27 @@ export function ChatbotWidget() {
           )}
         </div>
 
-        {/* Input */}
         <div className="chatbot-input-area">
           {isNew ? (
-            <button className="chatbot-start-btn" onClick={() => startChat()}>
-              Ask a question…
-            </button>
+            <button className="chatbot-start-btn" onClick={() => startChat()}>{copy.start}</button>
           ) : (
             <div className="chatbot-input-row">
               <textarea
                 ref={inputRef}
                 className="chatbot-input"
-                placeholder="Type your message..."
+                placeholder={copy.placeholder}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                maxLength={4_000}
+                onChange={(event) => setInput(event.target.value)}
                 onKeyDown={handleKey}
                 rows={1}
-                aria-label="Chat message input"
+                aria-label={copy.input}
               />
               <button
                 className="chatbot-send-btn"
-                onClick={() => sendMessage()}
+                onClick={() => void sendMessage()}
                 disabled={!input.trim() || loading}
-                aria-label="Send message"
+                aria-label={copy.send}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M22 2 11 13M22 2 15 22l-4-9-9-4 20-7Z" />
@@ -305,17 +425,15 @@ export function ChatbotWidget() {
               </button>
             </div>
           )}
-          <p className="chatbot-disclaimer">
-            AI responses may not always be accurate. Please verify important information.
-          </p>
+          <p className="chatbot-disclaimer">{copy.disclaimer}</p>
         </div>
       </div>
 
-      {/* ── FAB Trigger ────────────────────────────────── */}
       <button
+        ref={fabRef}
         className={`chatbot-fab ${open ? "chatbot-fab--active" : ""}`}
-        onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "Close AI Assistant" : "Open AI Assistant"}
+        onClick={() => setOpen((current) => !current)}
+        aria-label={open ? copy.close : copy.title}
         aria-expanded={open}
       >
         <FabBotIcon />

@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PilotFeature, Recommendation } from "../lib/pilot-data";
-import type { HomePrediction } from "../lib/home-data";
 import { useLanguage } from "../lib/i18n";
 import {
   homeMapScore,
@@ -39,6 +38,7 @@ import { ClimateLivePanel } from "./ClimateLivePanel";
 import { CORE_MODEL_TARGETS, cropModelTarget } from "../lib/model-contract";
 import { HarvestIcon } from "./HarvestIcon";
 import { SiteNavigation } from "./SiteNavigation";
+import { NeonWeeklyPredictions } from "./NeonWeeklyPredictions";
 
 const CLIMATE_FEATURE_IDS = new Set([
   "rainfall_normal_1991_2020_mm",
@@ -831,116 +831,6 @@ export function PilotDashboard() {
               </div>
             </section>
 
-            {isWeekly && selectedWeeklyCell && (() => {
-              const NEON_CATEGORIES: { id: string; label: string; labelMy: string; icon: string; match: (k: string) => boolean }[] = [
-                { id: "suitability", label: "Crop Suitability", labelMy: "သီးနှံ သင့်လျော်မှု", icon: "🌾", match: (k) => k.startsWith("crop_suitability_") },
-                { id: "production", label: "Production & Yield", labelMy: "ထုတ်လုပ်မှုနှင့် အထွက်နှုန်း", icon: "📊", match: (k) => ["crop_yield_t_ha", "crop_health_score", "irrigation_need", "nitrogen_requirement_level", "phosphorus_requirement_level", "irrigation_potential", "optimal_planting_month"].includes(k) },
-                { id: "climate", label: "Climate & Environment", labelMy: "ရာသီဥတုနှင့် ပတ်ဝန်းကျင်", icon: "🌧️", match: (k) => ["flood_risk_level", "drought_risk_score", "heat_stress_risk", "current_month_precipitation_mm", "current_month_mean_temperature_c", "current_month_solar_rad_mj_m2_day", "soil_erosion_risk", "surface_water_occurrence", "water_scarcity_risk"].includes(k) },
-                { id: "economics", label: "Economics & Market", labelMy: "စီးပွားရေးနှင့် ဈေးကွက်", icon: "💰", match: (k) => ["agricultural_gdp_forecast", "market_integration_score", "post_harvest_loss_risk", "supply_chain_efficiency", "cold_chain_potential", "agricultural_land_conversion_risk", "urban_encroachment_risk"].includes(k) },
-              ];
-              const allTargets = Object.entries(selectedWeeklyCell.predictions);
-              const categorized = NEON_CATEGORIES.map((cat) => ({
-                ...cat,
-                items: allTargets.filter(([k]) => cat.match(k)),
-              }));
-              const uncategorized = allTargets.filter(([k]) => !NEON_CATEGORIES.some((cat) => cat.match(k)));
-              const formatPredKey = (k: string) => k.replace(/^crop_suitability_/, "").replace(/^current_month_/, "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-              const formatPredVal = (pred: HomePrediction) => {
-                if (pred.value === null) return "—";
-                if (typeof pred.value === "number") return pred.value.toFixed(pred.unit === "score_0_to_1" ? 4 : 2);
-                return String(pred.value);
-              };
-              const formatUnit = (u: string | null) => {
-                if (!u) return "";
-                if (u === "score_0_to_1") return "(0–1)";
-                if (u === "class_0_to_2") return "(class)";
-                if (u === "tonnes_per_hectare") return "t/ha";
-                return u;
-              };
-              const confPct = (c: number | null) => c !== null && c > 0 ? `${Math.round(c * 100)}%` : null;
-              return (
-                <section className="harvest-neon-data">
-                  <div className="neon-data-heading">
-                    <h3>{lang === "my" ? "Neon DB Weekly Predictions" : "Neon DB Weekly Predictions"}</h3>
-                    <span className="neon-data-meta">
-                      {localizeRegion(payload.meta.region, lang)} · {payload.live.weekStart} → {payload.live.weekEnd}
-                      {payload.live.modelCatalogVersion && ` · ${payload.live.modelCatalogVersion}`}
-                    </span>
-                  </div>
-
-                  {categorized.map((cat) => cat.items.length > 0 && (
-                    <details key={cat.id} className="neon-category" open={cat.id === "suitability"}>
-                      <summary className="neon-category-header">
-                        <span>{cat.icon} {lang === "my" ? cat.labelMy : cat.label}</span>
-                        <span className="neon-category-count">{cat.items.length}</span>
-                      </summary>
-                      <div className="neon-category-body">
-                        {cat.items.map(([target, pred]) => (
-                          <div key={target} className="neon-pred-row">
-                            <div className="neon-pred-name">{formatPredKey(target)}</div>
-                            <div className="neon-pred-value-group">
-                              <strong className={pred.value === null ? "missing-value" : ""}>
-                                {formatPredVal(pred)} <small>{formatUnit(pred.unit)}</small>
-                              </strong>
-                              {confPct(pred.confidence) && (
-                                <span className="neon-conf-badge">{confPct(pred.confidence)}</span>
-                              )}
-                              {pred.validationStatus && pred.validationStatus !== "healthy" && (
-                                <span className="neon-flag-badge">{pred.validationStatus}</span>
-                              )}
-                            </div>
-                            {pred.warnings.length > 0 && (
-                              <div className="neon-pred-warnings">
-                                {pred.warnings.map((w, i) => <small key={i}>⚠ {w}</small>)}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </details>
-                  ))}
-
-                  {uncategorized.length > 0 && (
-                    <details className="neon-category">
-                      <summary className="neon-category-header">
-                        <span>📋 {lang === "my" ? "အခြား Predictions" : "Other Predictions"}</span>
-                        <span className="neon-category-count">{uncategorized.length}</span>
-                      </summary>
-                      <div className="neon-category-body">
-                        {uncategorized.map(([target, pred]) => (
-                          <div key={target} className="neon-pred-row">
-                            <div className="neon-pred-name">{formatPredKey(target)}</div>
-                            <div className="neon-pred-value-group">
-                              <strong className={pred.value === null ? "missing-value" : ""}>
-                                {formatPredVal(pred)} <small>{formatUnit(pred.unit)}</small>
-                              </strong>
-                              {confPct(pred.confidence) && (
-                                <span className="neon-conf-badge">{confPct(pred.confidence)}</span>
-                              )}
-                              {pred.validationStatus && pred.validationStatus !== "healthy" && (
-                                <span className="neon-flag-badge">{pred.validationStatus}</span>
-                              )}
-                            </div>
-                            {pred.warnings.length > 0 && (
-                              <div className="neon-pred-warnings">
-                                {pred.warnings.map((w, i) => <small key={i}>⚠ {w}</small>)}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </details>
-                  )}
-
-                  {allTargets.length === 0 && (
-                    <div className="neon-no-data">
-                      {lang === "my" ? "ဤ cell အတွက် weekly prediction data မရှိပါ" : "No weekly prediction data for this cell"}
-                    </div>
-                  )}
-                </section>
-              );
-            })()}
-
             <details className="harvest-advanced-details">
               <summary>
                 <span>{lang === "my"
@@ -1116,6 +1006,12 @@ export function PilotDashboard() {
             </div>
               </div>
             </details>
+
+            <NeonWeeklyPredictions
+              cell={selectedCell}
+              live={payload.live}
+              liveCell={selectedWeeklyCell}
+            />
           </aside>
           </section>
         </div>

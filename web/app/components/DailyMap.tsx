@@ -1,9 +1,10 @@
 import { MapContainer, Polygon, TileLayer, Tooltip } from "react-leaflet";
 import { CROP_COLORS } from "../lib/colors";
+import type { DailyMapCellView } from "../lib/daily-map-data";
 import "leaflet/dist/leaflet.css";
 
 type Props = {
-  cells: any[];
+  cells: DailyMapCellView[];
   selectedId: string | null;
   onSelect: (id: string) => void;
 };
@@ -12,12 +13,12 @@ export default function DailyMap({ cells, selectedId, onSelect }: Props) {
   const bounds: [[number, number], [number, number]] = cells.length > 0
     ? [
         [
-          Math.min(...cells.map((cell) => cell.lat)),
-          Math.min(...cells.map((cell) => cell.lon)),
+          Math.min(...cells.map((cell) => cell.latitude)),
+          Math.min(...cells.map((cell) => cell.longitude)),
         ],
         [
-          Math.max(...cells.map((cell) => cell.lat)),
-          Math.max(...cells.map((cell) => cell.lon)),
+          Math.max(...cells.map((cell) => cell.latitude)),
+          Math.max(...cells.map((cell) => cell.longitude)),
         ],
       ]
     : [[15.5, 94], [28.6, 101.2]];
@@ -36,10 +37,11 @@ export default function DailyMap({ cells, selectedId, onSelect }: Props) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {cells.filter(cell => cell.polygon).map((cell) => {
+      {cells.filter((cell) => cell.polygon !== null).map((cell) => {
         const isSelected = selectedId === cell.index;
-        const color = cell.color || CROP_COLORS[cell.top_crop] || "#9E9E9E";
+        const color = cell.color || (cell.topCrop ? CROP_COLORS[cell.topCrop] : undefined) || "#9E9E9E";
         const polyCoords = cell.polygon;
+        if (!polyCoords) return null;
         
         return (
           <Polygon
@@ -62,9 +64,9 @@ export default function DailyMap({ cells, selectedId, onSelect }: Props) {
                 </div>
                 <div className="capitalize">Region: {cell.region}</div>
                 <div className="capitalize text-blue-600 font-bold">
-                  Crop: {(cell.top_crop || "None").replace(/_/g, ' ')}
+                  Crop: {(cell.topCrop || "None").replace(/_/g, " ")}
                 </div>
-                <div>Score: {cell.top_score}</div>
+                <div>Score: {cell.topScore ?? "—"}</div>
               </div>
             </Tooltip>
           </Polygon>

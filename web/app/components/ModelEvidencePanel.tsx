@@ -80,8 +80,8 @@ export function ModelEvidencePanel({ cell, live, liveCell, cropId }: Props) {
         </strong>
         <span>
           {lang === "my"
-            ? `${availableCount} ခု ရရှိထားသည်`
-            : `${availableCount} available for this run`}
+            ? `${CORE_MODEL_TARGETS.length} ခုအနက် ${availableCount} ခု ရရှိထားသည်`
+            : `${availableCount} available of ${CORE_MODEL_TARGETS.length} catalog targets`}
         </span>
       </div>
 
@@ -101,7 +101,7 @@ export function ModelEvidencePanel({ cell, live, liveCell, cropId }: Props) {
                 <small>
                   {prediction
                     ? `${prediction.validationStatus ?? "stored"}${prediction.modelVersion ? ` · v${prediction.modelVersion}` : ""}`
-                    : error ?? (lang === "my" ? "ဤ run တွင် တန်ဖိုးမရရှိပါ" : "No value returned for this run")}
+                    : error?.code ?? error?.message ?? (lang === "my" ? "ဤ run တွင် တန်ဖိုးမရရှိပါ" : "No value returned for this run")}
                 </small>
               </span>
               <strong>{prediction ? formatPrediction(prediction, lang) : "—"}</strong>

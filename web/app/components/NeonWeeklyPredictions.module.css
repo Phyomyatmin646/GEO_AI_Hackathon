@@ -1,0 +1,535 @@
+.root {
+  margin-top: 12px;
+  overflow: clip;
+  background: linear-gradient(145deg, #fffdfa 0%, #fffaf0 100%);
+  border: 1px solid rgba(209, 142, 13, 0.24);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(101, 75, 24, 0.035);
+}
+
+.root > summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  min-height: 58px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  color: #173c2f;
+  cursor: pointer;
+  list-style: none;
+}
+
+.root > summary::-webkit-details-marker,
+.root :global(.neon-category) > summary::-webkit-details-marker,
+.root :global(.neon-prediction-warnings) > summary::-webkit-details-marker,
+.root :global(.neon-cell-errors) > summary::-webkit-details-marker,
+.root :global(.neon-unavailable-targets) > summary::-webkit-details-marker {
+  display: none;
+}
+
+.root :global(.neon-data-title-icon) {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  color: #a96d00;
+  background: #fff1cc;
+  border-radius: 10px;
+}
+
+.root :global(.neon-data-title) {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.root :global(.neon-data-title) strong {
+  overflow-wrap: anywhere;
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.root :global(.neon-data-title) small {
+  overflow: hidden;
+  color: #7b807b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.47rem;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.root :global(.neon-data-count) {
+  padding: 4px 8px;
+  color: #70664f;
+  background: #f5f1e8;
+  border-radius: 999px;
+  font-size: 0.52rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.root :global(.neon-data-count.has-data) {
+  color: #17623f;
+  background: #eaf6ec;
+}
+
+.root > summary > :global(.harvest-icon),
+.root :global(.neon-category) > summary > :global(.harvest-icon),
+.root :global(.neon-prediction-warnings) > summary > :global(.harvest-icon):last-child,
+.root :global(.neon-cell-errors) > summary > :global(.harvest-icon):last-child {
+  transition: transform 160ms ease;
+}
+
+.root[open] > summary > :global(.harvest-icon),
+.root :global(.neon-category[open]) > summary > :global(.harvest-icon),
+.root :global(.neon-prediction-warnings[open]) > summary > :global(.harvest-icon):last-child,
+.root :global(.neon-cell-errors[open]) > summary > :global(.harvest-icon):last-child {
+  transform: rotate(180deg);
+}
+
+.root :global(.neon-data-body) {
+  padding: 12px;
+  border-top: 1px solid rgba(209, 142, 13, 0.18);
+}
+
+.root :global(.neon-data-context) {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin: 0;
+}
+
+.root :global(.neon-data-context) > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  padding: 8px 9px;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(73, 66, 46, 0.1);
+  border-radius: 9px;
+}
+
+.root :global(.neon-data-context) dt,
+.root :global(.neon-prediction-meta) dt {
+  color: #838983;
+  font-size: 0.46rem;
+  font-weight: 600;
+}
+
+.root :global(.neon-data-context) dd {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: #27332d;
+  font-size: 0.54rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.root :global(.neon-data-provenance) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 1px 0;
+  color: #66716b;
+  font-size: 0.49rem;
+  line-height: 1.55;
+}
+
+.root :global(.neon-data-provenance) > :global(.harvest-icon) {
+  flex: 0 0 auto;
+  color: #a96d00;
+}
+
+.root :global(.neon-data-provenance) code {
+  min-width: 0;
+  margin-left: auto;
+  padding: 2px 5px;
+  overflow: hidden;
+  color: #70664f;
+  background: #fff4d9;
+  border-radius: 5px;
+  font-size: 0.43rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.root :global(.neon-availability-summary) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px 12px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  color: #315845;
+  background: #eef7ef;
+  border: 1px solid rgba(32, 113, 73, 0.14);
+  border-radius: 9px;
+}
+
+.root :global(.neon-availability-summary) strong {
+  font-size: 0.52rem;
+}
+
+.root :global(.neon-availability-summary) span {
+  color: #67766e;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.43rem;
+}
+
+.root :global(.neon-diagnostic-note) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 7px 9px;
+  color: #7d4e17;
+  background: #fff7e8;
+  border: 1px solid rgba(211, 137, 41, 0.18);
+  border-radius: 8px;
+  font-size: 0.45rem;
+}
+
+.root :global(.neon-diagnostic-note) code {
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.root :global(.neon-data-empty) {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px;
+  color: #4e5b54;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px dashed rgba(122, 116, 97, 0.3);
+  border-radius: 10px;
+}
+
+.root :global(.neon-data-empty) > span {
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 31px;
+  height: 31px;
+  place-items: center;
+  color: #99701c;
+  background: #fff3d4;
+  border-radius: 50%;
+}
+
+.root :global(.neon-data-empty) strong {
+  font-size: 0.61rem;
+}
+
+.root :global(.neon-data-empty) p {
+  margin: 3px 0 0;
+  color: #778079;
+  font-size: 0.52rem;
+  line-height: 1.5;
+}
+
+.root :global(.neon-category-list) {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.root :global(.neon-category) {
+  overflow: clip;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(73, 66, 46, 0.12);
+  border-radius: 10px;
+}
+
+.root :global(.neon-category) > summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  min-height: 43px;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  color: #25372f;
+  cursor: pointer;
+  list-style: none;
+}
+
+.root :global(.neon-category) > summary > span {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  color: #207149;
+  background: #ecf7ef;
+  border-radius: 8px;
+}
+
+.root :global(.neon-category) > summary strong {
+  font-size: 0.59rem;
+  line-height: 1.4;
+}
+
+.root :global(.neon-category) > summary small {
+  display: inline-grid;
+  min-width: 23px;
+  height: 23px;
+  place-items: center;
+  color: #765b24;
+  background: #fff4d9;
+  border-radius: 999px;
+  font-size: 0.48rem;
+  font-weight: 700;
+}
+
+.root :global(.neon-category-body) {
+  display: grid;
+  gap: 7px;
+  padding: 7px;
+  background: rgba(249, 248, 243, 0.62);
+  border-top: 1px solid rgba(73, 66, 46, 0.09);
+}
+
+.root :global(.neon-prediction-row) {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  padding: 9px 10px;
+  background: #fff;
+  border: 1px solid rgba(73, 66, 46, 0.09);
+  border-radius: 9px;
+}
+
+.root :global(.neon-prediction-main) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+}
+
+.root :global(.neon-prediction-name) {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.root :global(.neon-prediction-name) strong {
+  overflow-wrap: anywhere;
+  color: #27332d;
+  font-size: 0.57rem;
+  line-height: 1.45;
+}
+
+.root :global(.neon-prediction-name) code {
+  overflow: hidden;
+  color: #939892;
+  font-size: 0.4rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.root :global(.neon-prediction-value) {
+  display: grid;
+  min-width: 78px;
+  justify-items: end;
+}
+
+.root :global(.neon-prediction-value) strong {
+  color: #174f36;
+  font-family: var(--font-walone);
+  font-size: 0.7rem;
+}
+
+.root :global(.neon-prediction-value) span {
+  max-width: 150px;
+  color: #79817b;
+  font-size: 0.43rem;
+  text-align: right;
+}
+
+.root :global(.neon-prediction-badges) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.root :global(.neon-prediction-badges) span {
+  padding: 3px 6px;
+  color: #58645e;
+  background: #f1f3f1;
+  border-radius: 999px;
+  font-size: 0.43rem;
+  font-weight: 700;
+}
+
+.root :global(.neon-prediction-badges) :global(.is-healthy) {
+  color: #17623f;
+  background: #e8f6eb;
+}
+
+.root :global(.neon-prediction-badges) :global(.is-flagged) {
+  color: #9b520d;
+  background: #fff0df;
+}
+
+.root :global(.neon-prediction-badges) :global(.is-unknown) {
+  color: #6e6e68;
+  background: #f1f1ee;
+}
+
+.root :global(.neon-prediction-meta) {
+  display: grid;
+  grid-template-columns: minmax(0, 0.55fr) minmax(0, 1.45fr);
+  gap: 6px;
+  margin: 0;
+}
+
+.root :global(.neon-prediction-meta) > div {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+  padding: 5px 7px;
+  background: #fafaf7;
+  border-radius: 6px;
+}
+
+.root :global(.neon-prediction-meta) dd {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: #5b645f;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.42rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.root :global(.neon-prediction-warnings),
+.root :global(.neon-cell-errors),
+.root :global(.neon-unavailable-targets) {
+  color: #8c520f;
+  background: #fff8ed;
+  border: 1px solid rgba(211, 137, 41, 0.17);
+  border-radius: 7px;
+}
+
+.root :global(.neon-prediction-warnings) > summary,
+.root :global(.neon-cell-errors) > summary,
+.root :global(.neon-unavailable-targets) > summary {
+  display: flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 7px;
+  cursor: pointer;
+  font-size: 0.45rem;
+  font-weight: 700;
+  list-style: none;
+}
+
+.root :global(.neon-prediction-warnings) > summary > :global(.harvest-icon):last-child,
+.root :global(.neon-cell-errors) > summary > :global(.harvest-icon):last-child,
+.root :global(.neon-unavailable-targets) > summary > :global(.harvest-icon):last-child {
+  margin-left: auto;
+}
+
+.root :global(.neon-prediction-warnings) ul,
+.root :global(.neon-cell-errors) ul,
+.root :global(.neon-unavailable-targets) ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0 9px 8px 27px;
+  color: #725e43;
+  font-size: 0.44rem;
+  line-height: 1.5;
+}
+
+.root :global(.neon-cell-errors) li span {
+  display: block;
+  margin-top: 2px;
+}
+
+.root :global(.neon-unavailable-targets) ul {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 0 8px 8px;
+  list-style: none;
+}
+
+.root :global(.neon-unavailable-targets) li {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+  padding: 6px 7px;
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 6px;
+}
+
+.root :global(.neon-unavailable-targets) li span {
+  color: #4f5a54;
+  font-weight: 700;
+}
+
+.root :global(.neon-unavailable-targets) li code,
+.root :global(.neon-unavailable-targets) li small {
+  min-width: 0;
+  overflow: hidden;
+  color: #8a8e8a;
+  font-size: 0.39rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .root :global(.neon-data-context) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .root :global(.neon-data-provenance) {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .root :global(.neon-data-provenance) code {
+    width: 100%;
+    margin-left: 21px;
+  }
+
+  .root :global(.neon-unavailable-targets) ul {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 430px) {
+  .root > summary {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .root > summary > :global(.neon-data-count) {
+    display: none;
+  }
+
+  .root :global(.neon-prediction-main) {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .root :global(.neon-prediction-value) {
+    min-width: 0;
+    justify-items: start;
+  }
+
+  .root :global(.neon-prediction-value) span {
+    text-align: left;
+  }
+
+  .root :global(.neon-prediction-meta) {
+    grid-template-columns: 1fr;
+  }
+}
