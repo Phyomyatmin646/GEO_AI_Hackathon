@@ -155,7 +155,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 72px;
+  min-height: 80px;
   padding: 0 4vw;
   color: #fff;
   background: rgba(16, 43, 34, 0.96);
@@ -1473,9 +1473,9 @@ button {
   position: relative;
   top: auto;
   z-index: 700;
-  min-height: 104px;
-  align-items: flex-start;
-  padding: 26px clamp(24px, 4vw, 58px) 8px;
+  min-height: 80px;
+  align-items: center;
+  padding: 0 clamp(24px, 4vw, 58px);
   color: var(--harvest-ink);
   background: transparent;
   border: 0;
@@ -3037,11 +3037,11 @@ button {
 
 @media (max-width: 760px) {
   .harvest-dashboard .harvest-topbar {
-    min-height: 88px;
-    padding: 14px 16px 8px;
+    min-height: 68px;
+    padding: 6px 16px;
   }
 
-  .harvest-brand-logo {
+  .harvest-dashboard .harvest-brand-logo {
     width: 145px;
     height: 55px;
     background-position: -62px -25px;
@@ -3156,7 +3156,7 @@ button {
     width: min(100% - 20px, 820px);
   }
 
-  .harvest-brand-logo {
+  .harvest-dashboard .harvest-brand-logo {
     width: 128px;
     height: 48px;
     background-position: -55px -22px;
@@ -3268,13 +3268,6 @@ button {
 .market-brand {
   display: flex;
   align-items: center;
-}
-
-.market-brand-logo.harvest-brand-logo {
-  width: 148px;
-  height: 57px;
-  background-position: -62px -26px;
-  background-size: 290px 290px;
 }
 
 .market-topbar-nav {
@@ -3442,6 +3435,12 @@ button {
   opacity: 0.65;
 }
 
+.market-table th.market-col-no {
+  text-align: center;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
 .market-table tbody tr {
   border-bottom: 1px solid rgba(73, 66, 46, 0.07);
   transition: background 120ms ease;
@@ -3458,17 +3457,26 @@ button {
   white-space: nowrap;
 }
 
+.market-table tbody td.market-row-cell {
+  text-align: center;
+}
+
 .market-row-num {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  color: #7b5a0a;
-  font-size: 0.72rem;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 7px;
+  color: #8a6408;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.68rem;
   font-weight: 700;
-  background: var(--market-gold-soft);
-  border-radius: 8px;
+  letter-spacing: 0.02em;
+  background: linear-gradient(135deg, #fff6de, #ffe9ae);
+  border: 1px solid var(--market-gold-line);
+  border-radius: 999px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
 .market-name {
@@ -3482,6 +3490,75 @@ button {
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.8rem;
   text-align: right;
+}
+
+.market-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--market-line);
+  background: #fcfcf8;
+}
+
+.market-page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  color: var(--market-muted);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: #fff;
+  border: 1px solid var(--market-line);
+  border-radius: 9px;
+  cursor: pointer;
+  transition:
+    color 130ms ease,
+    border-color 130ms ease,
+    background 130ms ease,
+    transform 130ms ease;
+}
+
+.market-page-btn:hover:not(:disabled) {
+  color: #7b5a0a;
+  background: var(--market-gold-soft);
+  border-color: var(--market-gold-line);
+}
+
+.market-page-btn--active {
+  color: #fff;
+  background: linear-gradient(135deg, #f0a500, #e79c00);
+  border-color: #e79c00;
+  box-shadow: 0 3px 10px rgba(231, 156, 0, 0.28);
+}
+
+.market-page-btn--active:hover:not(:disabled) {
+  color: #fff;
+  background: linear-gradient(135deg, #f0a500, #e79c00);
+  border-color: #e79c00;
+}
+
+.market-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.market-page-btn--nav {
+  min-width: 32px;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.market-page-ellipsis {
+  color: var(--market-muted);
+  font-size: 0.8rem;
+  padding: 0 2px;
 }
 
 .market-state {
@@ -3516,11 +3593,6 @@ button {
 
 @media (max-width: 640px) {
   .market-topbar { min-height: 68px; padding: 0 16px; }
-  .market-brand-logo.harvest-brand-logo {
-    width: 120px; height: 46px;
-    background-position: -50px -21px;
-    background-size: 236px 236px;
-  }
   .market-content { width: calc(100% - 28px); padding: 24px 0 48px; }
   .market-title { font-size: 1.6rem; }
   .market-search-box { max-width: 100%; }
@@ -4257,8 +4329,8 @@ body:has(.faq-page) {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  min-height: 104px;
-  padding: 14px clamp(32px, 2.75vw, 53px) 12px;
+  min-height: 80px;
+  padding: 4px clamp(32px, 2.75vw, 53px);
   background: rgba(255, 255, 255, 0.98);
   border-bottom: 1px solid rgba(48, 48, 43, 0.12);
 }
@@ -4625,8 +4697,8 @@ body:has(.faq-page) {
   }
 
   .faq-topbar {
-    min-height: 86px;
-    padding: 9px 16px;
+    min-height: 68px;
+    padding: 7px 16px;
   }
 
   .faq-brand-logo.harvest-brand-logo {
@@ -5267,7 +5339,7 @@ body:has(.faq-page) {
   position: fixed;
   right: 16px;
   bottom: 16px;
-  z-index: 9002;
+  z-index: 9001;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5311,7 +5383,7 @@ body:has(.faq-page) {
   position: fixed;
   right: 16px;
   bottom: 16px;
-  z-index: 9001;
+  z-index: 9002;
   display: flex;
   flex-direction: column;
   width: 420px;
@@ -5783,8 +5855,8 @@ body:has(.faq-page) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 94px;
-  padding: 12px clamp(24px, 4.6vw, 70px);
+  min-height: 80px;
+  padding: 8px clamp(24px, 4.6vw, 70px);
   background: rgba(255, 255, 255, 0.96);
   border-bottom: 1px solid rgba(31, 35, 47, 0.11);
   backdrop-filter: blur(14px);
@@ -6241,8 +6313,8 @@ body:has(.faq-page) {
 
 @media (max-width: 900px) {
   .chart-topbar {
-    min-height: 82px;
-    padding: 10px 24px;
+    min-height: 68px;
+    padding: 6px 24px;
   }
 
   .chart-brand__logo.harvest-brand-logo {
@@ -6285,8 +6357,8 @@ body:has(.faq-page) {
   }
 
   .chart-topbar {
-    min-height: 72px;
-    padding: 8px 14px;
+    min-height: 68px;
+    padding: 6px 14px;
   }
 
   .chart-brand__logo.harvest-brand-logo {
@@ -6727,7 +6799,7 @@ body:has(.faq-page) {
   z-index: 1000;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  min-height: 86px;
+  min-height: 80px;
   align-items: center;
   gap: 24px;
   padding: 10px clamp(18px, 3vw, 44px);
@@ -6806,7 +6878,7 @@ body:has(.faq-page) {
   }
 
   .daily-topbar {
-    min-height: 74px;
+    min-height: 68px;
     gap: 8px;
     padding: 8px 12px;
   }

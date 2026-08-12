@@ -95,7 +95,7 @@ export default function CropCalendarPage() {
           className="market-brand"
           aria-label={lang === "my" ? "ပင်မစာမျက်နှာသို့" : "Go to home"}
         >
-          <span aria-label={t.header.title} className="harvest-brand-logo market-brand-logo" role="img" />
+          <span aria-label={t.header.title} className="harvest-brand-logo" role="img" />
         </Link>
         <nav className="market-topbar-nav" aria-label={copy.pageNavigation}>
           <button

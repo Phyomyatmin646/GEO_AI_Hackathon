@@ -186,10 +186,16 @@ export function ChatbotWidget() {
       setOpen(false);
       fabRef.current?.focus();
     };
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (event.target instanceof Element && event.target.closest(".chatbot-panel, .chatbot-fab, .chatbot-backdrop")) return;
+      setOpen(false);
+    };
     window.addEventListener("keydown", handleEscape);
+    document.addEventListener("click", handleOutsideClick);
     return () => {
       document.body.style.overflow = "";
       window.removeEventListener("keydown", handleEscape);
+      document.removeEventListener("click", handleOutsideClick);
     };
   }, [open]);
 

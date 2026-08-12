@@ -31,12 +31,75 @@ type MarketPayload = {
   commodities: CommodityPrice[];
 };
 
+const PAGE_SIZE = 20;
+
+export function MarketPagination({
+  current,
+  count,
+  onSelect,
+}: {
+  current: number;
+  count: number;
+  onSelect: (page: number) => void;
+}) {
+  const window = (() => {
+    if (count <= 7) return Array.from({ length: count }, (_, i) => i);
+    const out: (number | "…")[] = [0];
+    const start = Math.max(1, current - 1);
+    const end = Math.min(count - 2, current + 1);
+    if (start > 1) out.push("…");
+    for (let p = start; p <= end; p += 1) out.push(p);
+    if (end < count - 2) out.push("…");
+    out.push(count - 1);
+    return out;
+  })();
+
+  return (
+    <nav className="market-pagination" aria-label="pagination">
+      <button
+        type="button"
+        className="market-page-btn market-page-btn--nav"
+        onClick={() => onSelect(current - 1)}
+        disabled={current === 0}
+        aria-label="Previous page"
+      >
+        ‹
+      </button>
+      {window.map((entry, index) =>
+        entry === "…" ? (
+          <span key={`ellipsis-${index}`} className="market-page-ellipsis">…</span>
+        ) : (
+          <button
+            key={entry}
+            type="button"
+            className={`market-page-btn ${entry === current ? "market-page-btn--active" : ""}`}
+            onClick={() => onSelect(entry)}
+            aria-current={entry === current ? "page" : undefined}
+          >
+            {entry + 1}
+          </button>
+        ),
+      )}
+      <button
+        type="button"
+        className="market-page-btn market-page-btn--nav"
+        onClick={() => onSelect(current + 1)}
+        disabled={current === count - 1}
+        aria-label="Next page"
+      >
+        ›
+      </button>
+    </nav>
+  );
+}
+
 export default function MarketPage() {
   const { lang, setLang, t } = useLanguage();
   const [data, setData] = useState<MarketPayload | null>(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     fetch("/api/v1/market")
@@ -113,6 +176,9 @@ export default function MarketPage() {
     const localizedName = localizeMarketValue("commodities", commodity.name, "my") ?? "";
     return `${commodity.name} ${localizedName}`.toLocaleLowerCase().includes(normalizedSearch);
   });
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const pageRows = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
   const fmt = (v: number | null) =>
     v !== null ? formatMarketNumber(v, lang) : "—";
@@ -122,11 +188,11 @@ export default function MarketPage() {
       {/* ── Topbar ──────────────────────────────────── */}
       <header className="market-topbar">
         <Link href="/" className="market-brand" aria-label={lang === "my" ? "ပင်မစာမျက်နှာသို့" : "Go to home"}>
-          <span
-            aria-label={t.header.title}
-            className="harvest-brand-logo market-brand-logo"
-            role="img"
-          />
+<span
+              aria-label={t.header.title}
+              className="harvest-brand-logo"
+              role="img"
+            />
         </Link>
         <nav className="market-topbar-nav">
           <button
@@ -179,7 +245,10 @@ export default function MarketPage() {
               type="search"
               placeholder={copy.search}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(0);
+              }}
               id="market-search"
             />
           </div>
@@ -200,11 +269,12 @@ export default function MarketPage() {
           ) : filtered.length === 0 ? (
             <div className="market-state">{copy.noResults}</div>
           ) : (
-            <div className="market-table-wrap">
+            <>
+              <div className="market-table-wrap">
               <table className="market-table">
                 <thead>
                   <tr>
-                    <th><HarvestIcon name="dataset" size={13} />{copy.cols.no}</th>
+                    <th className="market-col-no">{copy.cols.no}</th>
                     <th><HarvestIcon name="sprout" size={13} />{copy.cols.name}</th>
                     <th><HarvestIcon name="pin" size={13} />{copy.cols.location}</th>
                     <th><HarvestIcon name="regions" size={13} />{copy.cols.marketplace}</th>
@@ -216,9 +286,13 @@ export default function MarketPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((row, i) => (
+                  {pageRows.map((row, i) => (
                     <tr key={row.id}>
-                      <td className="market-row-num">{formatMarketNumber(i + 1, lang)}</td>
+                      <td className="market-row-cell">
+                        <span className="market-row-num">
+                          {formatMarketNumber(safePage * PAGE_SIZE + i + 1, lang)}
+                        </span>
+                      </td>
                       <td className="market-name">
                         {localizeMarketValue("commodities", row.name, lang)}
                       </td>
@@ -233,7 +307,15 @@ export default function MarketPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+              </div>
+              {pageCount > 1 && (
+                <MarketPagination
+                  current={safePage}
+                  count={pageCount}
+                  onSelect={setPage}
+                />
+              )}
+            </>
           )}
         </div>
 
