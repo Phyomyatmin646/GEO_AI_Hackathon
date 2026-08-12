@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
-import { MapContainer, Polygon, TileLayer, Tooltip, useMap } from "react-leaflet";
+import { useEffect, useMemo, useState } from "react";
+import { MapContainer, Polygon, TileLayer, Tooltip, useMap, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
 import type { GridCell } from "../lib/pilot-data";
 import { useLanguage } from "../lib/i18n";
 
@@ -62,6 +63,16 @@ function MapViewportSync({ bounds }: { bounds: [[number, number], [number, numbe
 
 export default function GeoMap({ cells, selectedId, onSelect, overlay }: Props) {
   const { lang, t } = useLanguage();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("currentUser");
+      if (stored) setCurrentUser(JSON.parse(stored));
+    } catch (e) {
+      // ignore
+    }
+  }, []);
   const bounds = useMemo<[[number, number], [number, number]]>(() => (
     cells.length
       ? [
@@ -153,6 +164,40 @@ export default function GeoMap({ cells, selectedId, onSelect, overlay }: Props) 
           </Polygon>
         );
       })}
+
+      {currentUser && currentUser.location?.grid_id && (
+        (() => {
+          const userCell = cells.find((c) => c.id === currentUser.location.grid_id);
+          if (userCell) {
+            // Calculate center of polygon roughly
+            const lats = userCell.polygon.map(p => p[0]);
+            const lngs = userCell.polygon.map(p => p[1]);
+            const centerLat = (Math.max(...lats) + Math.min(...lats)) / 2;
+            const centerLng = (Math.max(...lngs) + Math.min(...lngs)) / 2;
+            
+            const customIcon = new L.Icon({
+              iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+              iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+              shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+              iconSize: [25, 41],
+              iconAnchor: [12, 41],
+            });
+
+            return (
+              <Marker position={[centerLat, centerLng]} icon={customIcon}>
+                <Popup>
+                  <strong>{currentUser.username}</strong>
+                  <br />
+                  Your registered farm location
+                  <br />
+                  Grid: {currentUser.location.grid_id}
+                </Popup>
+              </Marker>
+            );
+          }
+          return null;
+        })()
+      )}
     </MapContainer>
   );
 }

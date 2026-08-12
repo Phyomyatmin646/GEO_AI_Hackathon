@@ -195,28 +195,49 @@ export class WeeklyOrchestrator {
       expectedCoverageMetadata: manifest.coverage_metadata,
     })) {
       const batchRequestId = batchRequestIdentifier(requestId, manifest.region, batchIndex);
-      const response = await this.modelServer.batchInfer(
-        {
-          rows: batch.map((cell) => cell.features),
-          targets,
-          observation_month: observationMonthForWeekEnd(request.week_end),
-        },
-        batchRequestId,
-      );
-      for (const [index, result] of response.results.entries()) {
-        const source = batch[index];
-        if (!source) throw new Error('Model batch row alignment failed.');
-        const errors = Object.keys(result.errors);
-        targetErrors += errors.length;
-        cells.push({
-          grid_id: source.grid_id,
-          latitude: source.latitude,
-          longitude: source.longitude,
-          predictions: {
-            values: result.predictions,
-            errors: result.errors,
+      const validCells = batch.filter(cell => cell.features.valid_agriculture_mask === 1);
+      
+      let responseResults: any[] = [];
+      if (validCells.length > 0) {
+        const response = await this.modelServer.batchInfer(
+          {
+            rows: validCells.map((cell) => cell.features),
+            targets,
+            observation_month: observationMonthForWeekEnd(request.week_end),
           },
-        });
+          batchRequestId,
+        );
+        responseResults = response.results;
+      }
+
+      let validIndex = 0;
+      for (const [index, source] of batch.entries()) {
+        if (source.features.valid_agriculture_mask === 1) {
+          const result = responseResults[validIndex];
+          if (!result) throw new Error('Model batch row alignment failed.');
+          const errors = Object.keys(result.errors);
+          targetErrors += errors.length;
+          cells.push({
+            grid_id: source.grid_id,
+            latitude: source.latitude,
+            longitude: source.longitude,
+            predictions: {
+              values: result.predictions,
+              errors: result.errors,
+            },
+          });
+          validIndex += 1;
+        } else {
+          cells.push({
+            grid_id: source.grid_id,
+            latitude: source.latitude,
+            longitude: source.longitude,
+            predictions: {
+              values: {},
+              errors: {},
+            },
+          });
+        }
       }
       batchIndex += 1;
       // Ping DB every batch to keep connection alive through Docker NAT (5-min idle drop)

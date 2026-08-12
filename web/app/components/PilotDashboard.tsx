@@ -130,11 +130,18 @@ export function PilotDashboard() {
     setLoading(true);
     setLoadError(false);
     try {
-      const response = await fetch(
-        `/api/v1/home?region=${encodeURIComponent(selectedRegion)}&period=${selectedPeriod}`,
-        { signal, cache: "no-store" },
-      );
-      if (!response.ok) {
+      const [response, geometryResponse] = await Promise.all([
+        fetch(
+          `/api/v1/home?region=${encodeURIComponent(selectedRegion)}&period=${selectedPeriod}`,
+          { signal, cache: "no-store" },
+        ),
+        fetch(
+          `/api/v1/geometry?region=${encodeURIComponent(selectedRegion)}`,
+          { signal, cache: "force-cache" }
+        )
+      ]);
+      
+      if (!response.ok || !geometryResponse.ok) {
         throw new Error(`Pilot API returned ${response.status}`);
       }
       const value = (await response.json()) as HomePayload;
@@ -148,6 +155,16 @@ export function PilotDashboard() {
         throw new Error("Pilot API returned a different regional release");
       }
       if (signal?.aborted || requestId !== requestSequence.current) return;
+      
+      const geometryData = await geometryResponse.json() as { geometry: { id: string; polygon: unknown }[] };
+      const geometryMap = new Map(geometryData.geometry.map((g) => [g.id, g.polygon]));
+      
+      // Merge geometry back into cells
+      value.cells = value.cells.map((cell) => ({
+        ...cell,
+        polygon: geometryMap.get(cell.id) || []
+      }));
+      
       setPayload(value);
       setSelectedId((current) =>
         value.cells.some((cell) => cell.id === current)

@@ -223,8 +223,14 @@ export async function GET(request: Request) {
       }
     }
 
+    // Strip geometry from the cells to make it lightweight
+    const strippedBundle = {
+      ...bundle,
+      cells: bundle.cells.map(({ polygon, ...cell }) => cell),
+    };
+
     return NextResponse.json(
-      { ...bundle, live },
+      { ...strippedBundle, live },
       {
         headers: {
           "Cache-Control": "no-store",
