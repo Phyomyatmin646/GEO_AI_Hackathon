@@ -13,7 +13,7 @@ import {
 } from "@/app/lib/pilot-data";
 
 const DEFAULT_BACKEND_URL = "http://127.0.0.1:8000";
-const HOME_BACKEND_TIMEOUT_MS = 3_500;
+const HOME_BACKEND_TIMEOUT_MS = 30_000;
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -146,7 +146,21 @@ async function loadWeeklyState(
     .find((item) => optionalString(item?.region)?.toLocaleLowerCase("en") === region);
   if (!selected) throw new Error("region_unavailable");
 
-  const payload = record(selected.payload);
+  const weekStart = optionalString(selected.week_start) ?? optionalString(envelope?.week_start);
+  if (!weekStart) throw new Error("invalid_weekly_data");
+
+  // Fetch the specific region payload separately to avoid massive 200MB download on /latest
+  const regionResponse = await fetch(`${backendOrigin()}/api/v1/weekly/${weekStart}/${region}`, {
+    headers,
+    cache: "no-store",
+    signal: AbortSignal.timeout(HOME_BACKEND_TIMEOUT_MS),
+  });
+  if (!regionResponse.ok) {
+    throw new Error("backend_unavailable");
+  }
+  const regionData = record(await regionResponse.json());
+  const payload = record(regionData?.payload);
+
   const rawCells = Array.isArray(payload?.cells) ? payload.cells : [];
   const cells = rawCells.flatMap((cell) => {
     const parsed = parseWeeklyCell(cell, allowedGridIds);
@@ -156,7 +170,6 @@ async function loadWeeklyState(
 
   const modelPolicy = record(payload?.model_policy) ?? {};
   const coverage = record(payload?.coverage_metadata) ?? record(selected.coverage_metadata) ?? {};
-  const weekStart = optionalString(selected.week_start) ?? optionalString(envelope?.week_start);
   const weekEnd = optionalString(selected.week_end) ?? optionalString(envelope?.week_end);
   const hasCropPredictions = cells.some((cell) =>
     Object.keys(cell.predictions).some((target) => target.startsWith("crop_suitability_")),

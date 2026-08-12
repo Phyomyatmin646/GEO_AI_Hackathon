@@ -440,18 +440,21 @@ export class PostgresStore implements AppStore {
   async getLatestWeeklyPredictions(): Promise<WeeklyRegionPrediction[]> {
     const result = await this.pool.query<QueryResultRow>(
       `WITH selected_run AS (
-         SELECT predictions.pipeline_run_id
-         FROM weekly_region_predictions AS predictions
-         JOIN pipeline_runs AS runs ON runs.id = predictions.pipeline_run_id
-         WHERE predictions.expires_at > NOW()
-         ORDER BY predictions.week_start DESC, runs.created_at DESC, runs.id DESC
+         SELECT id AS pipeline_run_id
+         FROM pipeline_runs
+         WHERE status = 'succeeded'
+         ORDER BY week_start DESC, created_at DESC, id DESC
          LIMIT 1
        )
-       SELECT predictions.*
+       SELECT 
+         id, pipeline_run_id, region, week_start, week_end, cell_count, 
+         source_sha256, prediction_sha256, model_catalog_version, schema_version, 
+         coverage_metadata, created_at, expires_at
+         -- EXCLUDE payload to prevent 200MB JSON transfer on /latest
        FROM weekly_region_predictions AS predictions
        WHERE predictions.pipeline_run_id = (SELECT pipeline_run_id FROM selected_run)
          AND predictions.expires_at > NOW()
-       ORDER BY predictions.region`,
+       ORDER BY predictions.region`
     );
     return result.rows.map(mapWeeklyPrediction);
   }
@@ -459,11 +462,10 @@ export class PostgresStore implements AppStore {
   async getWeeklyPredictions(weekStart: string): Promise<WeeklyRegionPrediction[]> {
     const result = await this.pool.query<QueryResultRow>(
       `WITH selected_run AS (
-         SELECT predictions.pipeline_run_id
-         FROM weekly_region_predictions AS predictions
-         JOIN pipeline_runs AS runs ON runs.id = predictions.pipeline_run_id
-         WHERE predictions.week_start = $1 AND predictions.expires_at > NOW()
-         ORDER BY runs.created_at DESC, runs.id DESC
+         SELECT id AS pipeline_run_id
+         FROM pipeline_runs
+         WHERE week_start = $1 AND status = 'succeeded'
+         ORDER BY created_at DESC, id DESC
          LIMIT 1
        )
        SELECT predictions.*
@@ -482,11 +484,10 @@ export class PostgresStore implements AppStore {
   ): Promise<WeeklyRegionPrediction | undefined> {
     const result = await this.pool.query<QueryResultRow>(
       `WITH selected_run AS (
-         SELECT predictions.pipeline_run_id
-         FROM weekly_region_predictions AS predictions
-         JOIN pipeline_runs AS runs ON runs.id = predictions.pipeline_run_id
-         WHERE predictions.week_start = $1 AND predictions.expires_at > NOW()
-         ORDER BY runs.created_at DESC, runs.id DESC
+         SELECT id AS pipeline_run_id
+         FROM pipeline_runs
+         WHERE week_start = $1 AND status = 'succeeded'
+         ORDER BY created_at DESC, id DESC
          LIMIT 1
        )
        SELECT predictions.*
