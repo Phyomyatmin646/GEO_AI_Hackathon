@@ -87,7 +87,7 @@ export class GeminiChatbotService implements ChatbotServiceGateway {
           generationConfig: {
             temperature: 0.3,
             topP: 0.95,
-            maxOutputTokens: 2048,
+            maxOutputTokens: 8192,
           },
         }),
         signal: controller.signal,
