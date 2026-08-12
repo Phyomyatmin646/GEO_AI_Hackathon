@@ -1,0 +1,226 @@
+{
+  "name": "Weather Alert Routing (SMSPoh & Email)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "weather-alert",
+        "options": {}
+      },
+      "id": "e987c2b6-981f-4cf6-ba92-f7d8c6b75eb3",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "weather-alert-webhook"
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:8000/api/v1/market-prices/commodities/latest",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer dev-public-gateway-key-replace-before-production"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-price-node",
+      "name": "Fetch Latest Price",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "final_message",
+              "value": "={{ $('Webhook').item.json.body.message }}\n\n(ယနေ့ စပါးဈေး: {{ $json.data && $json.data.length > 0 ? $json.data[0].price : 'အချက်အလက်မရရှိပါ' }} ကျပ်)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "format-message-node",
+      "name": "Format Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $('Webhook').item.json.body.channel }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "sms"
+            },
+            {
+              "value2": "email",
+              "output": 1
+            }
+          ]
+        },
+        "fallbackOutput": 2
+      },
+      "id": "1d2a6a09-7a54-4752-b883-92f76807cc9f",
+      "name": "Route by Channel",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://smspoh.com/api/v2/send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_SMSPOH_TOKEN_HERE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"to\": \"{{ $('Webhook').item.json.body.recipient }}\",\n  \"message\": \"{{ $json.final_message }}\",\n  \"sender\": \"AgriAlert\"\n}",
+        "options": {}
+      },
+      "id": "smspoh-node",
+      "name": "SMSPoh (SMS)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1100, 150]
+    },
+    {
+      "parameters": {
+        "fromEmail": "phyomyatmin646@gmail.com",
+        "toEmail": "={{ $('Webhook').item.json.body.recipient }}",
+        "subject": "Myanmar Agri Geo: Weather Alert",
+        "text": "={{ $json.final_message }}",
+        "options": {}
+      },
+      "id": "a9a3b2f9-7e39-44be-ac5a-f11ebdebcbbd",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1100, 450],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": true\n}",
+        "options": {}
+      },
+      "id": "8f6f58fb-35b8-4cda-92ad-1f9e2b02cdcc",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1350, 300]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Fetch Latest Price",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Latest Price": {
+      "main": [
+        [
+          {
+            "node": "Format Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Message": {
+      "main": [
+        [
+          {
+            "node": "Route by Channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Channel": {
+      "main": [
+        [
+          {
+            "node": "SMSPoh (SMS)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SMSPoh (SMS)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f7813a30-3cb8-4a7a-9a8d-195b06f7dfbb",
+  "id": "b1827b59-994c-4eb6-9a25-2c89694e9f9c",
+  "meta": {
+    "instanceId": "5000572e5a7b678db80a3a713b192804562095fcfd347c0bc79323dfef86b9ab"
+  },
+  "tags": []
+}

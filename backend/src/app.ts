@@ -29,7 +29,7 @@ import { TelecomRepository } from './modules/telecom/telecom.repository.js';
 import { FarmerRepository } from './modules/telecom/farmer.repository.js';
 import { TelecomRouter } from './modules/telecom/telecom.router.js';
 import { DeliveryWorker } from './modules/telecom/delivery-worker.js';
-import { MockSmsProvider, MockEmailProvider } from './modules/telecom/providers.js';
+import { MockSmsProvider, MockEmailProvider, SmtpEmailProvider, N8nNotificationProvider } from './modules/telecom/providers.js';
 import {
   GeminiChatbotService,
   type ChatbotServiceGateway,
@@ -130,10 +130,20 @@ export async function buildApp(options: BuildAppOptions) {
     const farmerRepo = new FarmerRepository(pool);
     telecomRouter = new TelecomRouter(telecomRepo, farmerRepo);
     
+    const n8nUrl = process.env.N8N_WEBHOOK_URL;
+    
+    const emailProvider = n8nUrl 
+      ? new N8nNotificationProvider(n8nUrl, 'email')
+      : (process.env.SMTP_USER ? new SmtpEmailProvider() : new MockEmailProvider());
+      
+    const smsProvider = n8nUrl
+      ? new N8nNotificationProvider(n8nUrl, 'sms')
+      : new MockSmsProvider();
+    
     deliveryWorker = new DeliveryWorker(
       telecomRepo, 
-      new MockSmsProvider(), 
-      new MockEmailProvider()
+      smsProvider, 
+      emailProvider
     );
     deliveryWorker.start();
   }
