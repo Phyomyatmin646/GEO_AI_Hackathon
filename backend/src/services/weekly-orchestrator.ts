@@ -157,8 +157,8 @@ export class WeeklyOrchestrator {
     return {
       run_id: run.id,
       status: run.status,
-      week_start: typeof run.week_start === 'string' ? run.week_start : run.week_start.toISOString().substring(0, 10),
-      week_end: typeof run.week_end === 'string' ? run.week_end : run.week_end.toISOString().substring(0, 10),
+      week_start: run.week_start,
+      week_end: run.week_end,
       model_catalog_version: run.model_catalog_version,
       schema_version: run.schema_version,
       flagged_models_enabled: this.config.allowFlaggedModels,

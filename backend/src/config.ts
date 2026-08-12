@@ -15,6 +15,10 @@ function booleanEnvironmentValue(defaultValue: boolean) {
 }
 
 const OptionalTimeout = z.coerce.number().int().min(100).max(120_000).optional();
+const OptionalDatabaseUrl = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z.string().min(1).optional(),
+);
 
 const EnvironmentSchema = z
   .object({
@@ -27,7 +31,7 @@ const EnvironmentSchema = z
     API_KEY: z.string().min(16).optional(),
     INTERNAL_API_KEY: z.string().min(24).optional(),
     CORS_ORIGINS: z.string().default('http://localhost:3000'),
-    DATABASE_URL: z.string().min(1).optional(),
+    DATABASE_URL: OptionalDatabaseUrl,
 
     GEO_MODEL_SERVER_URL: z.url().optional(),
     MODEL_SERVER_URL: z.url().optional(),

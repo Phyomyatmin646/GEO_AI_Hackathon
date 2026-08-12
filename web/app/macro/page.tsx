@@ -18,6 +18,7 @@ import {
 } from "recharts";
 import DataSourceNote from "../components/DataSourceNote";
 import { HarvestIcon } from "../components/HarvestIcon";
+import { SiteNavigation } from "../components/SiteNavigation";
 import { useLanguage } from "../lib/i18n";
 
 type IndicatorValue = {
@@ -183,10 +184,8 @@ export default function MacroPage() {
           >
             <HarvestIcon name="globe" size={18} />
             <span>{lang === "en" ? "English" : "မြန်မာ"}</span>
-            <HarvestIcon name="chevron" size={17} />
           </button>
-          <Link href="/" className="chart-topbar__link">{copy.dashboard}</Link>
-          <Link href="/" className="chart-topbar__link">{copy.back}</Link>
+          <SiteNavigation />
         </nav>
       </header>
 

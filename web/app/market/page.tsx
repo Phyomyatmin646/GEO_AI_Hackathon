@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useLanguage } from "../lib/i18n";
 import { HarvestIcon } from "../components/HarvestIcon";
+import { SiteNavigation } from "../components/SiteNavigation";
 import {
   formatMarketDate,
   formatMarketNumber,
@@ -120,18 +121,14 @@ export default function MarketPage() {
     <main className="market-page">
       {/* ── Topbar ──────────────────────────────────── */}
       <header className="market-topbar">
-        <div className="market-brand">
+        <Link href="/" className="market-brand" aria-label={lang === "my" ? "ပင်မစာမျက်နှာသို့" : "Go to home"}>
           <span
             aria-label={t.header.title}
             className="harvest-brand-logo market-brand-logo"
             role="img"
           />
-        </div>
+        </Link>
         <nav className="market-topbar-nav">
-          <Link href="/" className="market-back-link">
-            <HarvestIcon name="sprout" size={16} />
-            {copy.back}
-          </Link>
           <button
             type="button"
             className="market-lang-btn"
@@ -145,6 +142,7 @@ export default function MarketPage() {
             <HarvestIcon name="globe" size={16} />
             {lang === "en" ? "Myanmar" : "English"}
           </button>
+          <SiteNavigation />
         </nav>
       </header>
 
