@@ -85,8 +85,8 @@ All `/api/v1/internal/*` routes always require `X-Internal-API-Key`.
   and pagination retained.
 - `GET /api/v1/market-prices/:crop/latest` and
   `GET /api/v1/market-prices/:crop/history` — crop-specific reads.
-- `GET /api/v1/crop-calendars/crops` — crop metadata currently stored in Neon.
-- `GET /api/v1/crop-calendars?region=Ayeyarwady` — stored regional calendars.
+- `GET /api/v1/crop-calendars/crops` — crop metadata from the validated local CSV snapshot.
+- `GET /api/v1/crop-calendars?region=Ayeyarwady` — local regional calendars.
 - `GET /api/v1/crop-calendars/:modelKey?region=Ayeyarwady` — one annual or
   perennial calendar, including source, evidence status, nulls, and English/
   Myanmar month labels. `season` is an optional disambiguation filter.
@@ -135,31 +135,26 @@ The production weekly release always covers these six canonical regions:
 ## Crop Calendar reference data
 
 Crop Calendars are a separate, source-backed reference feature. Runtime reads
-query the existing PostgreSQL/Neon `crop_calendars` table; the API never reads a
-JSON/CSV file and never calls prediction or model services. It does not use
-`optimal_planting_month`, grid geometry, or 5 km cell records.
+the checked-in `data/crop-calendars/myanmar_crop_calendar_17x6_2026-08-10.csv`
+once at backend startup, validates the exact canonical 17 × 6 contract, and
+serves an immutable in-memory snapshot. It does not require Neon, call
+prediction/model services, or use `optimal_planting_month`, grid geometry, or
+5 km cell records.
 
-Migrations `0005_crop_calendars.sql` and
-`0006_crop_calendar_active_snapshots.sql` add the calendar table and preserve
-superseded source releases as inactive history. The one-off importer requires
-the complete canonical 102-record JSON, validates all 17 crops × 6 regions
-before connecting to PostgreSQL, then performs one advisory-locked transaction.
-It rejects incomplete coverage, duplicate crop-region records, unknown fields,
-invalid months, branch mixing, incorrect research status/coverage totals, and
-missing attribution on verified records. Never reconstruct a production seed
-from a prose summary or substitute missing calendar fields.
+The loader rejects incomplete coverage, duplicate crop-region records, unknown
+or reordered columns, invalid months, annual/perennial branch mixing, incorrect
+research status/coverage totals, invalid UTF-8, and missing attribution on
+verified records. A malformed or missing CSV stops backend startup instead of
+publishing partial data. `CROP_CALENDAR_CSV_PATH` can select another complete
+canonical file; its default is the checked-in path above.
 
-```bash
-npm run db:migrate
-npm run db:import-crop-calendars -- /absolute/path/to/myanmar_crop_calendar_17x6.json
-npm run db:audit-crop-calendars
-```
+The additive PostgreSQL migrations/importer remain for historical compatibility,
+but the configured local CSV takes precedence for the public Crop Calendar API.
 
-The server-only web routes mirror these paths and attach `X-API-Key`, so later
-browser UI can use same-origin `fetch()` without exposing the key. No Crop
-Calendar UI is included. See
-[Crop Calendar Operations](../docs/CROP_CALENDAR_OPERATIONS.md) for validation,
-import, audit, and current source-artifact status.
+The server-only web routes mirror these paths and attach `X-API-Key`, so the
+browser `/crop-calendar` page uses same-origin `fetch()` without exposing the
+key. See [Crop Calendar Operations](../docs/CROP_CALENDAR_OPERATIONS.md) for
+validation, replacement, API, and UI details.
 
 ## Current live-data blocker
 

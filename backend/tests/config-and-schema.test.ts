@@ -14,6 +14,9 @@ describe('configuration', () => {
     expect(config.modelServerTimeoutMs).toBe(120_000);
     expect(config.modelBatchSize).toBe(50);
     expect(config.allowFlaggedModels).toBe(false);
+    expect(config.cropCalendarCsvPath).toBe(
+      './data/crop-calendars/myanmar_crop_calendar_17x6_2026-08-10.csv',
+    );
     expect(config.weeklyRunStaleAfterMs).toBe(24 * 60 * 60_000);
     expect(config.predictionRetentionDays).toBe(7);
     expect(config.marketPriceRequestTimeoutMs).toBe(120_000);

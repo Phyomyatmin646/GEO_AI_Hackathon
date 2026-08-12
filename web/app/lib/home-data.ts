@@ -3,14 +3,39 @@ import type { PilotBundle } from "./pilot-data";
 export type HomePeriod = "latest" | "pilot";
 export type HomeDataMode = "weekly" | "historical";
 
+export type HomeWeeklyFailureStage = "latest_metadata" | "regional_payload";
+
+export type HomeWeeklyUnavailableReason =
+  | "database_not_configured"
+  | "unauthorized"
+  | "no_active_weekly_predictions"
+  | "weekly_predictions_expired"
+  | "backend_timeout"
+  | "backend_unavailable"
+  | "invalid_backend_contract"
+  | "region_missing"
+  | "grid_id_mismatch"
+  | "latest_metadata_invalid"
+  | "regional_payload_not_found"
+  | "regional_payload_expired"
+  | "latest_region_contract_mismatch";
+
 export type HomePrediction = {
   value: number | string | null;
+  label: string | null;
   unit: string | null;
-  taskType: string | null;
+  taskType: "classification" | "regression";
   confidence: number | null;
-  validationStatus: string | null;
-  modelVersion: string | null;
+  confidenceKind: string | null;
+  probabilities: Record<string, number> | null;
+  validationStatus: string;
+  modelVersion: string;
   warnings: string[];
+};
+
+export type HomePredictionError = {
+  code: string | null;
+  message: string;
 };
 
 export type HomeWeeklyCell = {
@@ -18,21 +43,48 @@ export type HomeWeeklyCell = {
   latitude: number;
   longitude: number;
   predictions: Record<string, HomePrediction>;
-  errors: Record<string, string>;
+  errors: Record<string, HomePredictionError>;
+};
+
+export type HomeWeeklyDiagnostics = {
+  requestId: string | null;
+  failingStage: HomeWeeklyFailureStage | null;
+  retryable: boolean;
+};
+
+export type HomeWeeklyTelemetry = {
+  declaredCellCount: number | null;
+  decodedCellCount: number;
+  matchedCellCount: number;
+  droppedCellCount: number;
+  unmatchedGridIdCount: number;
+  latestResponseBytes: number | null;
+  regionalResponseBytes: number | null;
+  latestLatencyMs: number | null;
+  regionalLatencyMs: number | null;
 };
 
 export type HomeLiveState = {
   mode: HomeDataMode;
   requestedPeriod: HomePeriod;
+  region: string | null;
   weekStart: string | null;
   weekEnd: string | null;
   observationDate: string | null;
+  generatedAt: string | null;
   modelCatalogVersion: string | null;
+  schemaVersion: string | null;
+  sourceSha256: string | null;
+  predictionSha256: string | null;
   cropPredictionsAvailable: boolean;
   allowFlaggedModels: boolean;
   coverageRatio: number | null;
+  observationDays: number | null;
+  expectedDays: number | null;
   isPartialWeek: boolean;
-  unavailableReason: string | null;
+  unavailableReason: HomeWeeklyUnavailableReason | null;
+  diagnostics: HomeWeeklyDiagnostics;
+  telemetry: HomeWeeklyTelemetry;
   cells: HomeWeeklyCell[];
 };
 
@@ -42,9 +94,18 @@ export type HomePayload = PilotBundle & {
 
 export type HomeCropRecommendation = {
   cropId: string;
-  score: number;
+  score: number | null;
+  suitabilityTier: "poor" | "moderate" | "good" | "excellent" | null;
+  sortOrder: number;
   prediction: HomePrediction;
 };
+
+const SUITABILITY_ORDER = {
+  poor: 1,
+  moderate: 2,
+  good: 3,
+  excellent: 4,
+} as const;
 
 export function homeWeeklyCellMap(
   live: HomeLiveState,
@@ -81,15 +142,20 @@ export function weeklyCropRecommendations(
     .flatMap(([target, prediction]) => {
       if (!target.startsWith("crop_suitability_")) return [];
       const score = predictionScore(cell, target);
-      return score === null
-        ? []
-        : [{
-            cropId: target.slice("crop_suitability_".length),
-            score,
-            prediction,
-          }];
+      const tierValue = String(prediction.label ?? prediction.value ?? "").trim().toLowerCase();
+      const suitabilityTier = tierValue in SUITABILITY_ORDER
+        ? tierValue as keyof typeof SUITABILITY_ORDER
+        : null;
+      if (score === null && suitabilityTier === null) return [];
+      return [{
+        cropId: target.slice("crop_suitability_".length),
+        score,
+        suitabilityTier,
+        sortOrder: score ?? SUITABILITY_ORDER[suitabilityTier!],
+        prediction,
+      }];
     })
-    .sort((left, right) => right.score - left.score);
+    .sort((left, right) => right.sortOrder - left.sortOrder || left.cropId.localeCompare(right.cropId));
 }
 
 export function homeMapScore(cell: HomeWeeklyCell | undefined): {
@@ -98,7 +164,9 @@ export function homeMapScore(cell: HomeWeeklyCell | undefined): {
   kind: "crop" | "health";
 } | null {
   const crop = weeklyCropRecommendations(cell)[0];
-  if (crop) return { score: crop.score, label: crop.cropId, kind: "crop" };
+  if (crop?.score !== null && crop?.score !== undefined) {
+    return { score: crop.score, label: crop.cropId, kind: "crop" };
+  }
   const health = predictionScore(cell, "crop_health_score");
   return health === null
     ? null

@@ -31,6 +31,13 @@ export function LiveCropRecommendationPanel({
     return target ? (t.modelEvidence.targetLabels[target] ?? cropId) : cropId;
   };
   const unavailable = live.mode !== "weekly" || !live.cropPredictionsAvailable;
+  const tierLabel = (tier: "poor" | "moderate" | "good" | "excellent" | null) => {
+    if (!tier) return null;
+    const labels = lang === "my"
+      ? { poor: "မသင့်တော်", moderate: "အသင့်အတင့်", good: "ကောင်း", excellent: "အထူးကောင်း" }
+      : { poor: "Poor", moderate: "Moderate", good: "Good", excellent: "Excellent" };
+    return labels[tier];
+  };
 
   return (
     <section className="live-recommender" aria-live="polite" data-cell-id={cell.id}>
@@ -72,7 +79,9 @@ export function LiveCropRecommendationPanel({
                 aria-pressed={activeCropId === item.cropId}
               >
                 <span>{cropLabel(item.cropId)}</span>
-                <small>{item.score.toFixed(1)}/100</small>
+                <small>
+                  {item.score !== null ? `${item.score.toFixed(1)}/100` : tierLabel(item.suitabilityTier)}
+                </small>
               </button>
             ))}
           </div>

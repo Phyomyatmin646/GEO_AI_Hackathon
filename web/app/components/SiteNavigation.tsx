@@ -12,7 +12,7 @@ const navigationItems = [
   { href: "/climate", icon: "rain" as const, key: "climate" },
   { href: "/faq", icon: "info" as const, key: "faq" },
   { href: "/market", icon: "sprout" as const, key: "market" },
-  { href: "/daily", icon: "calendar" as const, key: "daily" },
+  { href: "/crop-calendar", icon: "calendar" as const, key: "cropCalendar" },
   { href: "/register", icon: "user" as const, key: "register" },
 ] as const;
 
@@ -29,7 +29,7 @@ export function SiteNavigation() {
     climate: t.dashboard.climateLink,
     faq: t.dashboard.faqLink,
     market: lang === "my" ? "ဈေးကွက်ဈေးနှုန်း" : "Market prices",
-    daily: lang === "my" ? "အပတ်စဉ်မြေပုံ" : "Weekly map",
+    cropCalendar: lang === "my" ? "သီးနှံပြက္ခဒိန်" : "Crop calendar",
     register: lang === "my" ? "အကောင့်ဖွင့်ရန်" : "Register",
   };
 

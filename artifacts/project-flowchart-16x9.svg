@@ -1,0 +1,226 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc">
+  <title id="title">Myanmar Agriculture Intelligence project flow</title>
+  <desc id="desc">A five-stage flow from data input through preparation and GeoAI analysis to prototype output and validation, with a separate runtime data-binding lane from Neon PostgreSQL to the clicked 5 kilometre cell detail panel.</desc>
+
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fffdfa"/>
+      <stop offset="0.56" stop-color="#fff9ee"/>
+      <stop offset="1" stop-color="#f3f8f2"/>
+    </linearGradient>
+    <linearGradient id="goldHeader" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7c34d"/>
+      <stop offset="1" stop-color="#e79c00"/>
+    </linearGradient>
+    <linearGradient id="greenHeader" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2c8a61"/>
+      <stop offset="1" stop-color="#173c2f"/>
+    </linearGradient>
+    <linearGradient id="softGreenHeader" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6db98c"/>
+      <stop offset="1" stop-color="#2d7655"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="10" stdDeviation="13" flood-color="#173c2f" flood-opacity="0.08"/>
+    </filter>
+    <marker id="arrowGold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#e79c00"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2d7655"/>
+    </marker>
+    <style>
+      .font { font-family: Inter, Arial, "Noto Sans Myanmar", sans-serif; }
+      .title { font-size: 50px; font-weight: 760; fill: #111814; letter-spacing: -1px; }
+      .subtitle { font-size: 21px; font-weight: 450; fill: #657169; }
+      .eyebrow { font-size: 14px; font-weight: 750; fill: #2d7655; letter-spacing: 2.4px; }
+      .step-label { font-size: 15px; font-weight: 750; fill: #fff; letter-spacing: 1.7px; }
+      .step-title { font-size: 27px; font-weight: 760; fill: #152019; }
+      .step-sub { font-size: 14px; font-weight: 650; fill: #7b857d; letter-spacing: 0.8px; }
+      .body { font-size: 17px; font-weight: 510; fill: #3c4740; }
+      .number { font-size: 18px; font-weight: 800; fill: #173c2f; }
+      .number-light { font-size: 18px; font-weight: 800; fill: #fff; }
+      .binding-title { font-size: 16px; font-weight: 780; fill: #173c2f; letter-spacing: 1.4px; }
+      .binding-box-title { font-size: 16px; font-weight: 750; fill: #17201b; }
+      .binding-box-sub { font-size: 12px; font-weight: 520; fill: #6d776f; }
+      .footer { font-size: 14px; font-weight: 560; fill: #6d776f; }
+    </style>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#background)"/>
+  <circle cx="1775" cy="60" r="220" fill="#f8d36a" opacity="0.09"/>
+  <circle cx="140" cy="1010" r="235" fill="#4d9a71" opacity="0.065"/>
+
+  <g class="font">
+    <!-- Title -->
+    <g transform="translate(82 49)">
+      <rect x="0" y="0" width="44" height="44" rx="13" fill="#173c2f"/>
+      <path d="M12 29C20 25 27 18 32 10M16 31c-1-9 3-16 12-21M15 19c7-1 12 2 15 8" fill="none" stroke="#f7c34d" stroke-width="3" stroke-linecap="round"/>
+      <text x="62" y="13" class="eyebrow">MYANMAR AGRICULTURE INTELLIGENCE</text>
+      <text x="62" y="62" class="title">Project data, GeoAI and validation flow</text>
+      <text x="64" y="98" class="subtitle">Source-backed evidence → 5 km analysis → bilingual decision-support prototype</text>
+    </g>
+
+    <!-- Main cards -->
+    <!-- Card 1 -->
+    <g transform="translate(82 190)" filter="url(#cardShadow)">
+      <rect width="322" height="510" rx="26" fill="#fff" stroke="#eadfcb" stroke-width="2"/>
+      <path d="M26 0h270a26 26 0 0 1 26 26v91H0V26A26 26 0 0 1 26 0z" fill="url(#goldHeader)"/>
+      <circle cx="42" cy="39" r="22" fill="#fff" opacity="0.96"/>
+      <text x="42" y="46" text-anchor="middle" class="number">01</text>
+      <text x="77" y="44" class="step-label">FOUNDATION</text>
+      <text x="28" y="91" fill="#173c2f" font-size="26" font-weight="790">Data Input</text>
+      <text x="28" y="151" class="step-title">Trusted sources</text>
+      <text x="28" y="176" class="step-sub">OFFICIAL + FIELD EVIDENCE</text>
+      <g transform="translate(29 212)">
+        <circle cx="7" cy="-5" r="4" fill="#e79c00"/><text x="22" y="1" class="body">Sentinel-1 / Sentinel-2</text>
+        <circle cx="7" cy="42" r="4" fill="#e79c00"/><text x="22" y="48" class="body">CHIRPS + ERA5-Land</text>
+        <circle cx="7" cy="89" r="4" fill="#e79c00"/><text x="22" y="95" class="body">Terrain, water and soils</text>
+        <circle cx="7" cy="136" r="4" fill="#e79c00"/><text x="22" y="142" class="body">Market and crop records</text>
+        <circle cx="7" cy="183" r="4" fill="#e79c00"/><text x="22" y="189" class="body">Field labels + feedback</text>
+      </g>
+      <rect x="27" y="456" width="268" height="28" rx="14" fill="#fff6df"/>
+      <text x="161" y="475" text-anchor="middle" font-size="13" font-weight="700" fill="#946500">PROVENANCE REQUIRED</text>
+    </g>
+
+    <!-- Card 2 -->
+    <g transform="translate(440 190)" filter="url(#cardShadow)">
+      <rect width="322" height="510" rx="26" fill="#fff" stroke="#dce9df" stroke-width="2"/>
+      <path d="M26 0h270a26 26 0 0 1 26 26v91H0V26A26 26 0 0 1 26 0z" fill="url(#softGreenHeader)"/>
+      <circle cx="42" cy="39" r="22" fill="#fff" opacity="0.96"/>
+      <text x="42" y="46" text-anchor="middle" class="number">02</text>
+      <text x="77" y="44" class="step-label">STANDARDIZE</text>
+      <text x="28" y="91" fill="#fff" font-size="26" font-weight="790">Data Preparation</text>
+      <text x="28" y="151" class="step-title">Build clean features</text>
+      <text x="28" y="176" class="step-sub">GRID + SCHEMA + QA</text>
+      <g transform="translate(29 212)">
+        <circle cx="7" cy="-5" r="4" fill="#2d7655"/><text x="22" y="1" class="body">GEE 5 km equal-area grid</text>
+        <circle cx="7" cy="42" r="4" fill="#2d7655"/><text x="22" y="48" class="body">Weekly / static exports</text>
+        <circle cx="7" cy="89" r="4" fill="#2d7655"/><text x="22" y="95" class="body">Python joins and features</text>
+        <circle cx="7" cy="136" r="4" fill="#2d7655"/><text x="22" y="142" class="body">Exact 75-feature contract</text>
+        <circle cx="7" cy="183" r="4" fill="#2d7655"/><text x="22" y="189" class="body">QA, checksum, coverage</text>
+      </g>
+      <rect x="27" y="456" width="268" height="28" rx="14" fill="#eaf6ec"/>
+      <text x="161" y="475" text-anchor="middle" font-size="13" font-weight="700" fill="#28684b">FAIL ON SCHEMA DRIFT</text>
+    </g>
+
+    <!-- Card 3 -->
+    <g transform="translate(798 190)" filter="url(#cardShadow)">
+      <rect width="322" height="510" rx="26" fill="#fff" stroke="#d7e7dd" stroke-width="2"/>
+      <path d="M26 0h270a26 26 0 0 1 26 26v91H0V26A26 26 0 0 1 26 0z" fill="url(#greenHeader)"/>
+      <circle cx="42" cy="39" r="22" fill="#f7c34d"/>
+      <text x="42" y="46" text-anchor="middle" class="number">03</text>
+      <text x="77" y="44" class="step-label">INFER</text>
+      <text x="28" y="91" fill="#fff" font-size="26" font-weight="790">GeoAI / Analysis</text>
+      <text x="28" y="151" class="step-title">Score each cell</text>
+      <text x="28" y="176" class="step-sub">RULES + MODEL ARTIFACTS</text>
+      <g transform="translate(29 212)">
+        <circle cx="7" cy="-5" r="4" fill="#173c2f"/><text x="22" y="1" class="body">Historical rule baseline</text>
+        <circle cx="7" cy="42" r="4" fill="#173c2f"/><text x="22" y="48" class="body">40-target model catalog</text>
+        <circle cx="7" cy="89" r="4" fill="#173c2f"/><text x="22" y="95" class="body">Batch model inference</text>
+        <circle cx="7" cy="136" r="4" fill="#173c2f"/><text x="22" y="142" class="body">11 healthy / 29 flagged</text>
+        <circle cx="7" cy="183" r="4" fill="#173c2f"/><text x="22" y="189" class="body">Policy and coverage gates</text>
+      </g>
+      <rect x="27" y="456" width="268" height="28" rx="14" fill="#e9f3ed"/>
+      <text x="161" y="475" text-anchor="middle" font-size="13" font-weight="700" fill="#173c2f">NO FABRICATED OUTPUT</text>
+    </g>
+
+    <!-- Card 4 -->
+    <g transform="translate(1156 190)" filter="url(#cardShadow)">
+      <rect width="322" height="510" rx="26" fill="#fff" stroke="#eadfcb" stroke-width="2"/>
+      <path d="M26 0h270a26 26 0 0 1 26 26v91H0V26A26 26 0 0 1 26 0z" fill="url(#goldHeader)"/>
+      <circle cx="42" cy="39" r="22" fill="#173c2f"/>
+      <text x="42" y="46" text-anchor="middle" class="number-light">04</text>
+      <text x="77" y="44" class="step-label">SERVE</text>
+      <text x="28" y="91" fill="#173c2f" font-size="26" font-weight="790">Prototype Output</text>
+      <text x="28" y="151" class="step-title">Decision support</text>
+      <text x="28" y="176" class="step-sub">API + MAP + EVIDENCE</text>
+      <g transform="translate(29 212)">
+        <circle cx="7" cy="-5" r="4" fill="#e79c00"/><text x="22" y="1" class="body">Neon JSONB persistence</text>
+        <circle cx="7" cy="42" r="4" fill="#e79c00"/><text x="22" y="48" class="body">Fastify public APIs</text>
+        <circle cx="7" cy="89" r="4" fill="#e79c00"/><text x="22" y="95" class="body">Secure Next BFF</text>
+        <circle cx="7" cy="136" r="4" fill="#e79c00"/><text x="22" y="142" class="body">Bilingual 5 km map UI</text>
+        <circle cx="7" cy="183" r="4" fill="#e79c00"/><text x="22" y="189" class="body">Cell detail + provenance</text>
+      </g>
+      <rect x="27" y="456" width="268" height="28" rx="14" fill="#fff6df"/>
+      <text x="161" y="475" text-anchor="middle" font-size="13" font-weight="700" fill="#946500">SERVER-SIDE SECRETS ONLY</text>
+    </g>
+
+    <!-- Card 5 -->
+    <g transform="translate(1514 190)" filter="url(#cardShadow)">
+      <rect width="322" height="510" rx="26" fill="#fff" stroke="#dce9df" stroke-width="2"/>
+      <path d="M26 0h270a26 26 0 0 1 26 26v91H0V26A26 26 0 0 1 26 0z" fill="url(#softGreenHeader)"/>
+      <circle cx="42" cy="39" r="22" fill="#fff" opacity="0.96"/>
+      <text x="42" y="46" text-anchor="middle" class="number">05</text>
+      <text x="77" y="44" class="step-label">VERIFY</text>
+      <text x="28" y="91" fill="#fff" font-size="26" font-weight="790">Validation</text>
+      <text x="28" y="151" class="step-title">Trust before scale</text>
+      <text x="28" y="176" class="step-sub">TECHNICAL + HUMAN QA</text>
+      <g transform="translate(29 212)">
+        <circle cx="7" cy="-5" r="4" fill="#2d7655"/><text x="22" y="1" class="body">Spatial folds + holdout</text>
+        <circle cx="7" cy="42" r="4" fill="#2d7655"/><text x="22" y="48" class="body">Schema and SHA checks</text>
+        <circle cx="7" cy="89" r="4" fill="#2d7655"/><text x="22" y="95" class="body">Freshness + QA warnings</text>
+        <circle cx="7" cy="136" r="4" fill="#2d7655"/><text x="22" y="142" class="body">Agronomist / farmer review</text>
+        <circle cx="7" cy="183" r="4" fill="#2d7655"/><text x="22" y="189" class="body">UX and usability testing</text>
+      </g>
+      <rect x="27" y="456" width="268" height="28" rx="14" fill="#eaf6ec"/>
+      <text x="161" y="475" text-anchor="middle" font-size="13" font-weight="700" fill="#28684b">FEEDBACK INTO NEXT RUN</text>
+    </g>
+
+    <!-- Main-flow arrows -->
+    <g stroke="#e79c00" stroke-width="4" fill="none" marker-end="url(#arrowGold)" opacity="0.98">
+      <path d="M407 445H430"/>
+      <path d="M765 445H788"/>
+      <path d="M1123 445H1146"/>
+      <path d="M1481 445H1504"/>
+    </g>
+
+    <!-- Feedback loop -->
+    <path d="M1758 710 C1770 758 1696 775 1613 775 H294 C204 775 139 756 150 711" fill="none" stroke="#2d7655" stroke-width="3" stroke-dasharray="9 9" marker-end="url(#arrowGreen)" opacity="0.75"/>
+    <rect x="732" y="754" width="455" height="40" rx="20" fill="#f4faf5" stroke="#cfe3d5"/>
+    <text x="959" y="779" text-anchor="middle" font-size="14" font-weight="720" fill="#2d7655">FIELD FEEDBACK + NEXT WEEKLY RUN</text>
+
+    <!-- Runtime binding lane -->
+    <g transform="translate(82 825)">
+      <rect x="0" y="0" width="1754" height="172" rx="28" fill="#ffffff" stroke="#dce7df" stroke-width="2"/>
+      <rect x="0" y="0" width="12" height="172" rx="6" fill="#173c2f"/>
+      <text x="34" y="33" class="binding-title">RUNTIME DATA BINDING — CLICKED 5 KM CELL</text>
+      <text x="34" y="57" class="footer">The browser never connects directly to Neon; data crosses authenticated server boundaries.</text>
+
+      <g transform="translate(34 80)">
+        <g>
+          <rect width="260" height="64" rx="17" fill="#f0f7f2" stroke="#bcd8c6"/>
+          <text x="18" y="27" class="binding-box-title">Neon PostgreSQL</text>
+          <text x="18" y="48" class="binding-box-sub">weekly_region_predictions</text>
+        </g>
+        <path d="M272 32H318" stroke="#e79c00" stroke-width="3" marker-end="url(#arrowGold)"/>
+        <g transform="translate(330 0)">
+          <rect width="260" height="64" rx="17" fill="#fff8e8" stroke="#efd597"/>
+          <text x="18" y="27" class="binding-box-title">Fastify API</text>
+          <text x="18" y="48" class="binding-box-sub">GET /api/v1/weekly/latest</text>
+        </g>
+        <path d="M602 32H648" stroke="#e79c00" stroke-width="3" marker-end="url(#arrowGold)"/>
+        <g transform="translate(660 0)">
+          <rect width="260" height="64" rx="17" fill="#f0f7f2" stroke="#bcd8c6"/>
+          <text x="18" y="27" class="binding-box-title">Next server BFF</text>
+          <text x="18" y="48" class="binding-box-sub">/api/v1/home + API key</text>
+        </g>
+        <path d="M932 32H978" stroke="#e79c00" stroke-width="3" marker-end="url(#arrowGold)"/>
+        <g transform="translate(990 0)">
+          <rect width="260" height="64" rx="17" fill="#fff8e8" stroke="#efd597"/>
+          <text x="18" y="27" class="binding-box-title">Frontend state</text>
+          <text x="18" y="48" class="binding-box-sub">live.cells[] keyed by grid_id</text>
+        </g>
+        <path d="M1262 32H1308" stroke="#e79c00" stroke-width="3" marker-end="url(#arrowGold)"/>
+        <g transform="translate(1320 0)">
+          <rect width="354" height="64" rx="17" fill="#173c2f" stroke="#173c2f"/>
+          <text x="18" y="27" font-size="16" font-weight="760" fill="#fff">Selected cell detail panel</text>
+          <text x="18" y="48" font-size="12" font-weight="540" fill="#d7e8df">values · units · confidence · warnings</text>
+        </g>
+      </g>
+    </g>
+
+    <text x="1837" y="1042" text-anchor="end" class="footer">Presentation export · 1920 × 1080 · 16:9</text>
+  </g>
+</svg>
+

@@ -27,7 +27,10 @@ const EnvironmentSchema = z
     API_KEY: z.string().min(16).optional(),
     INTERNAL_API_KEY: z.string().min(24).optional(),
     CORS_ORIGINS: z.string().default('http://localhost:3000'),
-    DATABASE_URL: z.string().url().optional(),
+    DATABASE_URL: z.preprocess(
+      (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+      z.string().url().optional(),
+    ),
 
     GEO_MODEL_SERVER_URL: z.url().optional(),
     MODEL_SERVER_URL: z.url().optional(),
@@ -78,6 +81,11 @@ const EnvironmentSchema = z
     ALLOW_INSECURE_MODEL_SERVER_HTTP: booleanEnvironmentValue(false),
 
     WEEKLY_DATA_DIR: z.string().min(1).default('../data/weekly'),
+    CROP_CALENDAR_CSV_PATH: z
+      .string()
+      .trim()
+      .min(1)
+      .default('./data/crop-calendars/myanmar_crop_calendar_17x6_2026-08-10.csv'),
     WEEKLY_RUN_STALE_AFTER_MS: z.coerce
       .number()
       .int()
@@ -201,6 +209,7 @@ export type AppConfig = {
   modelMaxConcurrentBatches: number;
   allowFlaggedModels: boolean;
   weeklyDataDir: string;
+  cropCalendarCsvPath?: string;
   weeklyRunStaleAfterMs: number;
   predictionRetentionDays: number;
   predictionCleanupIntervalMs: number;
@@ -311,6 +320,7 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
     modelMaxConcurrentBatches: parsed.data.MODEL_MAX_CONCURRENT_BATCHES,
     allowFlaggedModels: parsed.data.ALLOW_FLAGGED_MODELS,
     weeklyDataDir: parsed.data.WEEKLY_DATA_DIR,
+    cropCalendarCsvPath: parsed.data.CROP_CALENDAR_CSV_PATH,
     weeklyRunStaleAfterMs: parsed.data.WEEKLY_RUN_STALE_AFTER_MS,
     predictionRetentionDays: parsed.data.PREDICTION_RETENTION_DAYS,
     predictionCleanupIntervalMs: parsed.data.PREDICTION_CLEANUP_INTERVAL_MS,
