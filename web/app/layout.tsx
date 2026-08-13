@@ -3,6 +3,8 @@ import { headers } from "next/headers";
 import "./globals.css";
 import { LanguageProvider } from "./lib/i18n";
 import { ChatbotWidget } from "./components/ChatbotWidget";
+import { PWARegistration } from "./components/PWARegistration";
+import { OfflineBanner } from "./components/OfflineBanner";
 
 
 
@@ -43,12 +45,16 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..900&amp;family=Geist+Mono:wght@400..900&amp;display=swap" rel="stylesheet" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#2e7d32" />
         <style dangerouslySetInnerHTML={{ __html: `:root { --font-geist-sans: 'Geist', sans-serif; --font-geist-mono: 'Geist Mono', monospace; }` }} />
       </head>
       <body suppressHydrationWarning>
+        <OfflineBanner />
         <LanguageProvider>
           {children}
           <ChatbotWidget />
+          <PWARegistration />
         </LanguageProvider>
       </body>
     </html>
