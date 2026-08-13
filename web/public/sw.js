@@ -66,35 +66,51 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache First for static assets and navigation
-  if (event.request.method === 'GET') {
-    event.respondWith(
-      caches.match(event.request).then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        
-        return fetch(event.request).then((networkResponse) => {
-          // Do not cache non-200 or opaque responses
-          if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-            return networkResponse;
-          }
+  // Check if it's a static asset (images, fonts, scripts, css)
+  const isStaticAsset = url.pathname.match(/\.(js|css|woff2?|png|jpe?g|svg|json|ico)$/i);
+  
+  if (isStaticAsset) {
+    // Cache First for static assets
+    if (event.request.method === 'GET') {
+      event.respondWith(
+        caches.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) return cachedResponse;
           
-          return caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, networkResponse.clone());
-            return networkResponse;
+          return fetch(event.request).then((networkResponse) => {
+            if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+              return networkResponse;
+            }
+            return caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, networkResponse.clone());
+              return networkResponse;
+            });
           });
-        }).catch(() => {
-          // Fallback if network fails
-          // If the request is for a webpage (navigation), return the cached home page
-          if (event.request.mode === 'navigate') {
-            return caches.match('/');
-          }
-          // Otherwise return a simple offline response
-          return new Response('Offline Mode', { status: 503, statusText: 'Service Unavailable' });
-        });
-      })
-    );
+        })
+      );
+    }
+  } else {
+    // Network First for Navigation (HTML) and RSC payloads
+    if (event.request.method === 'GET') {
+      event.respondWith(
+        fetch(event.request)
+          .then((networkResponse) => {
+            return caches.open(DYNAMIC_CACHE).then((cache) => {
+              cache.put(event.request, networkResponse.clone());
+              return networkResponse;
+            });
+          })
+          .catch(() => {
+            return caches.match(event.request).then((cachedResponse) => {
+              if (cachedResponse) return cachedResponse;
+              
+              if (event.request.mode === 'navigate') {
+                return caches.match('/');
+              }
+              return new Response('Offline Mode', { status: 503, statusText: 'Service Unavailable' });
+            });
+          })
+      );
+    }
   }
 });
 

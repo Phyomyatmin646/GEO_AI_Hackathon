@@ -442,7 +442,7 @@ export function PilotDashboard() {
       ? (lang === "my" ? "အောင်မြင် · သတိပေးချက်ရှိ" : "Passed with warnings")
       : (lang === "my" ? "အောင်မြင်" : "Passed")
     : (lang === "my" ? "မအောင်မြင်" : "Failed");
-  const qaTitle = `${localizeRegion(payload.meta.region, lang)} · ${formatMonthLabel(payload.meta.periodStart.slice(0, 7))} QA`;
+  const qaTitle = localizeRegion(payload.meta.region, lang);
   const sourceFileName = `${payload.meta.releaseId.split("__")[0]}.csv`;
   const qaChecks = [
     {
@@ -1119,7 +1119,6 @@ export function PilotDashboard() {
 
         <section className="evidence-grid harvest-qa-report" id="harvest-evidence-grid">
           <div className="harvest-qa-heading">
-            <h2>{qaTitle}</h2>
             <span>
               <HarvestIcon name="cells" size={16} />
               {qaText.quality}
